@@ -1,0 +1,26 @@
+html, body {
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    color: aliceblue;
+    overflow: hidden;
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    padding: 0;
+}
+
+canvas {
+    border: 2px solid red;
+}
+
+#fpsDisplay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 18px;
+    color: lime;
+    background-color: black;
+    user-select: none;
+    pointer-events: none;
+}

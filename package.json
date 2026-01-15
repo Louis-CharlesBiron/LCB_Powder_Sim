@@ -1,0 +1,16 @@
+{
+  "name": "template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "test.js",
+  "scripts": {
+    "i": "npm install && npx @neutralinojs/neu update && powershell -Command \"Remove-Item -Path src/assets/scripts/*.ts -Force\"",
+    "start": "npx @neutralinojs/neu run",
+    "build": ""
+  },
+  "keywords": [],
+  "author": "Louis-Charles Biron",
+  "license": "ISC",
+  "dependencies": {
+  }
+}

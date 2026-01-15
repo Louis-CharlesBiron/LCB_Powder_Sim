@@ -1,0 +1,57 @@
+{
+  "applicationId": "TEMPLATE",
+  "version": "1.0.0",
+  "defaultMode": "window",
+  "port": 0,
+  "documentRoot": "/src/",
+  "url": "/",
+  "enableServer": true,
+  "enableNativeAPI": true,
+  "tokenSecurity": "one-time",
+  "logging": {
+    "enabled": true,
+    "writeToLogFile": false
+  },
+  "nativeAllowList": [
+"app.*",
+"os.*",
+"robot.*",
+"debug.log"
+  ],
+  "modes": {
+    "window": {
+      "title": "TEMPLATE",
+      "width": 800,
+      "height": 500,
+      "minWidth": 400,
+      "minHeight": 200,
+      "center": true,
+      "fullScreen": false,
+      "alwaysOnTop": false,
+      "icon": "/src/assets/img/favicon.png",
+      "enableInspector": true,
+      "borderless": false,
+      "transparent": false,
+      "maximize": false,
+      "hidden": false,
+      "resizable": true,
+      "exitProcessOnClose": false
+    }
+  },
+  "cli": {
+    "binaryName": "TEMPLATE",
+    "resourcesPath": "/src/",
+    "clientLibrary": "/src/assets/scripts/neutralino.js",
+    "binaryVersion": "5.4.0",
+    "clientVersion": "5.4.0"
+  },
+  "chrome": {
+    "width": 800,
+    "height": 600,
+    "args":  "--user-agent=\"Neutralinojs chrome mode\"",
+    "nativeBlockList": [
+      "filesystem.*",
+      "os.*"
+    ]
+  }
+}
