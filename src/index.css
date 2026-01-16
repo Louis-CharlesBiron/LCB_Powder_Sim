@@ -14,13 +14,17 @@ canvas {
     border: 2px solid red;
 }
 
-#fpsDisplay {
+#fpsDisplay, #mousePos {
     position: absolute;
     top: 0;
-    left: 0;
+    right: 0;
     font-size: 18px;
     color: lime;
     background-color: black;
     user-select: none;
     pointer-events: none;
+}
+
+#mousePos {
+    top: 30px;
 }

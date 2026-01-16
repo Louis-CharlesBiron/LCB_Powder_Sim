@@ -39,6 +39,4 @@ class MapGrid {
 	set pixelSize(_pixelSize) {return this._pixelSize = _pixelSize}
 	set mapWidth(_mapWidth) {return this._mapWidth = _mapWidth}
 	set mapHeight(_mapHeight) {return this._mapHeight = _mapHeight}
-
-
 }
