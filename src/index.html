@@ -15,21 +15,36 @@
       </div>
 
       <div class="controls">
-        <div class="buttons">
-          <button id="startButton">Start</button>
-          <button id="stopButton">Stop</button>
-          <button id="backStepButton"><</button>
-          <button id="stepButton">></button>
-          <button id="saveButton">Save</button>
-          <button id="loadButton">Load</button>
-          <button id="clearButton">Clear</button>
+        <div class="left">
+          <div class="buttons">
+            <button id="startButton">Start</button>
+            <button id="stopButton">Stop</button>
+            <button id="backStepButton"><</button>
+            <button id="stepButton">></button>
+            <button id="clearButton">Clear</button>
+          </div>
+
+          <div class="settings">
+            <input id="speedInput" type="number" step="0.1" min="0.1" max="10" placeholder="Speed...">
+            <input id="widthInput" type="number" step="5" min="1" max="100" placeholder="Width...">
+            <input id="heightInput" type="number" step="5" min="1" max="100" placeholder="Height...">
+            <select id="brushTypeOptions"></select>
+            <select id="materialOptions"></select>
+          </div>
         </div>
 
-        <div class="settings">
-          <input id="speedInput" type="number" step="0.1" min="0.1" max="10" placeholder="Speed...">
-          <input id="widthInput" type="number" step="5" min="1" max="100" placeholder="Width...">
-          <input id="heightInput" type="number" step="5" min="1" max="100" placeholder="Height...">
+        <div class="saveParent">
+          <div>
+            <button id="saveButton">Save</button>
+            <button id="loadButton">Load</button>
+          </div>
+
+          <div>
+            <input id="exportValueInput" type="text" placeholder="Save export to copy..." readonly>
+            <input id="loadValueInput" type="text" placeholder="Load to input...">
+          </div>
         </div>
+
       </div>
     </div>
 

@@ -30,6 +30,27 @@ class MapGrid {
         return lines
     }
 
+    moveAdjacency(i, direction) {
+        const D = Simulation.D, w = this._mapWidth
+        if (direction == D.t)       return i-w
+        else if (direction == D.b)  return i+w
+        else if (direction == D.r)  return (i+1)%w   ? i+1   : i
+        else if (direction == D.l)  return i%w       ? i-1   : i
+        else if (direction == D.tr) return (i-w+1)%w ? i-w+1 : i
+        else if (direction == D.br) return (i+w+1)%w ? i+w+1 : i
+        else if (direction == D.tl) return (i-w)%w   ? i-w-1 : i
+        else if (direction == D.bl) return (i+w)%w   ? i+w-1 : i
+    }
+
+    indexToMapPos(i) {
+        const w = this._mapWidth
+        return [i%w, (i/w)|0]
+    }
+
+    mapPosToIndex(mapPos) {
+        return mapPos[1]*this._mapWidth+mapPos[0]
+    }  
+
     get realWidth() {return this._mapWidth*this._pixelSize}
     get realHeight() {return this._mapHeight*this._pixelSize}
     get realDimensions() {return [this.realWidth, this.realHeight]}
