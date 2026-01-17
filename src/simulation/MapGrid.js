@@ -8,6 +8,18 @@ class MapGrid {
     //static DEFAULT_MAP_WIDTH = 60
     //static DEFAULT_MAP_HEIGHT = 45
 
+    //static DEFAULT_PIXEL_SIZE = 5
+    //static DEFAULT_MAP_WIDTH = 235
+    //static DEFAULT_MAP_HEIGHT = 160
+
+    //static DEFAULT_PIXEL_SIZE = 3
+    //static DEFAULT_MAP_WIDTH = 400
+    //static DEFAULT_MAP_HEIGHT = 260
+
+    //static DEFAULT_PIXEL_SIZE = 1
+    //static DEFAULT_MAP_WIDTH = 800
+    //static DEFAULT_MAP_HEIGHT = 600
+
     constructor(pixelSize, mapWidth, mapHeight) {
         this._pixelSize = pixelSize||MapGrid.DEFAULT_PIXEL_SIZE
         this._mapWidth = mapWidth||MapGrid.DEFAULT_MAP_WIDTH

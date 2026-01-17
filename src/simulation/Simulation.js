@@ -1,17 +1,22 @@
 class Simulation {
-    static MATERIALS = {AIR:0, SAND:1, WATER:2, STONE:3, GRAVEL:4, INVERTED_WATER:5}
+    static MATERIALS = {AIR:0, SAND:1<<0, WATER:1<<1, STONE:1<<2, GRAVEL:1<<3, INVERTED_WATER:1<<4}
     static MATERIAL_COLORS = {AIR:[0,0,0,0], SAND:[235,235,158,1], WATER:[0,15,242,.75], STONE:[100,100,100,1], GRAVEL:[188,188,188,1], INVERTED_WATER:[81,53,131,.75]}
-    static MATERIAL_NAMES = null
+    static MATERIAL_COLORS_INDEXED = []
+    static MATERIAL_NAMES = []
     static DEFAULT_MATERIAL = this.MATERIALS.SAND
     static D = {t:0, r:1, b:2, l:3, tr:4, br:5, bl:6, tl:7}
     static SIDE_PRIORITY = {RANDOM:0, LEFT:1, RIGHT:2}
-    static SIDE_PRIORITY_NAMES = null
+    static SIDE_PRIORITY_NAMES = []
     static DEFAULT_BACK_STEP_SAVING_COUNT = 20
     static EXPORT_STATES = {RAW:0, COMPACTED:1}
     static BRUSH_TYPES = {PIXEL:0, VERTICAL_CROSS:1, HOLLOW_VERTICAL_CROSS:2, LINE3:3, ROW3:4}
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static {
-        Simulation.MATERIAL_NAMES = Object.keys(Simulation.MATERIALS)
+        const materials = Object.keys(Simulation.MATERIALS), m_ll = materials.length
+        for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) {
+            Simulation.MATERIAL_NAMES[i] = materials[ii]
+            Simulation.MATERIAL_COLORS_INDEXED[i] = Simulation.MATERIAL_COLORS[materials[ii]]
+        }
         Simulation.SIDE_PRIORITY_NAMES = Object.keys(Simulation.SIDE_PRIORITY)
     }
 
@@ -20,7 +25,7 @@ class Simulation {
         this._CVS = CVS
         this._mapGrid = mapGrid
         this._loopExtras = []
-        this._pixels = new Uint8Array(mapGrid.arraySize)
+        this._pixels = new Uint16Array(mapGrid.arraySize)
         this._isMouseWithinSimulation = true
         this._selectedMaterial = Simulation.MATERIALS.SAND
         this._sidePriority = Simulation.SIDE_PRIORITY.RIGHT
@@ -32,7 +37,6 @@ class Simulation {
         this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.GRID_DISPLAY_COLOR, null, null, null, 1)
         this._imgMap = CVS.ctx.createImageData(...mapGrid.realDimensions)
         this._simImgMapDrawLoop = CanvasUtils.createEmptyObj(CVS, null, this.#simImgMapDraw.bind(this))
-        this._materialColorsIndexes = Object.values(Simulation.MATERIAL_COLORS)
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
 
         // CANVAS
@@ -61,21 +65,21 @@ class Simulation {
 
     load(mapData) {
         if (mapData) {
-            if (mapData instanceof Uint8Array) this._pixels.set(mapData)
+            if (mapData instanceof Uint16Array) this._pixels.set(mapData)
             else if (typeof mapData == "string") {
                 const exportType = mapData[0]
                 mapData = mapData.slice(2).split(",")
-                if (exportType==Simulation.EXPORT_STATES.RAW) this._pixels = new Uint8Array(mapData)
+                if (exportType==Simulation.EXPORT_STATES.RAW) this._pixels = new Uint16Array(mapData)
                 else if (exportType==Simulation.EXPORT_STATES.COMPACTED) {
                     let m_ll = mapData.length, offset = 0
                     for (let i=0;i<m_ll;i+=2) {
                         const count = mapData[i+1]
-                        this._pixels.set(new Uint8Array(count).fill(mapData[i]), offset)
+                        this._pixels.set(new Uint16Array(count).fill(mapData[i]), offset)
                         offset += +count
                     }
                 }
             }
-            else this._pixels = new Uint8Array(Object.values(mapData))
+            else this._pixels = new Uint16Array(Object.values(mapData))
             this.updateImgMapFromPixels()
         }
     }
@@ -198,11 +202,11 @@ class Simulation {
     }
 
     updateImgMapFromPixels() {
-        const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth
+        const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, C = Simulation.MATERIAL_COLORS_INDEXED
         for (let i=0,x=0,y=0;i<p_ll;i++) {
             x = i%w
             if (i&&!x) y++
-            this.#updateMapPixel([x,y], this._materialColorsIndexes[pixels[i]]) // can be optimized
+            this.#updateMapPixel([x,y], C[pixels[i]]) // can be optimized
         }
     }
 
@@ -210,7 +214,7 @@ class Simulation {
         const data = this._imgMap.data, width = this._imgMap.width,
             r = rgba[0]??255, g = rgba[1]??0, b = rgba[2]??0, a = (rgba[3]??1)*255,
             size = this._mapGrid.pixelSize, x = mapPos[0]*size, y = mapPos[1]*size,
-            pxRow = new Uint8ClampedArray(size*4)
+            pxRow = new Uint8ClampedArray(size*4) // could be cached OPTIMIZATION
 
         for (let i=0;i<size;i++) {
             const ii = i*4
@@ -272,7 +276,7 @@ class Simulation {
     }
 
     getPixelsCopy() {
-        const pixelsCopy = new Uint8Array(this._mapGrid.arraySize)
+        const pixelsCopy = new Uint16Array(this._mapGrid.arraySize)
         pixelsCopy.set(this._pixels)
         return pixelsCopy
     }
@@ -318,7 +322,6 @@ class Simulation {
 	get imgMap() {return this._imgMap}
     get isMouseWithinSimulation() {return this._isMouseWithinSimulation}
 	get selectedMaterial() {return this._selectedMaterial}
-	get materialColorsIndexes() {return this._materialColorsIndexes}
     get sidePriority() {return this._sidePriority}
     get isRunning() {return this._isRunning}
     get backStepSavingEnabled() {return this._backStepSavingMaxCount}
