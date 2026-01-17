@@ -4,6 +4,8 @@ class Simulation {
     static MATERIAL_NAMES = ["AIR", "TEST", "SAND", "WATER", "STONE", "GRAVEL"]
     static D = {t:0, r:1, b:2, l:3, tr:4, br:5, bl:6, tl:7}
     static SIDE_PRIORITY = {RANDOM:0, LEFT:1, RIGHT:2}
+    static SIDE_PRIORITY_NAMES = ["RANDOM", "LEFT", "RIGHT"]
+    static DEFAULT_BACK_STEP_SAVING_COUNT = 20
 
     constructor(CVS, mapGrid) {
         // SIM
@@ -13,7 +15,10 @@ class Simulation {
         this._pixels = new Uint8Array(mapGrid.arraySize)
         this._isMouseWithinSimulation = true
         this._selectedMaterial = Simulation.MATERIALS.DEFAULT
-        this._sidePriority = Simulation.SIDE_PRIORITY.LEFT
+        this._sidePriority = Simulation.SIDE_PRIORITY.RIGHT
+        this._isRunning = true
+        this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
+        this._backStepSaves = []
 
         // DISPLAY
         this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.GRID_DISPLAY_COLOR, null, null, null, 1)
@@ -41,12 +46,12 @@ class Simulation {
         if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.CONTROL)) this.#placePixelFromMouse(mouse)
         
         this.drawMapGrid()
-        this.step()
-        //this.updateImgMapFromPixels()
+        if (this._isRunning) this.step()
     }
 
-    load(mapData) {
-        if (typeof mapData == "object") this._pixels = new Uint8Array(Object.values(mapData))
+    load(mapData, isUint8Array) {
+        if (isUint8Array) this._pixels.set(mapData)
+        else this._pixels = new Uint8Array(Object.values(mapData))
         this.updateImgMapFromPixels()
     }
 
@@ -66,6 +71,8 @@ class Simulation {
 
     step() {
         const updated = [], pixels = this._pixels, p_ll = pixels.length, M = Simulation.MATERIALS, D = Simulation.D, checkAdjacency = this.checkAdjacency.bind(this)
+        this.saveStep()
+
         for (let i=0;i<p_ll;i++) {
             const mat = pixels[i]
             if (updated.includes(i) || mat == M.AIR) continue
@@ -83,10 +90,7 @@ class Simulation {
                     else if (checkAdjacency(i, D.bl) == M.AIR) newIndex = this.moveAdjacency(i, D.bl)
                 }
                 // check what to replace prev pos with
-                if (transpiercedMaterial == M.WATER) {
-                    if (checkAdjacency(i, D.l) == M.WATER || checkAdjacency(i, D.r) == M.WATER) replaceMaterial = M.WATER
-                    //else if (checkAdjacency(i, D.l) == mat && )
-                } 
+                if (transpiercedMaterial == M.WATER && (checkAdjacency(i, D.l) == M.WATER || checkAdjacency(i, D.r) == M.WATER)) replaceMaterial = M.WATER
             }
             // WATER
             else if (mat == M.WATER) {
@@ -119,7 +123,24 @@ class Simulation {
                 pixels[i] = replaceMaterial
             }
         }
+
         this.updateImgMapFromPixels()
+    }
+
+    static a = 0;
+
+    backStep() {
+        const b_ll = this._backStepSaves.length
+        if (b_ll) {
+            console.log(this._backStepSaves[b_ll-1], b_ll-1)
+            this.load(this._backStepSaves[b_ll-1], true)
+            this._backStepSaves.pop()
+        }
+    }
+
+    saveStep() {
+        if (this.backStepSavingEnabled) this._backStepSaves.push(this.getPixelsCopy())//Simulation.a++
+        if (this._backStepSaves.length > this._backStepSavingMaxCount) this._backStepSaves.shift()
     }
 
     #getSideSelectionPriority() {
@@ -134,7 +155,7 @@ class Simulation {
         return this._pixels[this.moveAdjacency(i, direction)]
     }
 
-    moveAdjacency(i, direction) {
+    moveAdjacency(i, direction) { // refractor to MapGrid
         const D = Simulation.D, w = this._mapGrid.mapWidth
         if (direction == D.t)       return i-w
         else if (direction == D.b)  return i+w
@@ -156,9 +177,9 @@ class Simulation {
     }
 
     updateMapPixel(mapPos, rgba) {
-        const data = this._imgMap.data, map = this._mapGrid, width = map.realWidth,
+        const data = this._imgMap.data, width = this._imgMap.width,
             r = rgba[0]??255, g = rgba[1]??0, b = rgba[2]??0, a = (rgba[3]??1)*255,
-            size = map.pixelSize, x = mapPos[0]*size, y = mapPos[1]*size,
+            size = this._mapGrid.pixelSize, x = mapPos[0]*size, y = mapPos[1]*size,
             pxRow = new Uint8ClampedArray(size*4)
 
         for (let i=0;i<size;i++) {
@@ -190,7 +211,10 @@ class Simulation {
 
     #placePixelFromMouse(mouse) {
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
-        if (this._isMouseWithinSimulation && mapPos) this.placePixel(mapPos)
+        if (this._isMouseWithinSimulation && mapPos) {
+            this.placePixel(mapPos)
+            if (!this._isRunning) this.updateImgMapFromPixels()
+        }
     }
 
     keyDown(keyboard) {
@@ -201,11 +225,22 @@ class Simulation {
         else if (keyboard.isDown([K.DIGIT_4, K.NUMPAD_4])) this._selectedMaterial = M.GRAVEL
         else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._selectedMaterial = M.AIR
 
-        if (keyboard.isDown(K.CONTROL) && keyboard.isDown(K.BACKSPACE)) this._pixels.fill(M.AIR)
+        if (keyboard.isDown(K.CONTROL) && keyboard.isDown(K.BACKSPACE)) this.clear()
     }
 
     mouseDown(mouse) {
         this.#placePixelFromMouse(mouse)
+    }
+
+    getPixelsCopy() {
+        const pixelsCopy = new Uint8Array(this._mapGrid.arraySize)
+        pixelsCopy.set(this._pixels)
+        return pixelsCopy
+    }
+
+    clear(material=Simulation.MATERIALS.AIR) {
+        this._pixels.fill(material)
+        if (!this._isRunning) this.updateImgMapFromPixels()
     }
 
     get CVS() {return this._CVS}
@@ -221,7 +256,11 @@ class Simulation {
     get isMouseWithinSimulation() {return this._isMouseWithinSimulation}
 	get selectedMaterial() {return this._selectedMaterial}
 	get materialColorsIndexes() {return this._materialColorsIndexes}
-
-	set loopExtras(_loopExtras) {return this._loopExtras = _loopExtras}
-	set selectedMaterial(_selectedMaterial) {return this._selectedMaterial = _selectedMaterial}
+    get sidePriority() {return this._sidePriority}
+    get isRunning() {return this._isRunning}
+    get backStepSavingEnabled() {return this._backStepSavingMaxCount}
+    
+	set loopExtras(_loopExtras) {this._loopExtras = _loopExtras}
+	set selectedMaterial(_selectedMaterial) {this._selectedMaterial = _selectedMaterial}
+	set isRunning(isRunning) {this._isRunning = isRunning}
 }

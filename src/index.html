@@ -9,8 +9,29 @@
 </head>
   <body>
 
-    
-    <canvas id="sim"></canvas>
+    <div class="main">
+      <div class="cvsParent">
+        <canvas id="sim"></canvas>
+      </div>
+
+      <div class="controls">
+        <div class="buttons">
+          <button id="startButton">Start</button>
+          <button id="stopButton">Stop</button>
+          <button id="backStepButton"><</button>
+          <button id="stepButton">></button>
+          <button id="saveButton">Save</button>
+          <button id="loadButton">Load</button>
+          <button id="clearButton">Clear</button>
+        </div>
+
+        <div class="settings">
+          <input id="speedInput" type="number" step="0.1" min="0.1" max="10" placeholder="Speed...">
+          <input id="widthInput" type="number" step="5" min="1" max="100" placeholder="Width...">
+          <input id="heightInput" type="number" step="5" min="1" max="100" placeholder="Height...">
+        </div>
+      </div>
+    </div>
 
     <div class="status">
       <span id="fpsDisplay"></span>
@@ -18,6 +39,8 @@
       <span id="mapDim"></span>
       <span id="selectedMaterial"></span>
       <span id="mouseMaterial"></span>
+      <span id="sidePriorityText"></span>
+      <span id="isRunningText"></span>
     </div>
 
 
