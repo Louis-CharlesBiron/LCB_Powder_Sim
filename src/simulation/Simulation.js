@@ -7,8 +7,9 @@ class Simulation {
     static D = {t:0, r:1, b:2, l:3, tr:4, br:5, bl:6, tl:7}
     static SIDE_PRIORITY = {RANDOM:0, LEFT:1, RIGHT:2}
     static SIDE_PRIORITY_NAMES = []
-    static DEFAULT_BACK_STEP_SAVING_COUNT = 20
+    static DEFAULT_BACK_STEP_SAVING_COUNT = 50
     static EXPORT_STATES = {RAW:0, COMPACTED:1}
+    static #EXPORT_SEP = "x"
     static BRUSH_TYPES = {PIXEL:0, VERTICAL_CROSS:1, HOLLOW_VERTICAL_CROSS:2, LINE3:3, ROW3:4}
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static {
@@ -34,12 +35,14 @@ class Simulation {
         this._backStepSaves = []
 
         // DISPLAY
+        this._showMapGrid = true
         this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.GRID_DISPLAY_COLOR, null, null, null, 1)
         this._imgMap = CVS.ctx.createImageData(...mapGrid.realDimensions)
         this._simImgMapDrawLoop = CanvasUtils.createEmptyObj(CVS, null, this.#simImgMapDraw.bind(this))
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
 
         // CANVAS
+        this._mouseListenerIds = []
         CVS.loopingCB = this.main.bind(this)
         CVS.setMouseMove()
         CVS.setMouseLeave()
@@ -49,8 +52,8 @@ class Simulation {
         CVS.setKeyDown(this.#keyDown.bind(this), true)
         CVS.start()
 
-        CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true)
-        CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this._isMouseWithinSimulation = false)
+        this._mouseListenerIds.push(CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true))
+        this._mouseListenerIds.push(CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this._isMouseWithinSimulation = false))
     }
 
     main(deltaTime) {
@@ -59,29 +62,60 @@ class Simulation {
         const mouse = this.mouse
         if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.CONTROL)) this.#placePixelFromMouse(mouse)
         
-        this.#drawMapGrid()
+        if (this._showMapGrid) this.#drawMapGrid()
         if (this._isRunning) this.step()
     }
 
-    load(mapData) {
+    load(mapData, saveDimensions=null) {
         if (mapData) {
-            if (mapData instanceof Uint16Array) this._pixels.set(mapData)
+            if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(saveDimensions[0], saveDimensions[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
             else if (typeof mapData == "string") {
-                const exportType = mapData[0]
-                mapData = mapData.slice(2).split(",")
-                if (exportType==Simulation.EXPORT_STATES.RAW) this._pixels = new Uint16Array(mapData)
+                const [exportType, rawSize, rawData] = mapData.split(Simulation.#EXPORT_SEP), data = rawData.split(","), [saveWidth, saveHeight] = rawSize.split(",").map(x=>+x)
+                let savePixels = null
+                if (exportType==Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data)
                 else if (exportType==Simulation.EXPORT_STATES.COMPACTED) {
-                    let m_ll = mapData.length, offset = 0
+                    let m_ll = data.length, offset = 0 
+                    savePixels = new Uint16Array(saveWidth*saveHeight)
                     for (let i=0;i<m_ll;i+=2) {
-                        const count = mapData[i+1]
-                        this._pixels.set(new Uint16Array(count).fill(mapData[i]), offset)
+                        const count = data[i+1]
+                        savePixels.set(new Uint16Array(count).fill(data[i]), offset)
                         offset += +count
                     }
                 }
-            }
-            else this._pixels = new Uint16Array(Object.values(mapData))
+                this.#updatePixelsFromSize(saveWidth, saveHeight, this._mapGrid.mapWidth, this._mapGrid.mapHeight, savePixels)
+            } else this._pixels = new Uint16Array(Object.values(mapData))
             this.updateImgMapFromPixels()
         }
+    }
+
+    #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
+        const pixels = this._pixels = new Uint16Array(this._mapGrid.arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
+        for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
+            pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)
+            oi += oldWidth
+            i += oldWidth+skipOffset
+        }
+    }
+
+    updateMapSize(width, height) {
+        const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight, oldPixels = this.getPixelsCopy()
+        height = map.mapHeight = height||map.mapHeight
+        width = map.mapWidth = width||map.mapWidth
+        this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldPixels)
+
+        this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
+        this.updateImgMapFromPixels()
+
+        this.mouse.updateListener(Mouse.LISTENER_TYPES.ENTER, this._mouseListenerIds[0], [[0,0], map.realDimensions])
+        this.mouse.updateListener(Mouse.LISTENER_TYPES.LEAVE, this._mouseListenerIds[1], [[0,0], map.realDimensions])
+    }
+
+    updateMapPixelSize(size) {
+        const map = this._mapGrid
+        map.pixelSize = size
+        this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
+        this.updateImgMapFromPixels()
+        //this.CVS.clear()
     }
 
     #simImgMapDraw() {
@@ -174,13 +208,14 @@ class Simulation {
     backStep() {
         const b_ll = this._backStepSaves.length
         if (b_ll) {
-            this.load(this._backStepSaves[b_ll-1])
+            const backSave = this._backStepSaves[b_ll-1]
+            this.load(backSave[0], backSave[1])
             this._backStepSaves.pop()
         }
     }
 
     saveStep() {
-        if (this.backStepSavingEnabled) this._backStepSaves.push(this.getPixelsCopy())
+        if (this.backStepSavingEnabled) this._backStepSaves.push([this.getPixelsCopy(), this._mapGrid.dimensions])
         if (this._backStepSaves.length > this._backStepSavingMaxCount) this._backStepSaves.shift()
     }
 
@@ -206,7 +241,7 @@ class Simulation {
         for (let i=0,x=0,y=0;i<p_ll;i++) {
             x = i%w
             if (i&&!x) y++
-            this.#updateMapPixel([x,y], C[pixels[i]]) // can be optimized
+            this.#updateMapPixel([x,y], C[pixels[i]]) // can be optimized OPTIMIZATION
         }
     }
 
@@ -276,16 +311,16 @@ class Simulation {
     }
 
     getPixelsCopy() {
-        const pixelsCopy = new Uint16Array(this._mapGrid.arraySize)
-        pixelsCopy.set(this._pixels)
+        const arraySize = this._mapGrid.arraySize, pixelsCopy = new Uint16Array(arraySize)
+        pixelsCopy.set(this._pixels.subarray(0, arraySize))
         return pixelsCopy
     }
 
     exportAsText(disableCompacting) {
-        let pixels = this._pixels, p_ll = pixels.length, prefix = Simulation.EXPORT_STATES.COMPACTED+"x", textResult = ""
+        let pixels = this._pixels, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
         
         if (disableCompacting) {
-            prefix = Simulation.EXPORT_STATES.RAW+"x"
+            state = Simulation.EXPORT_STATES.RAW
             textResult += pixels.toString()
         } else {
             let lastMaterial, atI = -1
@@ -299,7 +334,7 @@ class Simulation {
             textResult = textResult.toString()
         }
 
-        return prefix+textResult
+        return state+Simulation.#EXPORT_SEP+this._mapGrid.dimensions+Simulation.#EXPORT_SEP+textResult
     }
 
     start() {
