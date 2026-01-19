@@ -1,24 +1,29 @@
 class Simulation {
     static MATERIALS = {AIR:0, SAND:1<<0, WATER:1<<1, STONE:1<<2, GRAVEL:1<<3, INVERTED_WATER:1<<4}
     static MATERIAL_COLORS = {AIR:[0,0,0,0], SAND:[235,235,158,1], WATER:[0,15,242,.75], STONE:[100,100,100,1], GRAVEL:[188,188,188,1], INVERTED_WATER:[81,53,131,.75]}
+    static MATERIAL_GROUPS = {LIQUIDS:0}
     static MATERIAL_COLORS_INDEXED = []
     static MATERIAL_NAMES = []
+    static #CACHED_MATERIALS_ROWS = []
     static DEFAULT_MATERIAL = this.MATERIALS.SAND
-    static D = {t:0, r:1, b:2, l:3, tr:4, br:5, bl:6, tl:7}
-    static SIDE_PRIORITY = {RANDOM:0, LEFT:1, RIGHT:2}
+    static D = {t:1<<0, r:1<<1, b:1<<2, l:1<<3, tr:1<<4, br:1<<5, bl:1<<6, tl:1<<7}
+    static SIDE_PRIORITY = {RANDOM:0, LEFT:1, RIGHT:2, MAP_DEPENDANT:3}
     static SIDE_PRIORITY_NAMES = []
     static DEFAULT_BACK_STEP_SAVING_COUNT = 50
     static EXPORT_STATES = {RAW:0, COMPACTED:1}
-    static #EXPORT_SEP = "x"
+    static EXPORT_SEPARATOR = "x"
     static BRUSH_TYPES = {PIXEL:0, VERTICAL_CROSS:1, HOLLOW_VERTICAL_CROSS:2, LINE3:3, ROW3:4}
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static {
-        const materials = Object.keys(Simulation.MATERIALS), m_ll = materials.length
+        const M = Simulation.MATERIALS, materials = Object.keys(M), m_ll = materials.length
         for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) {
             Simulation.MATERIAL_NAMES[i] = materials[ii]
             Simulation.MATERIAL_COLORS_INDEXED[i] = Simulation.MATERIAL_COLORS[materials[ii]]
         }
+
         Simulation.SIDE_PRIORITY_NAMES = Object.keys(Simulation.SIDE_PRIORITY)
+
+        Simulation.MATERIAL_GROUPS["LIQUIDS"] = M.WATER+M.INVERTED_WATER
     }
 
     constructor(CVS, mapGrid) {
@@ -27,12 +32,14 @@ class Simulation {
         this._mapGrid = mapGrid
         this._loopExtras = []
         this._pixels = new Uint16Array(mapGrid.arraySize)
+        this._lastPixels = new Uint16Array(mapGrid.arraySize)
         this._isMouseWithinSimulation = true
         this._selectedMaterial = Simulation.MATERIALS.SAND
         this._sidePriority = Simulation.SIDE_PRIORITY.RIGHT
         this._isRunning = true
         this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
         this._backStepSaves = []
+        this.#updatedCachedMapPixelsRows()
 
         // DISPLAY
         this._showMapGrid = true
@@ -70,7 +77,7 @@ class Simulation {
         if (mapData) {
             if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(saveDimensions[0], saveDimensions[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
             else if (typeof mapData == "string") {
-                const [exportType, rawSize, rawData] = mapData.split(Simulation.#EXPORT_SEP), data = rawData.split(","), [saveWidth, saveHeight] = rawSize.split(",").map(x=>+x)
+                const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight] = rawSize.split(",").map(x=>+x)
                 let savePixels = null
                 if (exportType==Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data)
                 else if (exportType==Simulation.EXPORT_STATES.COMPACTED) {
@@ -114,8 +121,8 @@ class Simulation {
         const map = this._mapGrid
         map.pixelSize = size
         this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
+        this.#updatedCachedMapPixelsRows()
         this.updateImgMapFromPixels()
-        //this.CVS.clear()
     }
 
     #simImgMapDraw() {
@@ -133,70 +140,70 @@ class Simulation {
     }
 
     step() {
-        const updated = [], pixels = this._pixels, p_ll = pixels.length, M = Simulation.MATERIALS, D = Simulation.D, checkAdjacency = this.checkAdjacency.bind(this), moveAdjacency = this._mapGrid.moveAdjacency.bind(this._mapGrid)
+        const updated = new Set(), pixels = this._pixels, p_ll = pixels.length, M = Simulation.MATERIALS, AIR = M.AIR, G = Simulation.MATERIAL_GROUPS, D = Simulation.D, map = this._mapGrid, moveAdjacency = map.moveAdjacency.bind(map), w = map.mapWidth
         this.saveStep()
 
         for (let i=0;i<p_ll;i++) {
             const mat = pixels[i]
-            if (updated.includes(i) || mat == M.AIR) continue
-            let newMaterial = mat, newIndex = -1, replaceMaterial = M.AIR, lockUpdates = true
+            if (mat == AIR || updated.has(i)) continue
+            let newMaterial = mat, newIndex = -1, replaceMaterial = AIR, lockUpdates = true
 
             // SAND
             if (mat == M.SAND) {
-                const transpiercedMaterial = checkAdjacency(i, D.b)
+                const transpiercedMaterialIndex = moveAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpiercedLiquid = transpiercedMaterial&G.LIQUIDS
                 // check if can go down or sides
-                if (transpiercedMaterial == M.AIR || transpiercedMaterial == M.WATER) newIndex = moveAdjacency(i, D.b)
+                if (transpiercedMaterial == AIR || transpiercedLiquid) newIndex = transpiercedMaterialIndex
                 else if (transpiercedMaterial == mat) {
-                    const sideSelection = this.#getSideSelectionPriority()
-                    if      (sideSelection[0] && checkAdjacency(i, D.bl) == M.AIR) newIndex = moveAdjacency(i, D.bl)
-                    else if (sideSelection[1] && checkAdjacency(i, D.br) == M.AIR) newIndex = moveAdjacency(i, D.br)
-                    else if (sideSelection[2] && checkAdjacency(i, D.bl) == M.AIR) newIndex = moveAdjacency(i, D.bl)
+                    const sideSelection = this.#getSideSelectionPriority(), i_BL = moveAdjacency(i, D.bl), i_BR = moveAdjacency(i, D.br)
+                    if      (sideSelection[0] && pixels[i_BL] == AIR) newIndex = i_BL
+                    else if (sideSelection[1] && pixels[i_BR] == AIR) newIndex = i_BR
+                    else if (sideSelection[2] && pixels[i_BL] == AIR) newIndex = i_BL
                 }
                 // check what to replace prev pos with
-                if (transpiercedMaterial == M.WATER && (checkAdjacency(i, D.l) == M.WATER || checkAdjacency(i, D.r) == M.WATER)) replaceMaterial = M.WATER
+                if (transpiercedLiquid && (pixels[moveAdjacency(i, D.l)]&G.LIQUIDS || pixels[moveAdjacency(i, D.r)]&G.LIQUIDS)) replaceMaterial = transpiercedLiquid
             }
             // WATER
             else if (mat == M.WATER) {
-                const transpiercedMaterial = checkAdjacency(i, D.b)
+                const transpiercedMaterialIndex = moveAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex]
                 // check if can go down or sides
-                if (transpiercedMaterial == M.AIR) newIndex = moveAdjacency(i, D.b)
+                if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
                 else {
-                    const sideSelection = this.#getSideSelectionPriority(), leftIsAir = checkAdjacency(i, D.l) == M.AIR
-                    if      (sideSelection[0] && checkAdjacency(i, D.bl) == M.AIR && leftIsAir) newIndex = moveAdjacency(i, D.bl)
-                    else if (sideSelection[1] && checkAdjacency(i, D.br) == M.AIR && checkAdjacency(i, D.r) == M.AIR) newIndex = moveAdjacency(i, D.br)
-                    else if (sideSelection[2] && checkAdjacency(i, D.bl) == M.AIR && leftIsAir) newIndex = moveAdjacency(i, D.bl)
-                    else if (sideSelection[0] && leftIsAir) newIndex = moveAdjacency(i, D.l)
-                    else if (sideSelection[1] && checkAdjacency(i, D.r) == M.AIR) newIndex = moveAdjacency(i, D.r)
-                    else if (sideSelection[2] && leftIsAir) newIndex = moveAdjacency(i, D.l)
+                    const sideSelection = this.#getSideSelectionPriority(i, w), i_L = moveAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_BL = moveAdjacency(i, D.bl), i_BR = moveAdjacency(i, D.br), i_R = moveAdjacency(i, D.r)
+                    if      (sideSelection[0] && pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
+                    else if (sideSelection[1] && pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
+                    else if (sideSelection[2] && pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
+                    else if (sideSelection[0] && leftIsAir) newIndex = i_L
+                    else if (sideSelection[1] && pixels[i_R] == AIR) newIndex = i_R
+                    else if (sideSelection[2] && leftIsAir) newIndex = i_L
                 }
             }
             // GRAVEL
             else if (mat == M.GRAVEL) {
-                const transpiercedMaterial = checkAdjacency(i, D.b)
+                const transpiercedMaterialIndex = moveAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpiercedLiquid = transpiercedMaterial&G.LIQUIDS
                 // check if can go down
-                if (transpiercedMaterial == M.AIR || transpiercedMaterial == M.WATER) newIndex = moveAdjacency(i, D.b)
+                if (transpiercedMaterial == AIR || transpiercedLiquid) newIndex = transpiercedMaterialIndex
                 // check what to replace prev pos with
-                if (transpiercedMaterial == M.WATER && checkAdjacency(i, D.l) == M.WATER && checkAdjacency(i, D.r) == M.WATER) replaceMaterial = M.WATER
+                if (transpiercedLiquid && (pixels[moveAdjacency(i, D.l)]&G.LIQUIDS || pixels[moveAdjacency(i, D.r)]&G.LIQUIDS)) replaceMaterial = transpiercedLiquid
             }
             // INVERTED WATER
             else if (mat == M.INVERTED_WATER) {
-                const transpiercedMaterial = checkAdjacency(i, D.t)
+                const transpiercedMaterialIndex = moveAdjacency(i, D.t), transpiercedMaterial = pixels[transpiercedMaterialIndex]
                 // check if can go down or sides
-                if (transpiercedMaterial == M.AIR) newIndex = moveAdjacency(i, D.t)
+                if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
                 else {
-                    const sideSelection = this.#getSideSelectionPriority(), leftIsAir = checkAdjacency(i, D.l) == M.AIR
-                    if      (sideSelection[0] && checkAdjacency(i, D.tl) == M.AIR && leftIsAir) newIndex = moveAdjacency(i, D.tl)
-                    else if (sideSelection[1] && checkAdjacency(i, D.tr) == M.AIR && checkAdjacency(i, D.r) == M.AIR) newIndex = moveAdjacency(i, D.tr)
-                    else if (sideSelection[2] && checkAdjacency(i, D.tl) == M.AIR && leftIsAir) newIndex = moveAdjacency(i, D.tl)
-                    else if (sideSelection[0] && leftIsAir) newIndex = moveAdjacency(i, D.l)
-                    else if (sideSelection[1] && checkAdjacency(i, D.r) == M.AIR) newIndex = moveAdjacency(i, D.r)
-                    else if (sideSelection[2] && leftIsAir) newIndex = moveAdjacency(i, D.l)
+                    const sideSelection = this.#getSideSelectionPriority(), i_L = moveAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_TL = moveAdjacency(i, D.tl), i_TR = moveAdjacency(i, D.tr), i_R = moveAdjacency(i, D.r)
+                    if      (sideSelection[0] && pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
+                    else if (sideSelection[1] && pixels[i_TR] == AIR && pixels[i_R] == AIR) newIndex = i_TR
+                    else if (sideSelection[2] && pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
+                    else if (sideSelection[0] && leftIsAir) newIndex = i_L
+                    else if (sideSelection[1] && pixels[i_R] == AIR) newIndex = i_R
+                    else if (sideSelection[2] && leftIsAir) newIndex = i_L
                 }
             }
 
             // UPDATE
             if (newIndex != -1) {
-                if (lockUpdates) updated.push(newIndex)
+                if (lockUpdates) updated.add(newIndex)
                 pixels[newIndex] = newMaterial
                 pixels[i] = replaceMaterial
             }
@@ -219,54 +226,61 @@ class Simulation {
         if (this._backStepSaves.length > this._backStepSavingMaxCount) this._backStepSaves.shift()
     }
 
-    clear(material=Simulation.MATERIALS.AIR) {
-        this._pixels.fill(material)
-        if (!this._isRunning) this.updateImgMapFromPixels()
+    clear() {
+        this.fill(Simulation.MATERIALS.AIR)
     }
 
-    #getSideSelectionPriority() {
+    #getSideSelectionPriority(i, mapWidth) {
         const sidePriority = this._sidePriority, S = Simulation.SIDE_PRIORITY, isRandom = sidePriority==S.RANDOM, isRight = sidePriority==S.RIGHT
-        let resLeft = true, resRight = true
+        let resLeft = true, resRight = true, backupLeft = (!isRandom)||isRight
         if (isRandom) resLeft = !(resRight=Math.random()<0.5)
         else if (isRight) resLeft = false
-        return [resLeft, resRight, (!isRandom)||isRight]
-    }
-
-    checkAdjacency(i, direction) {
-        return this._pixels[this._mapGrid.moveAdjacency(i, direction)]
+        else if (sidePriority==S.MAP_DEPENDANT) {// TODO FIX
+            const isMoreLeft = (i%mapWidth)<(mapWidth/2)
+            resLeft = isMoreLeft
+            resRight = !isMoreLeft
+            if (resRight) backupLeft = true
+        }
+        return [resLeft, resRight, backupLeft]
     }
 
     updateImgMapFromPixels() {
-        const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, C = Simulation.MATERIAL_COLORS_INDEXED
-        for (let i=0,x=0,y=0;i<p_ll;i++) {
-            x = i%w
-            if (i&&!x) y++
-            this.#updateMapPixel([x,y], C[pixels[i]]) // can be optimized OPTIMIZATION
+        const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = lastPixels.length==p_ll&&map.lastPixelSize==map.pixelSize, w = map.mapWidth
+        for (let i=0;i<p_ll;i++) {
+            const y = (i/w)|0, mat = pixels[i]
+            if (enableOptimization && mat==lastPixels[i]) continue
+            this.#updateMapPixel(i-y*w, y, mat) 
+        }  
+        if (!enableOptimization) map.lastPixelSize = map.pixelSize
+        this._lastPixels = this.getPixelsCopy()
+    }
+    
+    #updateMapPixel(rawX, rawY, material) {
+        const data = this._imgMap.data, size = this._mapGrid.pixelSize, width = this._imgMap.width, x = rawX*size, y = rawY*size, R = Simulation.#CACHED_MATERIALS_ROWS
+        for (let i=0;i<size;i++) data.set(R[material], ((y+i)*width+x)*4)
+    }
+
+    #updatedCachedMapPixelsRows() {
+        const C = Simulation.MATERIAL_COLORS, colors = Object.values(C), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
+        for (let i=0,ii=0;ii<c_ll;i=!i?1:i*2,ii++) {
+            const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
+            for (let x=0;x<size;x++) {
+                const xx = x*4
+                pxRow[xx]   = r
+                pxRow[xx+1] = g
+                pxRow[xx+2] = b
+                pxRow[xx+3] = adjustedA
+            }
+            R[i] = pxRow
         }
     }
 
-    #updateMapPixel(mapPos, rgba) {
-        const data = this._imgMap.data, width = this._imgMap.width,
-            r = rgba[0]??255, g = rgba[1]??0, b = rgba[2]??0, a = (rgba[3]??1)*255,
-            size = this._mapGrid.pixelSize, x = mapPos[0]*size, y = mapPos[1]*size,
-            pxRow = new Uint8ClampedArray(size*4) // could be cached OPTIMIZATION
-
-        for (let i=0;i<size;i++) {
-            const ii = i*4
-            pxRow[ii]   = r
-            pxRow[ii+1] = g
-            pxRow[ii+2] = b
-            pxRow[ii+3] = a
-        }
-
-        for (let i=0;i<size;i++) {
-            const offset = ((y+i)*width+x)*4
-            data.set(pxRow, offset)
-        }
+    placePixel(mapPos, material=this._selectedMaterial) {
+        this._pixels[this._mapGrid.mapPosToIndex(mapPos)] = material
     }
 
-    placePixel(mapPos) {
-        this._pixels[this._mapGrid.mapPosToIndex(mapPos)] = this._selectedMaterial
+    placePixelCoords(x, y, material=this._selectedMaterial) {
+        this._pixels[this._mapGrid.mapPosToIndexCoords(x, y)] = material
     }
 
     #placePixelFromMouse(mouse) {
@@ -334,7 +348,7 @@ class Simulation {
             textResult = textResult.toString()
         }
 
-        return state+Simulation.#EXPORT_SEP+this._mapGrid.dimensions+Simulation.#EXPORT_SEP+textResult
+        return state+Simulation.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+Simulation.EXPORT_SEPARATOR+textResult
     }
 
     start() {
@@ -343,6 +357,36 @@ class Simulation {
 
     stop() {
         this._isRunning = false
+    }
+
+    fill(material=Simulation.MATERIALS.AIR) {
+        const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length
+        lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
+        pixels.set(new Uint16Array(p_ll).fill(material))
+        this.updateImgMapFromPixels()
+    }
+
+    fillArea(pos1, pos2, material) {
+        const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, [x1, y1] = pos1, [x2, y2] = pos2 
+        for (let i=0;i<p_ll;i++) {
+            const y = (i/w)|0, x = i-y*w
+            if (x>=x1 && x<=x2 && y>=y1 && y<=y2) this.placePixelCoords(x, y, material)
+        }            
+        this.updateImgMapFromPixels()
+    }
+
+    PERF_TEST_FULL_WATER_REG() {
+        simulation._showMapGrid = false
+        simulation.updateMapPixelSize(1)
+        simulation.updateMapSize(700, 600)
+        this.fill(Simulation.MATERIALS.WATER)
+    }
+
+    PERF_TEST_FULL_WATER_HIGH() {
+        simulation._showMapGrid = false
+        simulation.updateMapPixelSize(1)
+        simulation.updateMapSize(1000, 1000)
+        this.fill(Simulation.MATERIALS.WATER)
     }
 
     get CVS() {return this._CVS}

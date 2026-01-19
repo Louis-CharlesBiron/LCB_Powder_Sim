@@ -2,7 +2,7 @@ class MapGrid {
     static DEFAULT_PIXEL_SIZE = 25
     static DEFAULT_MAP_WIDTH = 30
     static DEFAULT_MAP_HEIGHT = 25
-    static GRID_DISPLAY_COLOR = [240, 248, 255, 0.25]
+    static GRID_DISPLAY_COLOR = [240, 248, 255, 0.2]
 
     //static DEFAULT_PIXEL_SIZE = 15
     //static DEFAULT_MAP_WIDTH = 60
@@ -20,8 +20,10 @@ class MapGrid {
     //static DEFAULT_MAP_WIDTH = 800
     //static DEFAULT_MAP_HEIGHT = 600
 
+    #lastPixelSize = null
+
     constructor(pixelSize, mapWidth, mapHeight) {
-        this._pixelSize = pixelSize||MapGrid.DEFAULT_PIXEL_SIZE
+        this._pixelSize = this.#lastPixelSize = pixelSize||MapGrid.DEFAULT_PIXEL_SIZE
         this._mapWidth = mapWidth||MapGrid.DEFAULT_MAP_WIDTH
         this._mapHeight = mapHeight||MapGrid.DEFAULT_MAP_HEIGHT
     }
@@ -42,7 +44,7 @@ class MapGrid {
         return lines
     }
 
-    moveAdjacency(i, direction) {
+    moveAdjacency(i, direction) { // OPTIMIZATION
         const D = Simulation.D, w = this._mapWidth
         if (direction == D.t)       return i-w
         else if (direction == D.b)  return i+w
@@ -61,13 +63,18 @@ class MapGrid {
 
     mapPosToIndex(mapPos) {
         return mapPos[1]*this._mapWidth+mapPos[0]
-    }  
+    } 
+
+    mapPosToIndexCoords(x, y) {
+        return y*this._mapWidth+x
+    } 
 
     get realWidth() {return this._mapWidth*this._pixelSize}
     get realHeight() {return this._mapHeight*this._pixelSize}
     get realDimensions() {return [this.realWidth, this.realHeight]}
     get arraySize() {return this._mapWidth*this._mapHeight}
     get displayDimensions() {return this._mapWidth+"x"+this._mapHeight}
+    get lastPixelSize() {return this.#lastPixelSize}
 
     get pixelSize() {return this._pixelSize}
 	get mapWidth() {return this._mapWidth}
@@ -77,4 +84,5 @@ class MapGrid {
 	set pixelSize(_pixelSize) {return this._pixelSize = _pixelSize}
 	set mapWidth(_mapWidth) {return this._mapWidth = _mapWidth}
 	set mapHeight(_mapHeight) {return this._mapHeight = _mapHeight}
+	set lastPixelSize(lps) {return this.#lastPixelSize = lps}
 }

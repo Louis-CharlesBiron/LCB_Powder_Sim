@@ -21,6 +21,12 @@ simulation.addLoopExtra(()=>{ // optimise for event updates instead of loop
     if (isRunningText.textContent != isRunning) isRunningText.textContent = isRunning?"RUNNING":"STOPPED"
 })
 
+//simulation.stop()
+
+// GENERAL
+document.oncontextmenu=e=>{
+    e.preventDefault()
+}
 
 // CONTROLS BUTTONS
 document.getElementById("startButton").onclick=()=>simulation.start()
@@ -35,7 +41,14 @@ document.getElementById("clearButton").onclick=()=>simulation.clear()
 const loadValueInput = document.getElementById("loadValueInput"), exportValueInput = document.getElementById("exportValueInput")
 
 document.getElementById("saveButton").onclick=e=>exportValueInput.value = simulation.exportAsText(e.ctrlKey)
-document.getElementById("loadButton").onclick=()=>simulation.load(loadValueInput.value||exportValueInput.value)
+document.getElementById("loadButton").onclick=e=>{
+    const v = loadValueInput.value||exportValueInput.value
+    if (e.ctrlKey) {
+        const size = v.split(Simulation.EXPORT_SEPARATOR)[1].split(",").map(x=>+x)
+        simulation.updateMapSize(...size)
+    }
+    simulation.load(v)
+}
 
 loadValueInput.oncontextmenu=e=>{
     e.preventDefault()
@@ -45,33 +58,36 @@ loadValueInput.oncontextmenu=e=>{
 // WIDTH / HEIGHT / PIXEL SIZE
 const widthInput = document.getElementById("widthInput"), heightInput = document.getElementById("heightInput"), pixelSizeInput = document.getElementById("pixelSizeInput")
 widthInput.value = simulation.mapGrid.mapWidth
-widthInput.oninput=()=>{
+widthInput.oninput=e=>{
     const v = +widthInput.value
-    if (v < 1200 && v > 0) simulation.updateMapSize(v)
+    if (v < e.target.max && v > e.target.min) simulation.updateMapSize(v)
 }
 widthInput.onwheel=e=>{
-    const v = widthInput.value = e.deltaY > 0 ? +widthInput.value-1 : +widthInput.value+1
-    if (v < 1200 && v > 0) simulation.updateMapSize(v)
+    e.preventDefault()
+    const inc = e.ctrlKey?10:1, v = widthInput.value = e.deltaY > 0 ? +widthInput.value-inc : +widthInput.value+inc
+    if (v < e.target.max && v > e.target.min) simulation.updateMapSize(v)
 }
 
 heightInput.value = simulation.mapGrid.mapHeight
-heightInput.oninput=()=>{
+heightInput.oninput=e=>{
     const v = +heightInput.value
-    if (v < 1000 && v > 0) simulation.updateMapSize(null, v)
+    if (v < e.target.max && v > e.target.min) simulation.updateMapSize(null, v)
 }
 heightInput.onwheel=e=>{
-    const v = heightInput.value = e.deltaY > 0 ? +heightInput.value-1 : +heightInput.value+1
-    if (v < 1000 && v > 0) simulation.updateMapSize(null, v)
+    e.preventDefault()
+    const inc = e.ctrlKey?10:1, v = heightInput.value = e.deltaY > 0 ? +heightInput.value-inc : +heightInput.value+inc
+    if (v < e.target.max && v > e.target.min) simulation.updateMapSize(null, v)
 }
 
 pixelSizeInput.value = simulation.mapGrid.pixelSize
-pixelSizeInput.oninput=()=>{
+pixelSizeInput.oninput=e=>{
     const v = +pixelSizeInput.value
-    if (v < 50 && v > 0) simulation.updateMapPixelSize(v)
+    if (v < e.target.max && v > e.target.min) simulation.updateMapPixelSize(v)
 }
 pixelSizeInput.onwheel=e=>{
-    const v = pixelSizeInput.value = e.deltaY > 0 ? +pixelSizeInput.value-1 : +pixelSizeInput.value+1
-    if (v < 50 && v > 0) simulation.updateMapPixelSize(v)
+    e.preventDefault()
+    const inc = e.ctrlKey?10:1, v = pixelSizeInput.value = e.deltaY > 0 ? +pixelSizeInput.value-inc : +pixelSizeInput.value+inc
+    if (v < e.target.max && v > e.target.min) simulation.updateMapPixelSize(v)
 }
 
 // BRUSH TYPES
