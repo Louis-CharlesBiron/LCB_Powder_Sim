@@ -37,12 +37,12 @@ class Simulation {
         this._pixels = new Uint16Array(mapGrid.arraySize)
         this._lastPixels = new Uint16Array(mapGrid.arraySize)
         this._pxStepUpdated = new Uint16Array(mapGrid.arraySize)
-        this._isMouseWithinSimulation = true
-        this._selectedMaterial = Simulation.MATERIALS.SAND
-        this._sidePriority = Simulation.SIDE_PRIORITY.RIGHT
-        this._isRunning = true
         this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
         this._backStepSaves = []
+        this._isMouseWithinSimulation = true
+        this._isRunning = true
+        this._selectedMaterial = Simulation.MATERIALS.SAND
+        this._sidePriority = Simulation.SIDE_PRIORITY.RIGHT
         this.#updatedCachedMapPixelsRows()
 
         // DISPLAY
@@ -54,7 +54,7 @@ class Simulation {
 
         // CANVAS
         this._mouseListenerIds = []
-        CVS.loopingCB = this.main.bind(this)
+        CVS.loopingCB = this.#main.bind(this)
         CVS.setMouseMove()
         CVS.setMouseLeave()
         CVS.setMouseDown(this.#mouseDown.bind(this))
@@ -67,7 +67,11 @@ class Simulation {
         this._mouseListenerIds.push(CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this._isMouseWithinSimulation = false))
     }
 
-    main(deltaTime) {
+    /**
+     * The main display and physics loop
+     * @param {Number} deltaTime The deltaTime
+     */
+    #main(deltaTime) {
         for (let i=0;i<this._loopExtras.length;i++) this._loopExtras[i](deltaTime)
 
         const mouse = this.mouse
@@ -77,6 +81,14 @@ class Simulation {
         if (this._isRunning) this.step()
     }
 
+    /**
+     * Fills the map with saved data
+     * @param {Uint16Array | String | Object} mapData The save data:
+     * - Either a Uint16Array containing the material value for each index
+     * - Or a string in the format created by the function exportAsText()
+     * - Or an Object containing the material value for each index {"index": material}
+     * @param {[width, height]} saveDimensions Specifies the save data dimensions when mapData is of Uint16Array type (leave undefined, used internally)
+     */
     load(mapData, saveDimensions=null) {
         if (mapData) {
             if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(saveDimensions[0], saveDimensions[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
@@ -99,6 +111,14 @@ class Simulation {
         }
     }
 
+    /**
+     * Offsets the pixel array to match the updated size 
+     * @param {Number} oldWidth The previous/current width of the map
+     * @param {Number} oldHeight The previous/current height of the map
+     * @param {Number} newWidth The new/updated width of the map
+     * @param {Number} newHeight The new/updated height of the map
+     * @param {Uint16Array} oldPixels The previous/current pixel array
+     */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
         const pixels = this._pixels = new Uint16Array(this._mapGrid.arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
         this._pxStepUpdated = new Uint16Array(this._mapGrid.arraySize)
@@ -109,6 +129,11 @@ class Simulation {
         }
     }
 
+    /**
+     * Updates the map dimensions
+     * @param {Number?} width The new width of the map
+     * @param {Number?} height The new height of the map
+     */
     updateMapSize(width, height) {
         const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight, oldPixels = this.getPixelsCopy()
         height = map.mapHeight = height||map.mapHeight
@@ -122,6 +147,10 @@ class Simulation {
         this.mouse.updateListener(Mouse.LISTENER_TYPES.LEAVE, this._mouseListenerIds[1], [[0,0], map.realDimensions])
     }
 
+    /**
+     * Updates the map pixel size
+     * @param {Number} size The new map pixel size
+     */
     updateMapPixelSize(size) {
         const map = this._mapGrid
         map.pixelSize = size
@@ -130,22 +159,31 @@ class Simulation {
         this.updateImgMapFromPixels()
     }
 
+    // Draws the imageMap on the canvas
     #simImgMapDraw() {
         this.ctx.putImageData(this._imgMap, 0, 0)
     }
 
+    // Draws a border and line to show the map grid on the canvas
     #drawMapGrid() {
         const lines = this._mapGrid.getDrawableGridPositions(), l_ll = lines.length, render = this.render
         for (let i=0;i<l_ll;i++) render.batchStroke(Render.getLine(lines[i][0], lines[i][1]), this._mapGridRenderStyles)
         render.batchStroke(Render.getRect([0,0], ...this._mapGrid.realDimensions))
     }
 
+    /**
+     * Adds a extra callback to the main loop
+     * @param {Function} callback The callback to be called (deltatime)=>{...} 
+     */
     addLoopExtra(callback) {
         this._loopExtras.push(callback)
     }
 
+    /**
+     * Runs and displays one physics step
+     */
     step() {
-        const updated = this._pxStepUpdated, pixels = this._pixels, p_ll = pixels.length-1, M = Simulation.MATERIALS, AIR = M.AIR, G = Simulation.MATERIAL_GROUPS, D = Simulation.D, map = this._mapGrid, moveAdjacency = map.moveAdjacency.bind(map), w = map.mapWidth
+        const updated = this._pxStepUpdated, pixels = this._pixels, p_ll = pixels.length-1, M = Simulation.MATERIALS, AIR = M.AIR, G = Simulation.MATERIAL_GROUPS, D = Simulation.D, map = this._mapGrid, getAdjacency = map.getAdjacency.bind(map), w = map.mapWidth
         updated.fill(0)
         this.saveStep()
 
@@ -156,11 +194,11 @@ class Simulation {
 
             // SAND
             if (mat == M.SAND) {
-                const transpiercedMaterialIndex = moveAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpierceable = transpiercedMaterial&G.TRANSPIERCEABLE
+                const transpiercedMaterialIndex = getAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpierceable = transpiercedMaterial&G.TRANSPIERCEABLE
                 // check if can go down or sides
                 if (transpiercedMaterial == AIR || transpierceable) newIndex = transpiercedMaterialIndex
                 else {
-                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_BL = moveAdjacency(i, D.bl), i_BR = moveAdjacency(i, D.br)
+                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_BL = getAdjacency(i, D.bl), i_BR = getAdjacency(i, D.br)
                     if (isLeftFirst) {
                         if (pixels[i_BL] == AIR) newIndex = i_BL
                         else if (pixels[i_BR] == AIR) newIndex = i_BR
@@ -170,15 +208,15 @@ class Simulation {
                     }
                 }
                 // check what to replace prev pos with
-                if (newIndex != -1) replaceMaterial = pixels[newIndex] // && (pixels[moveAdjacency(i, D.l)]&G.LIQUIDS || pixels[moveAdjacency(i, D.r)]&G.LIQUIDS)
+                if (newIndex != -1) replaceMaterial = pixels[newIndex] // && (pixels[getAdjacency(i, D.l)]&G.LIQUIDS || pixels[getAdjacency(i, D.r)]&G.LIQUIDS)
             }
             // WATER
             else if (mat == M.WATER) {
-                const transpiercedMaterialIndex = moveAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex]
+                const transpiercedMaterialIndex = getAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex]
                 // check if can go down or sides
                 if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
                 else {
-                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_L = moveAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_BL = moveAdjacency(i, D.bl), i_BR = moveAdjacency(i, D.br), i_R = moveAdjacency(i, D.r)
+                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_L = getAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_BL = getAdjacency(i, D.bl), i_BR = getAdjacency(i, D.br), i_R = getAdjacency(i, D.r)
                     if (isLeftFirst) {
                         if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
                         else if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
@@ -194,19 +232,19 @@ class Simulation {
             }
             // GRAVEL
             else if (mat == M.GRAVEL) {
-                const transpiercedMaterialIndex = moveAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpiercedLiquid = transpiercedMaterial&G.LIQUIDS
+                const transpiercedMaterialIndex = getAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpiercedLiquid = transpiercedMaterial&G.LIQUIDS
                 // check if can go down
                 if (transpiercedMaterial == AIR || transpiercedLiquid) newIndex = transpiercedMaterialIndex
                 // check what to replace prev pos with
-                if (transpiercedLiquid && (pixels[moveAdjacency(i, D.l)]&G.LIQUIDS || pixels[moveAdjacency(i, D.r)]&G.LIQUIDS)) replaceMaterial = transpiercedLiquid
+                if (transpiercedLiquid && (pixels[getAdjacency(i, D.l)]&G.LIQUIDS || pixels[getAdjacency(i, D.r)]&G.LIQUIDS)) replaceMaterial = transpiercedLiquid
             }
             // INVERTED WATER
             else if (mat == M.INVERTED_WATER) {
-                const transpiercedMaterialIndex = moveAdjacency(i, D.t), transpiercedMaterial = pixels[transpiercedMaterialIndex]
+                const transpiercedMaterialIndex = getAdjacency(i, D.t), transpiercedMaterial = pixels[transpiercedMaterialIndex]
                 // check if can go down or sides
                 if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
                 else {
-                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_L = moveAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_TL = moveAdjacency(i, D.tl), i_TR = moveAdjacency(i, D.tr), i_R = moveAdjacency(i, D.r)
+                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_L = getAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_TL = getAdjacency(i, D.tl), i_TR = getAdjacency(i, D.tr), i_R = getAdjacency(i, D.r)
                     if (isLeftFirst) {
                         if (pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
                         else if (pixels[i_TR] == AIR && pixels[i_R] == AIR) newIndex = i_TR
@@ -233,6 +271,9 @@ class Simulation {
         this.updateImgMapFromPixels()
     }
 
+    /**
+     * Displays the previous physics step saved
+     */
     backStep() {
         const b_ll = this._backStepSaves.length
         if (b_ll) {
@@ -242,15 +283,27 @@ class Simulation {
         }
     }
 
+    /**
+     * Saves a physics step
+     */
     saveStep() {
         if (this.backStepSavingEnabled) this._backStepSaves.push([this.getPixelsCopy(), this._mapGrid.dimensions])
         if (this._backStepSaves.length > this._backStepSavingMaxCount) this._backStepSaves.shift()
     }
 
+    /**
+     * Fills the map with air
+     */
     clear() {
         this.fill(Simulation.MATERIALS.AIR)
     }
 
+    /**
+     * Returns whether the side priority is left or not 
+     * @param {Number?} i The index of the pixel (used internally for the MAP_DEPENDANT mode) 
+     * @param {Number?} mapWidth The width of the map (used internally for the MAP_DEPENDANT mode) 
+     * @returns Whether the side priority is left first or not
+     */
     #getSideSelectionPriority(i, mapWidth) {
         const side = this._sidePriority, S = Simulation.SIDE_PRIORITY, isRandom = side==S.RANDOM, isLeft = side==S.LEFT
         let leftFirst = isLeft
@@ -259,6 +312,9 @@ class Simulation {
         return leftFirst
     }
 
+    /**
+     * Updates the display image map according to the pixels array
+     */
     updateImgMapFromPixels() {
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = lastPixels.length==p_ll&&map.lastPixelSize==map.pixelSize, w = map.mapWidth
         for (let i=0;i<p_ll;i++) {
@@ -270,11 +326,18 @@ class Simulation {
         this._lastPixels = this.getPixelsCopy()
     }
     
+    /**
+     * Updates a singular map pixels on the image map
+     * @param {Number} rawX The X value of the pixel on the map
+     * @param {Number} rawY The Y value of the pixel on the map
+     * @param {Simulation.MATERIALS} material One of Simulation.MATERIALS
+     */
     #updateMapPixel(rawX, rawY, material) {
         const data = this._imgMap.data, size = this._mapGrid.pixelSize, width = this._imgMap.width, x = rawX*size, y = rawY*size, R = Simulation.#CACHED_MATERIALS_ROWS
         for (let i=0;i<size;i++) data.set(R[material], ((y+i)*width+x)*4)
     }
 
+    // Updates the cached pixels row used for drawing optimizations
     #updatedCachedMapPixelsRows() {
         const C = Simulation.MATERIAL_COLORS, colors = Object.values(C), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
         for (let i=0,ii=0;ii<c_ll;i=!i?1:i*2,ii++) {
@@ -290,14 +353,29 @@ class Simulation {
         }
     }
 
+    /**
+     * Places a pixel of a specified material at the specified position on the pixel map
+     * @param {[x,y]} mapPos The map position of the pixel
+     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     */
     placePixel(mapPos, material=this._selectedMaterial) {
         this._pixels[this._mapGrid.mapPosToIndex(mapPos)] = material
     }
 
+    /**
+     * Places a pixel of a specified material at the specified position on the pixel map
+     * @param {Number} x The X value of the pixel on the map
+     * @param {Number} y The Y value of the pixel on the map
+     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     */
     placePixelCoords(x, y, material=this._selectedMaterial) {
         this._pixels[this._mapGrid.mapPosToIndexCoords(x, y)] = material
     }
 
+    /**
+     * Places the selected material at the mouse position on the map, based on the selected brushType
+     * @param {Mouse} mouse A CVS Mouse object
+     */
     #placePixelFromMouse(mouse) {
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
         if (this._isMouseWithinSimulation && mapPos) {
@@ -358,16 +436,26 @@ class Simulation {
         if (ctrlKey && keyboard.isDown(K.BACKSPACE)) this.clear()
     }
 
+    // mouseDown listener, allows the mouse to place pixels
     #mouseDown(mouse) {
         this.#placePixelFromMouse(mouse)
     }
 
+    /**
+     * Returns a copy of the current pixels array 
+     * @returns A Uint16Array
+     */
     getPixelsCopy() {
         const arraySize = this._mapGrid.arraySize, pixelsCopy = new Uint16Array(arraySize)
         pixelsCopy.set(this._pixels.subarray(0, arraySize))
         return pixelsCopy
     }
 
+    /**
+     * Exports/saves the current pixels array as text
+     * @param {Boolean} disableCompacting Whether to disable the text compacting (not recommended for large maps)
+     * @returns A string representing the current map
+     */
     exportAsText(disableCompacting) {
         let pixels = this._pixels, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
         
@@ -389,14 +477,24 @@ class Simulation {
         return state+Simulation.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+Simulation.EXPORT_SEPARATOR+textResult
     }
 
+    /**
+     * Sets the state of the simulation to be running
+     */
     start() {
         this._isRunning = true
     }
 
+    /**
+     * Sets the state of the simulation to be stopped
+     */
     stop() {
         this._isRunning = false
     }
 
+    /**
+     * Fills the entire map with a specific material
+     * @param {Simulation.MATERIALS} material The material used
+     */
     fill(material=Simulation.MATERIALS.AIR) {
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length
         lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
@@ -404,6 +502,12 @@ class Simulation {
         this.updateImgMapFromPixels()
     }
 
+    /**
+     * Fills the specified area of the map with a specific material
+     * @param {[leftX, topY]} pos1 The top-left pos of the area
+     * @param {[rightX, bottomY]} pos2 The bottom-right pos of the area
+     * @param {Simulation.MATERIALS} material The material used
+     */
     fillArea(pos1, pos2, material=this._selectedMaterial) {
         const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, [x1, y1] = pos1, [x2, y2] = pos2 
         for (let i=0;i<p_ll;i++) {
@@ -413,6 +517,8 @@ class Simulation {
         this.updateImgMapFromPixels()
     }
 
+
+    // TEMP PERFORMANCE BENCHES
     PERF_TEST_FULL_WATER_REG() {
         simulation._showMapGrid = false
         simulation.updateMapPixelSize(1)
@@ -434,6 +540,7 @@ class Simulation {
     get keyboard() {return this._CVS.keyboard}
 	get mapGrid() {return this._mapGrid}
 	get loopExtras() {return this._loopExtras}
+	get lastPixels() {return this._lastPixels}
 	get pixels() {return this._pixels}
 	get mapGridRenderStyles() {return this._mapGridRenderStyles}
 	get imgMap() {return this._imgMap}
@@ -441,12 +548,18 @@ class Simulation {
 	get selectedMaterial() {return this._selectedMaterial}
     get sidePriority() {return this._sidePriority}
     get isRunning() {return this._isRunning}
-    get backStepSavingEnabled() {return this._backStepSavingMaxCount}
+    get backStepSavingEnabled() {return Boolean(this._backStepSavingMaxCount)}
+	get backStepSavingMaxCount() {return this._backStepSavingMaxCount}
+	get backStepSaves() {return this._backStepSaves}
     get brushType() {return this._brushType}
+	get showMapGrid() {return this._showMapGrid}
     
 	set loopExtras(_loopExtras) {this._loopExtras = _loopExtras}
 	set selectedMaterial(_selectedMaterial) {this._selectedMaterial = _selectedMaterial}
 	set isRunning(isRunning) {this._isRunning = isRunning}
 	set brushType(brushType) {this._brushType = brushType}
 	set sidePriority(sidePriority) {this._sidePriority = sidePriority}
+	set backStepSavingMaxCount(_backStepSavingMaxCount) {return this._backStepSavingMaxCount = _backStepSavingMaxCount}
+	set showMapGrid(_showMapGrid) {return this._showMapGrid = _showMapGrid}
+	set mapGridRenderStyles(_mapGridRenderStyles) {return this._mapGridRenderStyles = _mapGridRenderStyles}
 }

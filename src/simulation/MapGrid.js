@@ -28,6 +28,11 @@ class MapGrid {
         this._mapHeight = mapHeight||MapGrid.DEFAULT_MAP_HEIGHT
     }
 
+    /**
+     * Converts a global pixel position to a local map pixel position
+     * @param {[x,y]} pos A global pixel position (e.g: a mouse pos)
+     * @returns A local map pixel position [x,y]
+     */
     getLocalMapPixel(pos) {
         const size = this._pixelSize, [w,h] = this.realDimensions, [posX,posY] = pos
         for (let y=0;y<h;y+=size) {
@@ -37,6 +42,9 @@ class MapGrid {
         }
     }
 
+    /**
+     * @returns An array of positions [[x1,y1],[x2,y2]] containing all the lines delimiting the grid of the map
+     */
     getDrawableGridPositions() {
         const size = this._pixelSize, [w,h] = this.realDimensions, lines = []
         for (let x=0;x<w;x+=size) lines.push([[x,0],[x,h]])
@@ -44,10 +52,17 @@ class MapGrid {
         return lines
     }
 
-    moveAdjacency(i, direction, distance=1) { // OPTIMIZATION, TODO
+    /**
+     * Calculates the adjacent index based on the provided index, direction and distance
+     * @param {Number} i The index of a pixel in the pixels array
+     * @param {Simulation.D} direction A direction specified by one of Simulation.D
+     * @param {Number?} distance The distance to go by in the provided direction (defaults to 1)
+     * @returns The calculated adjacent index
+     */
+    getAdjacency(i, direction, distance=1) { // OPTIMIZATION, TODO
         const D = Simulation.D, w = this._mapWidth, dWidth = w*distance
-        if (direction == D.t)       return i-dWidth
-        else if (direction == D.b)  return i+dWidth
+        if (direction == D.b)       return i+dWidth
+        else if (direction == D.t)  return i-dWidth
         else if (direction == D.r)  return (i+1)%w ? i+distance : i
         else if (direction == D.l)  return i%w     ? i-distance : i
         else if (direction == D.tr) return (i-dWidth+1)%w ? i-dWidth+distance : i
@@ -56,15 +71,31 @@ class MapGrid {
         else if (direction == D.bl) return (i+dWidth)%w   ? i+dWidth-distance : i
     }
 
+    /**
+     * Converts an index to a local map position
+     * @param {Number} i The index of a pixel in the pixels array
+     * @returns A local map position
+     */
     indexToMapPos(i) {
         const w = this._mapWidth
         return [i%w, (i/w)|0]
     }
 
+    /**
+     * Converts a local map position to an index
+     * @param {[x,y]} mapPos The local map position
+     * @returns The index of a pixel in the pixels array
+     */
     mapPosToIndex(mapPos) {
         return mapPos[1]*this._mapWidth+mapPos[0]
     } 
 
+    /**
+     * Converts a local map position to an index
+     * @param {Number} x The X value of the pixel on the map
+     * @param {Number} y The Y value of the pixel on the map
+     * @returns The index of a pixel in the pixels array
+     */
     mapPosToIndexCoords(x, y) {
         return y*this._mapWidth+x
     } 
