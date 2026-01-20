@@ -1,7 +1,7 @@
 class Simulation {
     static MATERIALS = {AIR:0, SAND:1<<0, WATER:1<<1, STONE:1<<2, GRAVEL:1<<3, INVERTED_WATER:1<<4}
     static MATERIAL_COLORS = {AIR:[0,0,0,0], SAND:[235,235,158,1], WATER:[0,15,242,.75], STONE:[100,100,100,1], GRAVEL:[188,188,188,1], INVERTED_WATER:[81,53,131,.75]}
-    static MATERIAL_GROUPS = {LIQUIDS:Simulation.MATERIALS.WATER+Simulation.MATERIALS.INVERTED_WATER}
+    static MATERIAL_GROUPS = {TRANSPIERCEABLE:Simulation.MATERIALS.WATER+Simulation.MATERIALS.INVERTED_WATER+Simulation.MATERIALS.AIR, LIQUIDS:Simulation.MATERIALS.WATER+Simulation.MATERIALS.INVERTED_WATER}
     static MATERIAL_COLORS_INDEXED = []
     static MATERIAL_NAMES = []
     static #CACHED_MATERIALS_ROWS = []
@@ -36,6 +36,7 @@ class Simulation {
         this._loopExtras = []
         this._pixels = new Uint16Array(mapGrid.arraySize)
         this._lastPixels = new Uint16Array(mapGrid.arraySize)
+        this._pxStepUpdated = new Uint16Array(mapGrid.arraySize)
         this._isMouseWithinSimulation = true
         this._selectedMaterial = Simulation.MATERIALS.SAND
         this._sidePriority = Simulation.SIDE_PRIORITY.RIGHT
@@ -100,6 +101,7 @@ class Simulation {
 
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
         const pixels = this._pixels = new Uint16Array(this._mapGrid.arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
+        this._pxStepUpdated = new Uint16Array(this._mapGrid.arraySize)
         for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
             pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)
             oi += oldWidth
@@ -143,27 +145,32 @@ class Simulation {
     }
 
     step() {
-        const updated = new Set(), pixels = this._pixels, p_ll = pixels.length, M = Simulation.MATERIALS, AIR = M.AIR, G = Simulation.MATERIAL_GROUPS, D = Simulation.D, map = this._mapGrid, moveAdjacency = map.moveAdjacency.bind(map), w = map.mapWidth
+        const updated = this._pxStepUpdated, pixels = this._pixels, p_ll = pixels.length-1, M = Simulation.MATERIALS, AIR = M.AIR, G = Simulation.MATERIAL_GROUPS, D = Simulation.D, map = this._mapGrid, moveAdjacency = map.moveAdjacency.bind(map), w = map.mapWidth
+        updated.fill(0)
         this.saveStep()
 
-        for (let i=0;i<p_ll;i++) {
+        for (let i=p_ll;i>=0;i--) {
             const mat = pixels[i]
-            if (mat == AIR || updated.has(i)) continue
-            let newMaterial = mat, newIndex = -1, replaceMaterial = AIR, lockUpdates = true
+            if (mat == AIR || updated[i]) continue
+            let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
 
             // SAND
             if (mat == M.SAND) {
-                const transpiercedMaterialIndex = moveAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpiercedLiquid = transpiercedMaterial&G.LIQUIDS
+                const transpiercedMaterialIndex = moveAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpierceable = transpiercedMaterial&G.TRANSPIERCEABLE
                 // check if can go down or sides
-                if (transpiercedMaterial == AIR || transpiercedLiquid) newIndex = transpiercedMaterialIndex
-                else if (transpiercedMaterial == mat) {
-                    const sideSelection = this.#getSideSelectionPriority(), i_BL = moveAdjacency(i, D.bl), i_BR = moveAdjacency(i, D.br)
-                    if      (sideSelection[0] && pixels[i_BL] == AIR) newIndex = i_BL
-                    else if (sideSelection[1] && pixels[i_BR] == AIR) newIndex = i_BR
-                    else if (sideSelection[2] && pixels[i_BL] == AIR) newIndex = i_BL
+                if (transpiercedMaterial == AIR || transpierceable) newIndex = transpiercedMaterialIndex
+                else {
+                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_BL = moveAdjacency(i, D.bl), i_BR = moveAdjacency(i, D.br)
+                    if (isLeftFirst) {
+                        if (pixels[i_BL] == AIR) newIndex = i_BL
+                        else if (pixels[i_BR] == AIR) newIndex = i_BR
+                    } else {
+                        if (pixels[i_BR] == AIR) newIndex = i_BR
+                        else if (pixels[i_BL] == AIR) newIndex = i_BL
+                    }
                 }
                 // check what to replace prev pos with
-                if (transpiercedLiquid && (pixels[moveAdjacency(i, D.l)]&G.LIQUIDS || pixels[moveAdjacency(i, D.r)]&G.LIQUIDS)) replaceMaterial = transpiercedLiquid
+                if (newIndex != -1) replaceMaterial = pixels[newIndex] // && (pixels[moveAdjacency(i, D.l)]&G.LIQUIDS || pixels[moveAdjacency(i, D.r)]&G.LIQUIDS)
             }
             // WATER
             else if (mat == M.WATER) {
@@ -171,13 +178,18 @@ class Simulation {
                 // check if can go down or sides
                 if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
                 else {
-                    const sideSelection = this.#getSideSelectionPriority(i, w), i_L = moveAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_BL = moveAdjacency(i, D.bl), i_BR = moveAdjacency(i, D.br), i_R = moveAdjacency(i, D.r)
-                    if      (sideSelection[0] && pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
-                    else if (sideSelection[1] && pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
-                    else if (sideSelection[2] && pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
-                    else if (sideSelection[0] && leftIsAir) newIndex = i_L
-                    else if (sideSelection[1] && pixels[i_R] == AIR) newIndex = i_R
-                    else if (sideSelection[2] && leftIsAir) newIndex = i_L
+                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_L = moveAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_BL = moveAdjacency(i, D.bl), i_BR = moveAdjacency(i, D.br), i_R = moveAdjacency(i, D.r)
+                    if (isLeftFirst) {
+                        if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
+                        else if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
+                        else if (leftIsAir) newIndex = i_L
+                        else if (pixels[i_R] == AIR) newIndex = i_R
+                    } else {
+                        if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
+                        else if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
+                        else if (pixels[i_R] == AIR) newIndex = i_R
+                        else if (leftIsAir) newIndex = i_L
+                    }
                 }
             }
             // GRAVEL
@@ -194,19 +206,25 @@ class Simulation {
                 // check if can go down or sides
                 if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
                 else {
-                    const sideSelection = this.#getSideSelectionPriority(), i_L = moveAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_TL = moveAdjacency(i, D.tl), i_TR = moveAdjacency(i, D.tr), i_R = moveAdjacency(i, D.r)
-                    if      (sideSelection[0] && pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
-                    else if (sideSelection[1] && pixels[i_TR] == AIR && pixels[i_R] == AIR) newIndex = i_TR
-                    else if (sideSelection[2] && pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
-                    else if (sideSelection[0] && leftIsAir) newIndex = i_L
-                    else if (sideSelection[1] && pixels[i_R] == AIR) newIndex = i_R
-                    else if (sideSelection[2] && leftIsAir) newIndex = i_L
+                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_L = moveAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_TL = moveAdjacency(i, D.tl), i_TR = moveAdjacency(i, D.tr), i_R = moveAdjacency(i, D.r)
+                    if (isLeftFirst) {
+                        if (pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
+                        else if (pixels[i_TR] == AIR && pixels[i_R] == AIR) newIndex = i_TR
+                        else if (leftIsAir) newIndex = i_L
+                        else if (pixels[i_R] == AIR) newIndex = i_R
+                    } else {
+                        if (pixels[i_TR] == AIR && pixels[i_R] == AIR) newIndex = i_TR
+                        else if (pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
+                        else if (pixels[i_R] == AIR) newIndex = i_R
+                        else if (leftIsAir) newIndex = i_L
+                    }
+
                 }
             }
 
             // UPDATE
             if (newIndex != -1) {
-                if (lockUpdates) updated.add(newIndex)
+                updated[newIndex] = 1
                 pixels[newIndex] = newMaterial
                 pixels[i] = replaceMaterial
             }
@@ -234,17 +252,11 @@ class Simulation {
     }
 
     #getSideSelectionPriority(i, mapWidth) {
-        const sidePriority = this._sidePriority, S = Simulation.SIDE_PRIORITY, isRandom = sidePriority==S.RANDOM, isRight = sidePriority==S.RIGHT
-        let resLeft = true, resRight = true, backupLeft = (!isRandom)||isRight
-        if (isRandom) resLeft = !(resRight=Math.random()<0.5)
-        else if (isRight) resLeft = false
-        else if (sidePriority==S.MAP_DEPENDANT) {// TODO FIX
-            const isMoreLeft = (i%mapWidth)<(mapWidth/2)
-            resLeft = isMoreLeft
-            resRight = !isMoreLeft
-            if (resRight) backupLeft = true
-        }
-        return [resLeft, resRight, backupLeft]
+        const side = this._sidePriority, S = Simulation.SIDE_PRIORITY, isRandom = side==S.RANDOM, isLeft = side==S.LEFT
+        let leftFirst = isLeft
+        if (isRandom) leftFirst = Math.random()<0.5
+        else if (side==S.MAP_DEPENDANT) leftFirst = (i%mapWidth)<(mapWidth/2)
+        return leftFirst
     }
 
     updateImgMapFromPixels() {
@@ -316,7 +328,8 @@ class Simulation {
     #keyDown(keyboard, e) {// cleanup TODO
         const K = TypingDevice.KEYS, M = Simulation.MATERIALS, B = Simulation.BRUSH_TYPES, ctrlKey = keyboard.isDown(K.CONTROL)
         if (ctrlKey) {
-            e.preventDefault()
+            if (!keyboard.isDown([K.R, K.C, K.V, K.W, K.SHIFT, K.A])) e.preventDefault()
+            
             if (keyboard.isDown([K.DIGIT_1, K.NUMPAD_1]))      this._brushType = B.PIXEL
             else if (keyboard.isDown([K.DIGIT_2, K.NUMPAD_2])) this._brushType = B.VERTICAL_CROSS
             else if (keyboard.isDown([K.DIGIT_3, K.NUMPAD_3])) this._brushType = B.X3

@@ -44,16 +44,16 @@ class MapGrid {
         return lines
     }
 
-    moveAdjacency(i, direction) { // OPTIMIZATION
-        const D = Simulation.D, w = this._mapWidth
-        if (direction == D.t)       return i-w
-        else if (direction == D.b)  return i+w
-        else if (direction == D.r)  return (i+1)%w   ? i+1   : i
-        else if (direction == D.l)  return i%w       ? i-1   : i
-        else if (direction == D.tr) return (i-w+1)%w ? i-w+1 : i
-        else if (direction == D.br) return (i+w+1)%w ? i+w+1 : i
-        else if (direction == D.tl) return (i-w)%w   ? i-w-1 : i
-        else if (direction == D.bl) return (i+w)%w   ? i+w-1 : i
+    moveAdjacency(i, direction, distance=1) { // OPTIMIZATION, TODO
+        const D = Simulation.D, w = this._mapWidth, dWidth = w*distance
+        if (direction == D.t)       return i-dWidth
+        else if (direction == D.b)  return i+dWidth
+        else if (direction == D.r)  return (i+1)%w ? i+distance : i
+        else if (direction == D.l)  return i%w     ? i-distance : i
+        else if (direction == D.tr) return (i-dWidth+1)%w ? i-dWidth+distance : i
+        else if (direction == D.br) return (i+dWidth+1)%w ? i+dWidth+distance : i
+        else if (direction == D.tl) return (i-dWidth)%w   ? i-dWidth-distance : i
+        else if (direction == D.bl) return (i+dWidth)%w   ? i+dWidth-distance : i
     }
 
     indexToMapPos(i) {
