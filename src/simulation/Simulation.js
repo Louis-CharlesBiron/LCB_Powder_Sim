@@ -1,7 +1,7 @@
 class Simulation {
     static MATERIALS = {AIR:0, SAND:1<<0, WATER:1<<1, STONE:1<<2, GRAVEL:1<<3, INVERTED_WATER:1<<4}
     static MATERIAL_COLORS = {AIR:[0,0,0,0], SAND:[235,235,158,1], WATER:[0,15,242,.75], STONE:[100,100,100,1], GRAVEL:[188,188,188,1], INVERTED_WATER:[81,53,131,.75]}
-    static MATERIAL_GROUPS = {LIQUIDS:0}
+    static MATERIAL_GROUPS = {LIQUIDS:Simulation.MATERIALS.WATER+Simulation.MATERIALS.INVERTED_WATER}
     static MATERIAL_COLORS_INDEXED = []
     static MATERIAL_NAMES = []
     static #CACHED_MATERIALS_ROWS = []
@@ -12,7 +12,9 @@ class Simulation {
     static DEFAULT_BACK_STEP_SAVING_COUNT = 50
     static EXPORT_STATES = {RAW:0, COMPACTED:1}
     static EXPORT_SEPARATOR = "x"
-    static BRUSH_TYPES = {PIXEL:0, VERTICAL_CROSS:1, HOLLOW_VERTICAL_CROSS:2, LINE3:3, ROW3:4}
+    static BRUSH_TYPES = {PIXEL:1<<0, VERTICAL_CROSS:1<<1, LINE3:1<<2, ROW3:1<<3, BIG_DOT:1<<4, X3:1<<5, X5:1<<6, X15:1<<7, X25:1<<8, X55:1<<9, X99:1<<10}
+    static #BRUSHES_X_VALUES = []
+    static #BRUSH_GROUPS = {SMALL_OPTIMIZED:Simulation.BRUSH_TYPES.PIXEL+Simulation.BRUSH_TYPES.VERTICAL_CROSS+Simulation.BRUSH_TYPES.LINE3+Simulation.BRUSH_TYPES.ROW3, X:Simulation.BRUSH_TYPES.X3+Simulation.BRUSH_TYPES.X5+Simulation.BRUSH_TYPES.X15+Simulation.BRUSH_TYPES.X25+Simulation.BRUSH_TYPES.X55+Simulation.BRUSH_TYPES.X99}
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static {
         const M = Simulation.MATERIALS, materials = Object.keys(M), m_ll = materials.length
@@ -23,7 +25,8 @@ class Simulation {
 
         Simulation.SIDE_PRIORITY_NAMES = Object.keys(Simulation.SIDE_PRIORITY)
 
-        Simulation.MATERIAL_GROUPS["LIQUIDS"] = M.WATER+M.INVERTED_WATER
+        const brushesX = Object.keys(Simulation.BRUSH_TYPES).filter(b=>b.startsWith("X")), b_ll = brushesX.length
+        for (let i=Simulation.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) Simulation.#BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
     }
 
     constructor(CVS, mapGrid) {
@@ -286,38 +289,60 @@ class Simulation {
     #placePixelFromMouse(mouse) {
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
         if (this._isMouseWithinSimulation && mapPos) {
-            const B = Simulation.BRUSH_TYPES, [x,y] = mapPos
-            if (this._brushType == B.LINE3 || this._brushType == B.VERTICAL_CROSS || this._brushType == B.HOLLOW_VERTICAL_CROSS) {
-                this.placePixel([x,y-1])
-                this.placePixel([x,y+1])
+            const B = Simulation.BRUSH_TYPES, [x,y] = mapPos, brush = this._brushType
+
+            if (brush&Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
+                if (brush == B.LINE3 || brush == B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
+                if (brush == B.ROW3 || brush == B.VERTICAL_CROSS) {
+                    if (x) this.placePixelCoords(x-1, y)
+                    if (x != this._mapGrid.mapWidth-1) this.placePixelCoords(x+1, y)
+                }
+                this.placePixel(mapPos)
+            } else if (brush == B.BIG_DOT) {
+                if (x) this.placePixelCoords(x-2, y)
+                if (x != this._mapGrid.mapWidth-2) this.placePixelCoords(x+2, y)
+                    this.placePixelCoords(x, y-2)
+                    this.placePixelCoords(x, y+2)
+                    this.fillArea([x-1,y-1], [x+1,y+1])
+            } else if (brush&Simulation.#BRUSH_GROUPS.X) {
+                const offset = (Simulation.#BRUSHES_X_VALUES[brush]/2)|0
+                this.fillArea([x-offset,y-offset], [x+offset,y+offset])
             }
-            if (this._brushType == B.ROW3 || this._brushType == B.VERTICAL_CROSS || this._brushType == B.HOLLOW_VERTICAL_CROSS) {
-                if (x) this.placePixel([x-1,y])
-                if (x != this._mapGrid.mapWidth-1) this.placePixel([x+1,y])
-            }
-            if (this._brushType != B.HOLLOW_VERTICAL_CROSS) this.placePixel(mapPos)
 
             if (!this._isRunning) this.updateImgMapFromPixels()
         }
     }
 
-    #keyDown(keyboard) {
-        const K = TypingDevice.KEYS, M = Simulation.MATERIALS
-        if (keyboard.isDown([K.DIGIT_1, K.NUMPAD_1])) this._selectedMaterial = M.SAND 
-        else if (keyboard.isDown([K.DIGIT_2, K.NUMPAD_2])) this._selectedMaterial = M.WATER
-        else if (keyboard.isDown([K.DIGIT_3, K.NUMPAD_3])) this._selectedMaterial = M.STONE
-        else if (keyboard.isDown([K.DIGIT_4, K.NUMPAD_4])) this._selectedMaterial = M.GRAVEL
-        else if (keyboard.isDown([K.DIGIT_5, K.NUMPAD_5])) this._selectedMaterial = M.INVERTED_WATER
-        else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._selectedMaterial = M.AIR
+    #keyDown(keyboard, e) {// cleanup TODO
+        const K = TypingDevice.KEYS, M = Simulation.MATERIALS, B = Simulation.BRUSH_TYPES, ctrlKey = keyboard.isDown(K.CONTROL)
+        if (ctrlKey) {
+            e.preventDefault()
+            if (keyboard.isDown([K.DIGIT_1, K.NUMPAD_1]))      this._brushType = B.PIXEL
+            else if (keyboard.isDown([K.DIGIT_2, K.NUMPAD_2])) this._brushType = B.VERTICAL_CROSS
+            else if (keyboard.isDown([K.DIGIT_3, K.NUMPAD_3])) this._brushType = B.X3
+            else if (keyboard.isDown([K.DIGIT_4, K.NUMPAD_4])) this._brushType = B.BIG_DOT
+            else if (keyboard.isDown([K.DIGIT_5, K.NUMPAD_5])) this._brushType = B.X5
+            else if (keyboard.isDown([K.DIGIT_6, K.NUMPAD_6])) this._brushType = B.X15
+            else if (keyboard.isDown([K.DIGIT_7, K.NUMPAD_7])) this._brushType = B.X25
+            else if (keyboard.isDown([K.DIGIT_8, K.NUMPAD_8])) this._brushType = B.X99
+            else if (keyboard.isDown([K.DIGIT_9, K.NUMPAD_9])) this._brushType = B.X99
+            else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._brushType = B.PIXEL
+        } else {
+            if (keyboard.isDown([K.DIGIT_1, K.NUMPAD_1]))      this._selectedMaterial = M.SAND 
+            else if (keyboard.isDown([K.DIGIT_2, K.NUMPAD_2])) this._selectedMaterial = M.WATER
+            else if (keyboard.isDown([K.DIGIT_3, K.NUMPAD_3])) this._selectedMaterial = M.STONE
+            else if (keyboard.isDown([K.DIGIT_4, K.NUMPAD_4])) this._selectedMaterial = M.GRAVEL
+            else if (keyboard.isDown([K.DIGIT_5, K.NUMPAD_5])) this._selectedMaterial = M.INVERTED_WATER
+            else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._selectedMaterial = M.AIR
+        }
 
-        else if (keyboard.isDown([K.ARROW_RIGHT])) this.step()
+        if (keyboard.isDown([K.ARROW_RIGHT])) this.step()
         else if (keyboard.isDown([K.ARROW_LEFT])) this.backStep()
 
         else if (keyboard.isDown([K.SPACE])) this.start()
         else if (keyboard.isDown([K.ESCAPE])) this.stop()
 
-
-        if (keyboard.isDown(K.CONTROL) && keyboard.isDown(K.BACKSPACE)) this.clear()
+        if (ctrlKey && keyboard.isDown(K.BACKSPACE)) this.clear()
     }
 
     #mouseDown(mouse) {
@@ -366,7 +391,7 @@ class Simulation {
         this.updateImgMapFromPixels()
     }
 
-    fillArea(pos1, pos2, material) {
+    fillArea(pos1, pos2, material=this._selectedMaterial) {
         const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, [x1, y1] = pos1, [x2, y2] = pos2 
         for (let i=0;i<p_ll;i++) {
             const y = (i/w)|0, x = i-y*w

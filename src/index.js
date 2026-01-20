@@ -94,7 +94,7 @@ pixelSizeInput.onwheel=e=>{
 const brushTypeOptions = document.getElementById("brushTypeOptions")
 Object.keys(Simulation.BRUSH_TYPES).forEach((type, i)=>{
     const option = document.createElement("option")
-    option.value = i
+    option.value = 1<<i
     option.textContent = type
     brushTypeOptions.appendChild(option)
 })
