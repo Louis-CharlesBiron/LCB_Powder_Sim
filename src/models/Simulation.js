@@ -30,20 +30,26 @@ class Simulation {
     }
 
     constructor(CVS, mapGrid) {
-        // SIM
+        // SIMULATION
         this._CVS = CVS
         this._mapGrid = mapGrid
         this._loopExtras = []
         this._pixels = new Uint16Array(mapGrid.arraySize)
         this._lastPixels = new Uint16Array(mapGrid.arraySize)
-        this._pxStepUpdated = new Uint16Array(mapGrid.arraySize)
+        this._pxStepUpdated = new Uint8Array(mapGrid.arraySize)
         this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
         this._isRunning = true
         this._selectedMaterial = Simulation.MATERIALS.SAND
-        this._sidePriority = Simulation.SIDE_PRIORITY.RIGHT
+        this._sidePriority = Simulation.SIDE_PRIORITY.RANDOM
         this.#updatedCachedMapPixelsRows()
+
+        /*this._worker = new Worker("./workers/worker.js")// TODO
+        this._worker.postMessage({test:123})
+        this._worker.onmessage=e=>{
+            console.log(e)
+        }*/
 
         // DISPLAY
         this._showMapGrid = true
@@ -53,7 +59,6 @@ class Simulation {
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
 
         // CANVAS
-        this._mouseListenerIds = []
         CVS.loopingCB = this.#main.bind(this)
         CVS.setMouseMove()
         CVS.setMouseLeave()
@@ -62,9 +67,11 @@ class Simulation {
         CVS.setKeyUp(null, true)
         CVS.setKeyDown(this.#keyDown.bind(this), true)
         CVS.start()
-
-        this._mouseListenerIds.push(CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true))
-        this._mouseListenerIds.push(CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this._isMouseWithinSimulation = false))
+        this._mouseListenerIds = [
+            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
+            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
+            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this._isMouseWithinSimulation = false)
+        ]
     }
 
     /**
@@ -121,7 +128,7 @@ class Simulation {
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
         const pixels = this._pixels = new Uint16Array(this._mapGrid.arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
-        this._pxStepUpdated = new Uint16Array(this._mapGrid.arraySize)
+        this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
         for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
             pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)
             oi += oldWidth
@@ -144,7 +151,8 @@ class Simulation {
         this.updateImgMapFromPixels()
 
         this.mouse.updateListener(Mouse.LISTENER_TYPES.ENTER, this._mouseListenerIds[0], [[0,0], map.realDimensions])
-        this.mouse.updateListener(Mouse.LISTENER_TYPES.LEAVE, this._mouseListenerIds[1], [[0,0], map.realDimensions])
+        this.mouse.updateListener(Mouse.LISTENER_TYPES.MOVE, this._mouseListenerIds[1], [[0,0], map.realDimensions])
+        this.mouse.updateListener(Mouse.LISTENER_TYPES.LEAVE, this._mouseListenerIds[2], [[0,0], map.realDimensions])
     }
 
     /**
