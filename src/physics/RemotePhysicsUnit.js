@@ -25,7 +25,6 @@ self.onmessage=e=>{
 
         mapWidth = data.mapWidth
     }
-
 }
 
 function step() {
@@ -33,10 +32,11 @@ function step() {
     postMessage({type:WORKER_MESSAGE_TYPES.STEP, pixels:newPixels}, [newPixels.buffer])
 }
 
+// IMPLEMENT QUEUING?
 
-// ATTRIBUTES TRANSFERED
-//
-// FUNCTIONS TRANSFERED
+// pixels + pxStepUpdated = PHYSICS ONLY
+// pixels -> needed by -> Simulation (rendering + direct updates?) + PhysicsCore (step) -> solution: pass memory along between sim/core
+// pxStepUpdated -> used in -> Simulation(#updatePixelsFromSize~) + PhysicsCore (step)  -> solution: store in core, update size when needed?
 
 //    load(mapData, saveDimensions=null) {
 //    #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {

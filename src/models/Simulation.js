@@ -113,6 +113,7 @@ class Simulation {
      * @param {[width, height]} saveDimensions Specifies the save data dimensions when mapData is of Uint16Array type (leave undefined, used internally)
      */
     load(mapData, saveDimensions=null) {
+        if (!this._pixels.buffer.byteLength) console.log("load", "CORE GOT BUFFER")
         if (mapData) {
             if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(saveDimensions[0], saveDimensions[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
             else if (typeof mapData == "string") {
@@ -143,6 +144,7 @@ class Simulation {
      * @param {Uint16Array} oldPixels The previous/current pixel array
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
+        if (!this._pixels.buffer.byteLength) console.log("updatePixelsFromSize", "CORE GOT BUFFER")
         const pixels = this._pixels = new Uint16Array(this._mapGrid.arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
         this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
         for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
@@ -253,6 +255,7 @@ class Simulation {
      * Updates the display image map according to the pixels array
      */
     updateImgMapFromPixels() {
+        if (!this._pixels.buffer.byteLength) console.log("updateImgMapFromPixels", "CORE GOT BUFFER")
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = lastPixels.length==p_ll&&map.lastPixelSize==map.pixelSize, w = map.mapWidth
         for (let i=0;i<p_ll;i++) {
             const y = (i/w)|0, mat = pixels[i]
@@ -296,6 +299,7 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
     placePixel(mapPos, material=this._selectedMaterial) {
+        if (!this._pixels.buffer.byteLength) console.log("placePixel", "CORE GOT BUFFER")
         this._pixels[this._mapGrid.mapPosToIndex(mapPos)] = material
     }
 
@@ -306,6 +310,7 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
     placePixelCoords(x, y, material=this._selectedMaterial) {
+        if (!this._pixels.buffer.byteLength) console.log("placePixelCoords", "CORE GOT BUFFER")
         this._pixels[this._mapGrid.mapPosToIndexCoords(x, y)] = material
     }
 
@@ -384,6 +389,7 @@ class Simulation {
      */
     getPixelsCopy() {
         const arraySize = this._mapGrid.arraySize, pixelsCopy = new Uint16Array(arraySize)
+        if (!this._pixels.buffer.byteLength) console.log("getPixelsCopy", "CORE GOT BUFFER")
         pixelsCopy.set(this._pixels.subarray(0, arraySize))
         return pixelsCopy
     }
@@ -394,6 +400,7 @@ class Simulation {
      * @returns A string representing the current map
      */
     exportAsText(disableCompacting) {
+        if (!this._pixels.buffer.byteLength) console.log("exportAsText", "CORE GOT BUFFER")
         let pixels = this._pixels, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
         
         if (disableCompacting) {
@@ -433,10 +440,10 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used
      */
     fill(material=Simulation.MATERIALS.AIR) {
+        if (!this._pixels.buffer.byteLength) console.log("fill", "CORE GOT BUFFER")
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length
         lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
         pixels.set(new Uint16Array(p_ll).fill(material))
-        this.updateImgMapFromPixels()
     }
 
     /**
@@ -446,12 +453,12 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used
      */
     fillArea(pos1, pos2, material=this._selectedMaterial) {
+        if (!this._pixels.buffer.byteLength) console.log("fillArea", "CORE GOT BUFFER")
         const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, [x1, y1] = pos1, [x2, y2] = pos2 
         for (let i=0;i<p_ll;i++) {
             const y = (i/w)|0, x = i-y*w
             if (x>=x1 && x<=x2 && y>=y1 && y<=y2) this.placePixelCoords(x, y, material)
         }            
-        this.updateImgMapFromPixels()
     }
 
 
