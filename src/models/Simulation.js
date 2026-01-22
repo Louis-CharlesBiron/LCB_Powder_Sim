@@ -16,7 +16,7 @@ class Simulation {
     static #BRUSHES_X_VALUES = []
     static #BRUSH_GROUPS = {SMALL_OPTIMIZED:Simulation.BRUSH_TYPES.PIXEL+Simulation.BRUSH_TYPES.VERTICAL_CROSS+Simulation.BRUSH_TYPES.LINE3+Simulation.BRUSH_TYPES.ROW3, X:Simulation.BRUSH_TYPES.X3+Simulation.BRUSH_TYPES.X5+Simulation.BRUSH_TYPES.X15+Simulation.BRUSH_TYPES.X25+Simulation.BRUSH_TYPES.X55+Simulation.BRUSH_TYPES.X99}
     static #WORKER_RELATIVE_PATH = "./physics/RemotePhysicsUnit.js"
-    static #WORKER_MESSAGE_TYPES = {INIT:0, STEP:1<<0}
+    static #WORKER_MESSAGE_TYPES = {INIT:0, STEP:1, SIDE_PRIORITY:2, MAP_WIDTH:3}
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static {
         const M = Simulation.MATERIALS, materials = Object.keys(M), m_ll = materials.length
@@ -31,6 +31,7 @@ class Simulation {
         for (let i=Simulation.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) Simulation.#BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
     }
 
+    #simulationHasPixelsBuffer = true
     constructor(CVS, mapGrid, useWebWorkers=true) {
         // SIMULATION
         this._CVS = CVS
@@ -44,6 +45,8 @@ class Simulation {
         this._isRunning = true
         this._selectedMaterial = Simulation.MATERIALS.SAND
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
+        this._lastStepTime = null
+        this._queuedBufferOperations = []
         this.updatePhysicsUnitType(useWebWorkers)
         this.#updatedCachedMapPixelsRows()
 
@@ -81,12 +84,13 @@ class Simulation {
         this._physicsUnit = useWebWorkers ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
 
         if (useWebWorkers) {
-            this._awaitingPhysicsUnit = 0
+            this.#simulationHasPixelsBuffer = true
             this._physicsUnit.onmessage=this.#physicsUnitMessage.bind(this)
             initObject.type = Simulation.#WORKER_MESSAGE_TYPES.INIT
             this._physicsUnit.postMessage(initObject)
         } else {
-            //this._physicsUnit.init(initObject) TODO CHECK
+            //this._physicsUnit.init(initObject) TODO CHECK CLEANUP
+
         }
     }
 
@@ -113,7 +117,11 @@ class Simulation {
      * @param {[width, height]} saveDimensions Specifies the save data dimensions when mapData is of Uint16Array type (leave undefined, used internally)
      */
     load(mapData, saveDimensions=null) {
-        if (!this._pixels.buffer.byteLength) console.log("load", "CORE GOT BUFFER")
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.load(mapData, saveDimensions))
+            return
+        }
+
         if (mapData) {
             if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(saveDimensions[0], saveDimensions[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
             else if (typeof mapData == "string") {
@@ -144,9 +152,11 @@ class Simulation {
      * @param {Uint16Array} oldPixels The previous/current pixel array
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
-        if (!this._pixels.buffer.byteLength) console.log("updatePixelsFromSize", "CORE GOT BUFFER")
-        const pixels = this._pixels = new Uint16Array(this._mapGrid.arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
-        this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
+        if (!this._pixels.buffer.byteLength) console.log("updatePixelsFromSize", "CORE GOT BUFFER")// TODO SAFETY CLEANUP
+        const arraySize = this._mapGrid.arraySize, pixels = this._pixels = new Uint16Array(arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
+        this._pxStepUpdated = new Uint8Array(arraySize)
+        if (this.useWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_WIDTH, mapWidth:this._mapGrid.mapWidth, arraySize})
+        
         for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
             pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)
             oi += oldWidth
@@ -160,6 +170,11 @@ class Simulation {
      * @param {Number?} height The new height of the map
      */
     updateMapSize(width, height) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateMapSize(width, height))
+            return
+        }
+
         const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight, oldPixels = this.getPixelsCopy()
         height = map.mapHeight = height||map.mapHeight
         width = map.mapWidth = width||map.mapWidth
@@ -191,7 +206,7 @@ class Simulation {
     }
 
     // Draws a border and line to show the map grid on the canvas
-    #drawMapGrid() {
+    #drawMapGrid() {// OPTIMIZATION, USE CACHE
         const lines = this._mapGrid.getDrawableGridPositions(), l_ll = lines.length, render = this.render
         for (let i=0;i<l_ll;i++) render.batchStroke(Render.getLine(lines[i][0], lines[i][1]), this._mapGridRenderStyles)
         render.batchStroke(Render.getRect([0,0], ...this._mapGrid.realDimensions))
@@ -199,27 +214,54 @@ class Simulation {
 
     #physicsUnitMessage(e) {
         const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES
-        if (type==T.STEP) {// STEP
-            this._awaitingPhysicsUnit &= ~T.STEP
+        if (type==T.STEP) {// RECEIVE STEP RESULTS (is step/sec bound)
+            this.#simulationHasPixelsBuffer = true
             this._pixels = new Uint16Array(data.pixels)
             this.updateImgMapFromPixels()
+
+            // EXECUTE QUEUE
+            // RUNS ON WORKER'S TIME
+            this.#executeQueuedOperations()
+
+            // REQ NEXT STEP
+            const timeStamp = this._CVS.timeStamp //timeStamp-this._lastStepTime >= this._CVS.fpsLimitRaw
+            if (this._isRunning && this.useWebWorkers) {//console.log("E", timeStamp, this._lastStepTime)
+                const pixels = this._pixels
+                if (this._stepExtra) this._stepExtra()
+                this.#simulationHasPixelsBuffer = false
+                this._lastStepTime = timeStamp
+                this._physicsUnit.postMessage({type:T.STEP, pixels}, [pixels.buffer])
+            }
         }
+    }
+
+    #executeQueuedOperations() {
+        const queued = this._queuedBufferOperations, q_ll = queued.length
+        for (let i=0;i<q_ll;i++) {
+            queued[0]()
+            queued.shift()
+        }
+    }
+
+    updateSidePriority(sidePriority) {
+        if (this.useWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
+        return this._sidePriority = sidePriority
     }
 
     /**
      * Runs and displays one physics step
      */
     step() {
-        //this.saveStep() CHECK
         const pixels = this._pixels, T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit, stepExtra = this._stepExtra
         if (this.useLocalPhysics) {
             if (stepExtra) stepExtra()
             this._pixels = unit.step(this._pixels, this._pxStepUpdated, this._sidePriority, this._mapGrid.mapWidth)
             this.updateImgMapFromPixels()
         }
-        else if (!(this._awaitingPhysicsUnit&T.STEP)) {
+        else if (this._lastStepTime == null && this.#simulationHasPixelsBuffer) {console.log("A")
             if (stepExtra) stepExtra()
-            this._awaitingPhysicsUnit |= T.STEP
+            this.saveStep() // TODO CHECK
+            this.#simulationHasPixelsBuffer = false
             unit.postMessage({type:T.STEP, pixels}, [pixels.buffer])
         }
     }
@@ -239,7 +281,7 @@ class Simulation {
     /**
      * Saves a physics step
      */
-    saveStep() {
+    saveStep() {// TODO
         if (this.backStepSavingEnabled) this._backStepSaves.push([this.getPixelsCopy(), this._mapGrid.dimensions])
         if (this._backStepSaves.length > this._backStepSavingMaxCount) this._backStepSaves.shift()
     }
@@ -255,7 +297,11 @@ class Simulation {
      * Updates the display image map according to the pixels array
      */
     updateImgMapFromPixels() {
-        if (!this._pixels.buffer.byteLength) console.log("updateImgMapFromPixels", "CORE GOT BUFFER")
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateImgMapFromPixels())
+            return
+        }
+
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = lastPixels.length==p_ll&&map.lastPixelSize==map.pixelSize, w = map.mapWidth
         for (let i=0;i<p_ll;i++) {
             const y = (i/w)|0, mat = pixels[i]
@@ -299,7 +345,11 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
     placePixel(mapPos, material=this._selectedMaterial) {
-        if (!this._pixels.buffer.byteLength) console.log("placePixel", "CORE GOT BUFFER")
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.placePixel(mapPos, material))
+            return
+        }
+
         this._pixels[this._mapGrid.mapPosToIndex(mapPos)] = material
     }
 
@@ -310,7 +360,11 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
     placePixelCoords(x, y, material=this._selectedMaterial) {
-        if (!this._pixels.buffer.byteLength) console.log("placePixelCoords", "CORE GOT BUFFER")
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.placePixelCoords(x, y, material))
+            return
+        }
+
         this._pixels[this._mapGrid.mapPosToIndexCoords(x, y)] = material
     }
 
@@ -388,21 +442,30 @@ class Simulation {
      * @returns A Uint16Array
      */
     getPixelsCopy() {
+        if (!this._pixels.buffer.byteLength) console.log("getPixelsCopy", "CORE GOT BUFFER") // TODO SAFETY CLEANUP
         const arraySize = this._mapGrid.arraySize, pixelsCopy = new Uint16Array(arraySize)
-        if (!this._pixels.buffer.byteLength) console.log("getPixelsCopy", "CORE GOT BUFFER")
         pixelsCopy.set(this._pixels.subarray(0, arraySize))
         return pixelsCopy
+    }
+
+    getPixelAtMapPos(mapPos) {
+        const i = this._mapGrid.mapPosToIndex(mapPos)
+        return this.useWebWorkers ? this._lastPixels[i] : this._pixels[i]
     }
 
     /**
      * Exports/saves the current pixels array as text
      * @param {Boolean} disableCompacting Whether to disable the text compacting (not recommended for large maps)
+     * @param {Function?} callback If using web workers, use this callback to retrieve the return value (stringValue)=>{...}
      * @returns A string representing the current map
      */
-    exportAsText(disableCompacting) {
-        if (!this._pixels.buffer.byteLength) console.log("exportAsText", "CORE GOT BUFFER")
+    exportAsText(disableCompacting, callback) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>callback&&callback(this.exportAsText(disableCompacting)))
+            return
+        }
+
         let pixels = this._pixels, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
-        
         if (disableCompacting) {
             state = Simulation.EXPORT_STATES.RAW
             textResult += pixels.toString()
@@ -440,7 +503,11 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used
      */
     fill(material=Simulation.MATERIALS.AIR) {
-        if (!this._pixels.buffer.byteLength) console.log("fill", "CORE GOT BUFFER")
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.fill(material))
+            return
+        }
+
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length
         lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
         pixels.set(new Uint16Array(p_ll).fill(material))
@@ -453,6 +520,11 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used
      */
     fillArea(pos1, pos2, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.fillArea(pos1, pos2, material))
+            return
+        }
+
         if (!this._pixels.buffer.byteLength) console.log("fillArea", "CORE GOT BUFFER")
         const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, [x1, y1] = pos1, [x2, y2] = pos2 
         for (let i=0;i<p_ll;i++) {
@@ -464,16 +536,16 @@ class Simulation {
 
     // TEMP PERFORMANCE BENCHES
     PERF_TEST_FULL_WATER_REG() {
-        simulation._showMapGrid = false
-        simulation.updateMapPixelSize(1)
-        simulation.updateMapSize(700, 600)
+        this._showMapGrid = false
+        this.updateMapPixelSize(1)
+        this.updateMapSize(700, 600)
         this.fill(Simulation.MATERIALS.WATER)
     }
 
     PERF_TEST_FULL_WATER_HIGH() {
-        simulation._showMapGrid = false
-        simulation.updateMapPixelSize(1)
-        simulation.updateMapSize(1000, 1000)
+        this._showMapGrid = false
+        this.updateMapPixelSize(1)
+        this.updateMapSize(1000, 1000)
         this.fill(Simulation.MATERIALS.WATER)
     }
 
@@ -506,7 +578,7 @@ class Simulation {
 	set selectedMaterial(_selectedMaterial) {this._selectedMaterial = _selectedMaterial}
 	set isRunning(isRunning) {this._isRunning = isRunning}
 	set brushType(brushType) {this._brushType = brushType}
-	set sidePriority(sidePriority) {this._sidePriority = sidePriority}
+	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
 	set backStepSavingMaxCount(_backStepSavingMaxCount) {return this._backStepSavingMaxCount = _backStepSavingMaxCount}
 	set showMapGrid(_showMapGrid) {return this._showMapGrid = _showMapGrid}
 	set mapGridRenderStyles(_mapGridRenderStyles) {return this._mapGridRenderStyles = _mapGridRenderStyles}

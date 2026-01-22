@@ -6,7 +6,7 @@ simulation.loopExtra=()=>{ // optimise for event updates instead of loop
     const mapPos = simulation.mapGrid.getLocalMapPixel(CVS.mouse.pos)
     if (simulation.isMouseWithinSimulation && mapPos) document.getElementById("mousePos").textContent = mapPos+" | "+simulation.mapGrid.mapPosToIndex(mapPos)
 
-    if (simulation.isMouseWithinSimulation && mapPos) document.getElementById("mouseMaterial").textContent = "("+Simulation.MATERIAL_NAMES[simulation.pixels[simulation.mapGrid.mapPosToIndex(mapPos)]]+")"
+    if (simulation.isMouseWithinSimulation && mapPos) document.getElementById("mouseMaterial").textContent = "("+Simulation.MATERIAL_NAMES[simulation.getPixelAtMapPos(mapPos)]+")"
     
     const matEl = document.getElementById("selectedMaterial"), selectedMat = simulation.selectedMaterial
     if (matEl.textContent != selectedMat) matEl.textContent = Simulation.MATERIAL_NAMES[selectedMat]
@@ -25,6 +25,8 @@ simulation.stepExtra=()=>{
     document.getElementById("fpsStepDisplay").textContent = " | "+stepFpsCounter.getFps()+" steps"
 }
 
+//simulation.PERF_TEST_FULL_WATER_REG()
+//simulation.PERF_TEST_FULL_WATER_HIGH()
 //simulation.stop()
 
 // GENERAL
@@ -44,7 +46,9 @@ document.getElementById("clearButton").onclick=()=>simulation.clear()
 // SAVE/EXPORT + LOAD/IMPORT
 const loadValueInput = document.getElementById("loadValueInput"), exportValueInput = document.getElementById("exportValueInput")
 
-document.getElementById("saveButton").onclick=e=>exportValueInput.value = simulation.exportAsText(e.ctrlKey)
+document.getElementById("saveButton").onclick=e=>{
+    exportValueInput.value = simulation.exportAsText(e.ctrlKey, saveValue=>exportValueInput.value=saveValue)
+}
 document.getElementById("loadButton").onclick=e=>{
     const v = loadValueInput.value||exportValueInput.value
     if (e.ctrlKey) {

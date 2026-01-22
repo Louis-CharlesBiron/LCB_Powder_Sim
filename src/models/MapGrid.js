@@ -53,25 +53,6 @@ class MapGrid {
     }
 
     /**
-     * Calculates the adjacent index based on the provided index, direction and distance
-     * @param {Number} i The index of a pixel in the pixels array
-     * @param {Simulation.D} direction A direction specified by one of Simulation.D
-     * @param {Number?} distance The distance to go by in the provided direction (defaults to 1)
-     * @returns The calculated adjacent index
-     */
-    getAdjacency(i, direction, distance=1) { // OPTIMIZATION, TODO
-        const D = Simulation.D, w = this._mapWidth, dWidth = w*distance
-        if (direction == D.b)       return i+dWidth
-        else if (direction == D.t)  return i-dWidth
-        else if (direction == D.r)  return (i+1)%w ? i+distance : i
-        else if (direction == D.l)  return i%w     ? i-distance : i
-        else if (direction == D.tr) return (i-dWidth+1)%w ? i-dWidth+distance : i
-        else if (direction == D.br) return (i+dWidth+1)%w ? i+dWidth+distance : i
-        else if (direction == D.tl) return (i-dWidth)%w   ? i-dWidth-distance : i
-        else if (direction == D.bl) return (i+dWidth)%w   ? i+dWidth-distance : i
-    }
-
-    /**
      * Converts an index to a local map position
      * @param {Number} i The index of a pixel in the pixels array
      * @returns A local map position

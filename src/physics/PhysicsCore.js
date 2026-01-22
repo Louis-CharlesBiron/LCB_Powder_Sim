@@ -29,7 +29,6 @@ class PhysicsCore {
     step(pixels, pxStepUpdated, sidePriority, mapWidth, MATERIALS, MATERIAL_GROUPS, D, SIDE_PRIORITIES) {
         const p_ll = pixels.length-1, AIR = MATERIALS.AIR, getAdjacency = this.getAdjacency
         pxStepUpdated.fill(0)
-        //.saveStep() CHECK
 
         for (let i=p_ll;i>=0;i--) {
             const mat = pixels[i]

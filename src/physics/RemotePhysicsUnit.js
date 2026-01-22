@@ -1,6 +1,8 @@
 importScripts("PhysicsCore.js")
 
-const WORKER_MESSAGE_TYPES = {INIT:0, STEP:1}, physicsCore = new PhysicsCore("WORKER")
+const WORKER_MESSAGE_TYPES = {INIT:0, STEP:1, SIDE_PRIORITY:2, MAP_WIDTH:3},
+      physicsCore = new PhysicsCore("WORKER")
+
 // CONSTANTS
 let MATERIALS, D, MATERIAL_GROUPS, SIDE_PRIORITIES
 // ATTRIBUTES
@@ -13,7 +15,12 @@ self.onmessage=e=>{
         pixels = data.pixels
         step()
     }
-    else if (type == WORKER_MESSAGE_TYPES.INIT) {// INIT
+    else if (type == WORKER_MESSAGE_TYPES.SIDE_PRIORITY) sidePriority = data.sidePriority
+    else if (type === WORKER_MESSAGE_TYPES.MAP_WIDTH) {
+        mapWidth = data.mapWidth
+        pxStepUpdated = new Uint8Array(data.arraySize)
+    }
+    else if (type == WORKER_MESSAGE_TYPES.INIT) {//  INIT
         MATERIALS = data.MATERIALS
         D = data.D
         MATERIAL_GROUPS = data.MATERIAL_GROUPS
@@ -32,11 +39,23 @@ function step() {
     postMessage({type:WORKER_MESSAGE_TYPES.STEP, pixels:newPixels}, [newPixels.buffer])
 }
 
-// IMPLEMENT QUEUING?
 
+
+
+
+
+
+
+
+
+
+
+
+// IMPLEMENT QUEUING
+// DEPRECATED
 // pixels + pxStepUpdated = PHYSICS ONLY
 // pixels -> needed by -> Simulation (rendering + direct updates?) + PhysicsCore (step) -> solution: pass memory along between sim/core
-// pxStepUpdated -> used in -> Simulation(#updatePixelsFromSize~) + PhysicsCore (step)  -> solution: store in core, update size when needed?
+// pxStepUpdated -> used in -> Simulation(#updatePixelsFromSize~) + PhysicsCore (step)  -> solution: store in core, update size when needed? NOPE
 
 //    load(mapData, saveDimensions=null) {
 //    #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
@@ -50,17 +69,4 @@ function step() {
 //-    exportAsText(disableCompacting) {
 
 // DONES:
-//    step() {
-
-
-
-
-
-
-
-
-
-
-
-
-
+//    step()
