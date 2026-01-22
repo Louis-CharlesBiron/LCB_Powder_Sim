@@ -19,11 +19,18 @@ simulation.loopExtra=()=>{ // optimise for event updates instead of loop
 
     const isRunningText = document.getElementById("isRunningText"), isRunning = simulation.isRunning
     if (isRunningText.textContent != isRunning) isRunningText.textContent = isRunning?"RUNNING":"STOPPED"
+
+    document.getElementById("fpsStepDisplay").textContent = " | "+stepFps+" step/s"
+    if (stepFps>0) stepFps--
 }
 
+let stepFps = 0
 simulation.stepExtra=()=>{
-    document.getElementById("fpsStepDisplay").textContent = " | "+stepFpsCounter.getFps()+" steps"
+    stepFps = stepFpsCounter.getFps()
 }
+
+simulation.start()
+
 
 //simulation.PERF_TEST_FULL_WATER_REG()
 //simulation.PERF_TEST_FULL_WATER_HIGH()

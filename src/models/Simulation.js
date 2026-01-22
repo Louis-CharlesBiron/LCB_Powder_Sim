@@ -16,7 +16,7 @@ class Simulation {
     static #BRUSHES_X_VALUES = []
     static #BRUSH_GROUPS = {SMALL_OPTIMIZED:Simulation.BRUSH_TYPES.PIXEL+Simulation.BRUSH_TYPES.VERTICAL_CROSS+Simulation.BRUSH_TYPES.LINE3+Simulation.BRUSH_TYPES.ROW3, X:Simulation.BRUSH_TYPES.X3+Simulation.BRUSH_TYPES.X5+Simulation.BRUSH_TYPES.X15+Simulation.BRUSH_TYPES.X25+Simulation.BRUSH_TYPES.X55+Simulation.BRUSH_TYPES.X99}
     static #WORKER_RELATIVE_PATH = "./physics/RemotePhysicsUnit.js"
-    static #WORKER_MESSAGE_TYPES = {INIT:0, STEP:1, SIDE_PRIORITY:2, MAP_WIDTH:3}
+    static #WORKER_MESSAGE_TYPES = {INIT:0, STEP:1, START_LOOP:2, STOP_LOOP:3, SIDE_PRIORITY:4, MAP_WIDTH:5, PIXELS:6}
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static {
         const M = Simulation.MATERIALS, materials = Object.keys(M), m_ll = materials.length
@@ -32,7 +32,7 @@ class Simulation {
     }
 
     #simulationHasPixelsBuffer = true
-    constructor(CVS, mapGrid, useWebWorkers=true) {
+    constructor(CVS, mapGrid, usesWebWorkers=true) {
         // SIMULATION
         this._CVS = CVS
         this._mapGrid = mapGrid
@@ -42,12 +42,12 @@ class Simulation {
         this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
-        this._isRunning = true
+        this._isRunning = false
         this._selectedMaterial = Simulation.MATERIALS.SAND
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
         this._lastStepTime = null
         this._queuedBufferOperations = []
-        this.updatePhysicsUnitType(useWebWorkers)
+        this.updatePhysicsUnitType(usesWebWorkers)
         this.#updatedCachedMapPixelsRows()
 
         // DISPLAY
@@ -75,19 +75,20 @@ class Simulation {
         ]
     }
 
-    updatePhysicsUnitType(useWebWorkers) {
-        const initObject = {
-            MATERIALS:Simulation.MATERIALS, D:Simulation.D, MATERIAL_GROUPS:Simulation.MATERIAL_GROUPS, SIDE_PRIORITIES:Simulation.SIDE_PRIORITIES,
-            pixels:this._pixels, pxStepUpdated:this._pxStepUpdated, sidePriority:this._sidePriority, 
-            mapWidth:this._mapGrid.mapWidth
-        }
-        this._physicsUnit = useWebWorkers ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
+    updatePhysicsUnitType(usesWebWorkers) {
+        this._physicsUnit = usesWebWorkers ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
 
-        if (useWebWorkers) {
+        if (usesWebWorkers) {
             this.#simulationHasPixelsBuffer = true
             this._physicsUnit.onmessage=this.#physicsUnitMessage.bind(this)
-            initObject.type = Simulation.#WORKER_MESSAGE_TYPES.INIT
-            this._physicsUnit.postMessage(initObject)
+            this._physicsUnit.postMessage({
+                type:Simulation.#WORKER_MESSAGE_TYPES.INIT,
+                MATERIALS:Simulation.MATERIALS, D:Simulation.D, MATERIAL_GROUPS:Simulation.MATERIAL_GROUPS, SIDE_PRIORITIES:Simulation.SIDE_PRIORITIES,
+                pixels:this._pixels, pxStepUpdated:this._pxStepUpdated, sidePriority:this._sidePriority, 
+                mapWidth:this._mapGrid.mapWidth,
+                aimedFps:this._CVS.fpsLimit
+            })
+            this.start(true)
         } else {
             //this._physicsUnit.init(initObject) TODO CHECK CLEANUP
 
@@ -105,7 +106,7 @@ class Simulation {
         if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.CONTROL)) this.#placePixelFromMouse(mouse)
         
         if (this._showMapGrid) this.#drawMapGrid()
-        if (this._isRunning) this.step()
+        if (this._isRunning && this.useLocalPhysics) this.step()
     }
 
     /**
@@ -155,7 +156,7 @@ class Simulation {
         if (!this._pixels.buffer.byteLength) console.log("updatePixelsFromSize", "CORE GOT BUFFER")// TODO SAFETY CLEANUP
         const arraySize = this._mapGrid.arraySize, pixels = this._pixels = new Uint16Array(arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
         this._pxStepUpdated = new Uint8Array(arraySize)
-        if (this.useWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_WIDTH, mapWidth:this._mapGrid.mapWidth, arraySize})
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_WIDTH, mapWidth:this._mapGrid.mapWidth, arraySize})
         
         for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
             pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)
@@ -193,6 +194,11 @@ class Simulation {
      * @param {Number} size The new map pixel size
      */
     updateMapPixelSize(size) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateMapPixelSize(size))
+            return
+        }
+
         const map = this._mapGrid
         map.pixelSize = size
         this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
@@ -214,25 +220,34 @@ class Simulation {
 
     #physicsUnitMessage(e) {
         const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES
-        if (type==T.STEP) {// RECEIVE STEP RESULTS (is step/sec bound)
-            this.#simulationHasPixelsBuffer = true
+        if (type == T.STEP) {// RECEIVE STEP RESULTS (is step/sec bound)
+            const stepExtra = this._stepExtra
             this._pixels = new Uint16Array(data.pixels)
+            this.#simulationHasPixelsBuffer = true
             this.updateImgMapFromPixels()
 
             // EXECUTE QUEUE
-            // RUNS ON WORKER'S TIME
+            // RUNS ON WORKER'S TIME (NOT ANYMORE I THINK, TODO VERIFY)
             this.#executeQueuedOperations()
 
-            // REQ NEXT STEP
-            const timeStamp = this._CVS.timeStamp //timeStamp-this._lastStepTime >= this._CVS.fpsLimitRaw
-            if (this._isRunning && this.useWebWorkers) {//console.log("E", timeStamp, this._lastStepTime)
-                const pixels = this._pixels
-                if (this._stepExtra) this._stepExtra()
+            if (stepExtra) stepExtra()
+
+            // PASS BACK PIXELS IF LOOP RUNNING
+            if (this._isRunning) {
                 this.#simulationHasPixelsBuffer = false
-                this._lastStepTime = timeStamp
-                this._physicsUnit.postMessage({type:T.STEP, pixels}, [pixels.buffer])
+                this.#sendPixelsToWorker(T.PIXELS)
             }
+        } else if (type == T.PIXELS) {
+            this._pixels = new Uint16Array(data.pixels)
+            this.#simulationHasPixelsBuffer = true
         }
+    }
+
+    #sendPixelsToWorker(type) {
+        const pixels = this._pixels
+        this.saveStep()
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type, pixels}, [pixels.buffer])
+        else this.#simulationHasPixelsBuffer = true
     }
 
     #executeQueuedOperations() {
@@ -244,7 +259,7 @@ class Simulation {
     }
 
     updateSidePriority(sidePriority) {
-        if (this.useWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
         return this._sidePriority = sidePriority
     }
 
@@ -254,16 +269,12 @@ class Simulation {
     step() {
         const pixels = this._pixels, T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit, stepExtra = this._stepExtra
         if (this.useLocalPhysics) {
+            // TODO ADD SAVESTEP
             if (stepExtra) stepExtra()
             this._pixels = unit.step(this._pixels, this._pxStepUpdated, this._sidePriority, this._mapGrid.mapWidth)
             this.updateImgMapFromPixels()
         }
-        else if (this._lastStepTime == null && this.#simulationHasPixelsBuffer) {console.log("A")
-            if (stepExtra) stepExtra()
-            this.saveStep() // TODO CHECK
-            this.#simulationHasPixelsBuffer = false
-            unit.postMessage({type:T.STEP, pixels}, [pixels.buffer])
-        }
+        else if (this.#simulationHasPixelsBuffer) this.#sendPixelsToWorker(T.STEP)
     }
 
     /**
@@ -450,7 +461,7 @@ class Simulation {
 
     getPixelAtMapPos(mapPos) {
         const i = this._mapGrid.mapPosToIndex(mapPos)
-        return this.useWebWorkers ? this._lastPixels[i] : this._pixels[i]
+        return this.usesWebWorkers ? this._lastPixels[i] : this._pixels[i]
     }
 
     /**
@@ -487,15 +498,21 @@ class Simulation {
     /**
      * Sets the state of the simulation to be running
      */
-    start() {
-        this._isRunning = true
+    start(force) {
+        if (!this._isRunning || force) {
+            this._isRunning = true
+            if (this.usesWebWorkers) this.#sendPixelsToWorker(Simulation.#WORKER_MESSAGE_TYPES.START_LOOP)
+        }
     }
 
     /**
      * Sets the state of the simulation to be stopped
      */
     stop() {
-        this._isRunning = false
+        if (this._isRunning) {
+            this._isRunning = false
+            if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.STOP_LOOP})
+        }
     }
 
     /**
@@ -525,7 +542,6 @@ class Simulation {
             return
         }
 
-        if (!this._pixels.buffer.byteLength) console.log("fillArea", "CORE GOT BUFFER")
         const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, [x1, y1] = pos1, [x2, y2] = pos2 
         for (let i=0;i<p_ll;i++) {
             const y = (i/w)|0, x = i-y*w
@@ -571,7 +587,7 @@ class Simulation {
     get brushType() {return this._brushType}
 	get showMapGrid() {return this._showMapGrid}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
-    get useWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
+    get usesWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
