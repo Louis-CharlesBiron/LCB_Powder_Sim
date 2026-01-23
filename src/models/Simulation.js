@@ -5,16 +5,20 @@ class Simulation {
     static MATERIAL_COLORS_INDEXED = []
     static MATERIAL_NAMES = []
     static #CACHED_MATERIALS_ROWS = []
+    static #CACHED_GRID_LINES = null
+    static #CACHED_GRID_BORDER = null
     static DEFAULT_MATERIAL = this.MATERIALS.SAND
     static D = {t:1<<0, r:1<<1, b:1<<2, l:1<<3, tr:1<<4, br:1<<5, bl:1<<6, tl:1<<7}
-    static SIDE_PRIORITY = {RANDOM:0, LEFT:1, RIGHT:2, MAP_DEPENDANT:3}
+    static SIDE_PRIORITIES = {RANDOM:0, LEFT:1, RIGHT:2, MAP_DEPENDANT:3}
     static SIDE_PRIORITY_NAMES = []
-    static DEFAULT_BACK_STEP_SAVING_COUNT = 50
+    static DEFAULT_BACK_STEP_SAVING_COUNT = 500
     static EXPORT_STATES = {RAW:0, COMPACTED:1}
     static EXPORT_SEPARATOR = "x"
     static BRUSH_TYPES = {PIXEL:1<<0, VERTICAL_CROSS:1<<1, LINE3:1<<2, ROW3:1<<3, BIG_DOT:1<<4, X3:1<<5, X5:1<<6, X15:1<<7, X25:1<<8, X55:1<<9, X99:1<<10}
     static #BRUSHES_X_VALUES = []
     static #BRUSH_GROUPS = {SMALL_OPTIMIZED:Simulation.BRUSH_TYPES.PIXEL+Simulation.BRUSH_TYPES.VERTICAL_CROSS+Simulation.BRUSH_TYPES.LINE3+Simulation.BRUSH_TYPES.ROW3, X:Simulation.BRUSH_TYPES.X3+Simulation.BRUSH_TYPES.X5+Simulation.BRUSH_TYPES.X15+Simulation.BRUSH_TYPES.X25+Simulation.BRUSH_TYPES.X55+Simulation.BRUSH_TYPES.X99}
+    static #WORKER_RELATIVE_PATH = "./physics/RemotePhysicsUnit.js"
+    static #WORKER_MESSAGE_TYPES = {INIT:0, STEP:1, START_LOOP:2, STOP_LOOP:3, SIDE_PRIORITY:4, MAP_WIDTH:5, PIXELS:6}
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static {
         const M = Simulation.MATERIALS, materials = Object.keys(M), m_ll = materials.length
@@ -23,33 +27,31 @@ class Simulation {
             Simulation.MATERIAL_COLORS_INDEXED[i] = Simulation.MATERIAL_COLORS[materials[ii]]
         }
 
-        Simulation.SIDE_PRIORITY_NAMES = Object.keys(Simulation.SIDE_PRIORITY)
+        Simulation.SIDE_PRIORITY_NAMES = Object.keys(Simulation.SIDE_PRIORITIES)
 
         const brushesX = Object.keys(Simulation.BRUSH_TYPES).filter(b=>b.startsWith("X")), b_ll = brushesX.length
         for (let i=Simulation.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) Simulation.#BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
     }
 
-    constructor(CVS, mapGrid) {
+    #simulationHasPixelsBuffer = true
+    #lastPlacedPos = null
+    constructor(CVS, mapGrid, usesWebWorkers=true) {
         // SIMULATION
         this._CVS = CVS
         this._mapGrid = mapGrid
-        this._loopExtras = []
         this._pixels = new Uint16Array(mapGrid.arraySize)
         this._lastPixels = new Uint16Array(mapGrid.arraySize)
         this._pxStepUpdated = new Uint8Array(mapGrid.arraySize)
         this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
-        this._isRunning = true
+        this._isRunning = false
         this._selectedMaterial = Simulation.MATERIALS.SAND
-        this._sidePriority = Simulation.SIDE_PRIORITY.RANDOM
-        this.#updatedCachedMapPixelsRows()
-
-        /*this._worker = new Worker("./workers/worker.js")// TODO
-        this._worker.postMessage({test:123})
-        this._worker.onmessage=e=>{
-            console.log(e)
-        }*/
+        this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
+        this._lastStepTime = null
+        this._queuedBufferOperations = []
+        this.updatePhysicsUnitType(usesWebWorkers)
+        this.#updateCachedMapPixelsRows()
 
         // DISPLAY
         this._showMapGrid = true
@@ -57,21 +59,41 @@ class Simulation {
         this._imgMap = CVS.ctx.createImageData(...mapGrid.realDimensions)
         this._simImgMapDrawLoop = CanvasUtils.createEmptyObj(CVS, null, this.#simImgMapDraw.bind(this))
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
+        this._loopExtra = null
+        this._stepExtra = null
+        this.#updateCachedGridDisplays()
 
         // CANVAS
         CVS.loopingCB = this.#main.bind(this)
         CVS.setMouseMove()
         CVS.setMouseLeave()
         CVS.setMouseDown(this.#mouseDown.bind(this))
-        CVS.setMouseUp()
+        CVS.setMouseUp(this.#mouseUp.bind(this))
         CVS.setKeyUp(null, true)
         CVS.setKeyDown(this.#keyDown.bind(this), true)
         CVS.start()
         this._mouseListenerIds = [
             CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
             CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
-            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this._isMouseWithinSimulation = false)
+            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
+    }
+
+    updatePhysicsUnitType(usesWebWorkers) {
+        this._physicsUnit = usesWebWorkers ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
+
+        if (usesWebWorkers) {
+            this.#simulationHasPixelsBuffer = true
+            this._physicsUnit.onmessage=this.#physicsUnitMessage.bind(this)
+            this._physicsUnit.postMessage({
+                type:Simulation.#WORKER_MESSAGE_TYPES.INIT,
+                MATERIALS:Simulation.MATERIALS, D:Simulation.D, MATERIAL_GROUPS:Simulation.MATERIAL_GROUPS, SIDE_PRIORITIES:Simulation.SIDE_PRIORITIES,
+                pixels:this._pixels, pxStepUpdated:this._pxStepUpdated, sidePriority:this._sidePriority, 
+                mapWidth:this._mapGrid.mapWidth,
+                aimedFps:this._CVS.fpsLimit
+            })
+            if (this._isRunning) this.start(true)
+        }
     }
 
     /**
@@ -79,13 +101,13 @@ class Simulation {
      * @param {Number} deltaTime The deltaTime
      */
     #main(deltaTime) {
-        for (let i=0;i<this._loopExtras.length;i++) this._loopExtras[i](deltaTime)
+        if (this._loopExtra) this._loopExtra(deltaTime)
 
         const mouse = this.mouse
         if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.CONTROL)) this.#placePixelFromMouse(mouse)
         
         if (this._showMapGrid) this.#drawMapGrid()
-        if (this._isRunning) this.step()
+        if (this._isRunning && this.useLocalPhysics) this.step()
     }
 
     /**
@@ -97,6 +119,11 @@ class Simulation {
      * @param {[width, height]} saveDimensions Specifies the save data dimensions when mapData is of Uint16Array type (leave undefined, used internally)
      */
     load(mapData, saveDimensions=null) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.load(mapData, saveDimensions))
+            return
+        }
+
         if (mapData) {
             if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(saveDimensions[0], saveDimensions[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
             else if (typeof mapData == "string") {
@@ -127,8 +154,10 @@ class Simulation {
      * @param {Uint16Array} oldPixels The previous/current pixel array
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
-        const pixels = this._pixels = new Uint16Array(this._mapGrid.arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
-        this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
+        const arraySize = this._mapGrid.arraySize, pixels = this._pixels = new Uint16Array(arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
+        this._pxStepUpdated = new Uint8Array(arraySize)
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_WIDTH, mapWidth:this._mapGrid.mapWidth, arraySize})
+        
         for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
             pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)
             oi += oldWidth
@@ -142,16 +171,22 @@ class Simulation {
      * @param {Number?} height The new height of the map
      */
     updateMapSize(width, height) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateMapSize(width, height))
+            return
+        }
+
         const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight, oldPixels = this.getPixelsCopy()
         height = map.mapHeight = height||map.mapHeight
         width = map.mapWidth = width||map.mapWidth
         this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldPixels)
+        this.#updateCachedGridDisplays()
 
         this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
         this.updateImgMapFromPixels()
 
         this.mouse.updateListener(Mouse.LISTENER_TYPES.ENTER, this._mouseListenerIds[0], [[0,0], map.realDimensions])
-        this.mouse.updateListener(Mouse.LISTENER_TYPES.MOVE, this._mouseListenerIds[1], [[0,0], map.realDimensions])
+        this.mouse.updateListener(Mouse.LISTENER_TYPES.MOVE,  this._mouseListenerIds[1], [[0,0], map.realDimensions])
         this.mouse.updateListener(Mouse.LISTENER_TYPES.LEAVE, this._mouseListenerIds[2], [[0,0], map.realDimensions])
     }
 
@@ -160,10 +195,16 @@ class Simulation {
      * @param {Number} size The new map pixel size
      */
     updateMapPixelSize(size) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateMapPixelSize(size))
+            return
+        }
+
         const map = this._mapGrid
         map.pixelSize = size
         this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
-        this.#updatedCachedMapPixelsRows()
+        this.#updateCachedMapPixelsRows()
+        this.#updateCachedGridDisplays()
         this.updateImgMapFromPixels()
     }
 
@@ -172,122 +213,102 @@ class Simulation {
         this.ctx.putImageData(this._imgMap, 0, 0)
     }
 
-    // Draws a border and line to show the map grid on the canvas
-    #drawMapGrid() {
-        const lines = this._mapGrid.getDrawableGridPositions(), l_ll = lines.length, render = this.render
-        for (let i=0;i<l_ll;i++) render.batchStroke(Render.getLine(lines[i][0], lines[i][1]), this._mapGridRenderStyles)
-        render.batchStroke(Render.getRect([0,0], ...this._mapGrid.realDimensions))
+    #updateCachedGridDisplays() {
+        Simulation.#CACHED_GRID_LINES = this._mapGrid.getDrawableGridLines()
+        Simulation.#CACHED_GRID_BORDER = Render.getRect([0,0], ...this._mapGrid.realDimensions)
     }
 
-    /**
-     * Adds a extra callback to the main loop
-     * @param {Function} callback The callback to be called (deltatime)=>{...} 
-     */
-    addLoopExtra(callback) {
-        this._loopExtras.push(callback)
+    // Draws a border and line to show the map grid on the canvas
+    #drawMapGrid() {// OPTIMIZATION, USE CACHE
+        const lines = Simulation.#CACHED_GRID_LINES, l_ll = lines.length, batchStroke = this.render.batchStroke.bind(this.render), styles = this._mapGridRenderStyles
+        for (let i=0;i<l_ll;i++) batchStroke(lines[i], styles)
+        batchStroke(Simulation.#CACHED_GRID_BORDER)
+    }
+
+    #physicsUnitMessage(e) {
+        const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES
+        if (type == T.STEP) {// RECEIVE STEP RESULTS (is step/sec bound)
+            const stepExtra = this._stepExtra
+            this._pixels = new Uint16Array(data.pixels)
+            this.#simulationHasPixelsBuffer = true
+            this.updateImgMapFromPixels()
+
+            this.#executeQueuedOperations()
+
+            if (stepExtra) stepExtra()
+
+            // PASS BACK PIXELS IF LOOP RUNNING
+            if (this._isRunning) {
+                this.#simulationHasPixelsBuffer = false
+                this.#sendPixelsToWorker(T.PIXELS)
+            }
+        } else if (type == T.PIXELS) {
+            this._pixels = new Uint16Array(data.pixels)
+            this.#simulationHasPixelsBuffer = true
+        }
+    }
+
+    #sendPixelsToWorker(type) {
+        const pixels = this._pixels
+        this.saveStep()
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type, pixels}, [pixels.buffer])
+        else this.#simulationHasPixelsBuffer = true
+    }
+
+    #executeQueuedOperations() {
+        const queued = this._queuedBufferOperations, q_ll = queued.length
+        for (let i=0;i<q_ll;i++) {
+            queued[0]()
+            queued.shift()
+        }
+    }
+
+    updateSidePriority(sidePriority) {
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
+        return this._sidePriority = sidePriority
     }
 
     /**
      * Runs and displays one physics step
      */
     step() {
-        const updated = this._pxStepUpdated, pixels = this._pixels, p_ll = pixels.length-1, M = Simulation.MATERIALS, AIR = M.AIR, G = Simulation.MATERIAL_GROUPS, D = Simulation.D, map = this._mapGrid, getAdjacency = map.getAdjacency.bind(map), w = map.mapWidth
-        updated.fill(0)
-        this.saveStep()
-
-        for (let i=p_ll;i>=0;i--) {
-            const mat = pixels[i]
-            if (mat == AIR || updated[i]) continue
-            let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
-
-            // SAND
-            if (mat == M.SAND) {
-                const transpiercedMaterialIndex = getAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpierceable = transpiercedMaterial&G.TRANSPIERCEABLE
-                // check if can go down or sides
-                if (transpiercedMaterial == AIR || transpierceable) newIndex = transpiercedMaterialIndex
-                else {
-                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_BL = getAdjacency(i, D.bl), i_BR = getAdjacency(i, D.br)
-                    if (isLeftFirst) {
-                        if (pixels[i_BL] == AIR) newIndex = i_BL
-                        else if (pixels[i_BR] == AIR) newIndex = i_BR
-                    } else {
-                        if (pixels[i_BR] == AIR) newIndex = i_BR
-                        else if (pixels[i_BL] == AIR) newIndex = i_BL
-                    }
-                }
-                // check what to replace prev pos with
-                if (newIndex != -1) replaceMaterial = pixels[newIndex] // && (pixels[getAdjacency(i, D.l)]&G.LIQUIDS || pixels[getAdjacency(i, D.r)]&G.LIQUIDS)
-            }
-            // WATER
-            else if (mat == M.WATER) {
-                const transpiercedMaterialIndex = getAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex]
-                // check if can go down or sides
-                if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
-                else {
-                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_L = getAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_BL = getAdjacency(i, D.bl), i_BR = getAdjacency(i, D.br), i_R = getAdjacency(i, D.r)
-                    if (isLeftFirst) {
-                        if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
-                        else if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
-                        else if (leftIsAir) newIndex = i_L
-                        else if (pixels[i_R] == AIR) newIndex = i_R
-                    } else {
-                        if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
-                        else if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
-                        else if (pixels[i_R] == AIR) newIndex = i_R
-                        else if (leftIsAir) newIndex = i_L
-                    }
-                }
-            }
-            // GRAVEL
-            else if (mat == M.GRAVEL) {
-                const transpiercedMaterialIndex = getAdjacency(i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpiercedLiquid = transpiercedMaterial&G.LIQUIDS
-                // check if can go down
-                if (transpiercedMaterial == AIR || transpiercedLiquid) newIndex = transpiercedMaterialIndex
-                // check what to replace prev pos with
-                if (transpiercedLiquid && (pixels[getAdjacency(i, D.l)]&G.LIQUIDS || pixels[getAdjacency(i, D.r)]&G.LIQUIDS)) replaceMaterial = transpiercedLiquid
-            }
-            // INVERTED WATER
-            else if (mat == M.INVERTED_WATER) {
-                const transpiercedMaterialIndex = getAdjacency(i, D.t), transpiercedMaterial = pixels[transpiercedMaterialIndex]
-                // check if can go down or sides
-                if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
-                else {
-                    const isLeftFirst = this.#getSideSelectionPriority(i, w), i_L = getAdjacency(i, D.l), leftIsAir = pixels[i_L] == AIR, i_TL = getAdjacency(i, D.tl), i_TR = getAdjacency(i, D.tr), i_R = getAdjacency(i, D.r)
-                    if (isLeftFirst) {
-                        if (pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
-                        else if (pixels[i_TR] == AIR && pixels[i_R] == AIR) newIndex = i_TR
-                        else if (leftIsAir) newIndex = i_L
-                        else if (pixels[i_R] == AIR) newIndex = i_R
-                    } else {
-                        if (pixels[i_TR] == AIR && pixels[i_R] == AIR) newIndex = i_TR
-                        else if (pixels[i_TL] == AIR && leftIsAir) newIndex = i_TL
-                        else if (pixels[i_R] == AIR) newIndex = i_R
-                        else if (leftIsAir) newIndex = i_L
-                    }
-
-                }
-            }
-
-            // UPDATE
-            if (newIndex != -1) {
-                updated[newIndex] = 1
-                pixels[newIndex] = newMaterial
-                pixels[i] = replaceMaterial
-            }
+        const T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit
+        if (this.useLocalPhysics) {
+            const stepExtra = this._stepExtra
+            this.saveStep()
+            if (stepExtra) stepExtra()
+            this._pixels = unit.step(this._pixels, this._pxStepUpdated, this._sidePriority, this._mapGrid.mapWidth)
+            this.updateImgMapFromPixels()
         }
-
-        this.updateImgMapFromPixels()
+        else if (this.#simulationHasPixelsBuffer) this.#sendPixelsToWorker(T.STEP)
     }
 
     /**
      * Displays the previous physics step saved
      */
     backStep() {
-        const b_ll = this._backStepSaves.length
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.backStep())
+            return
+        }
+
+        const saves = this._backStepSaves, b_ll = saves.length
         if (b_ll) {
-            const backSave = this._backStepSaves[b_ll-1]
-            this.load(backSave[0], backSave[1])
-            this._backStepSaves.pop()
+            let lastSave = saves[b_ll-1]
+            const lastSaveArray = lastSave[0], l_ll = lastSaveArray.length, currentSave = this.getPixelsCopy()
+            
+            let hasChanges = l_ll != currentSave.length
+            for (let i=0;i<l_ll;i++) {
+                if (lastSaveArray[i] != currentSave[i]) {
+                    hasChanges = true
+                    break
+                }
+            }
+
+            if (!hasChanges) lastSave = saves[b_ll-2]
+
+            if (lastSave) this.load(lastSave[0], lastSave[1])
+            saves.pop()
         }
     }
 
@@ -295,8 +316,23 @@ class Simulation {
      * Saves a physics step
      */
     saveStep() {
-        if (this.backStepSavingEnabled) this._backStepSaves.push([this.getPixelsCopy(), this._mapGrid.dimensions])
-        if (this._backStepSaves.length > this._backStepSavingMaxCount) this._backStepSaves.shift()
+        if (this.backStepSavingEnabled) {
+            const saves = this._backStepSaves, b_ll = saves.length, lastSave = saves[b_ll-1]?.[0], l_ll = lastSave?.length, currentSave = this.getPixelsCopy()
+
+            if (lastSave) {
+                let hasChanges = l_ll != currentSave.length
+                for (let i=0;i<l_ll;i++) {
+                    if (lastSave[i] != currentSave[i]) {
+                        hasChanges = true
+                        break
+                    }
+                }
+                if (!hasChanges) return
+            }
+            
+            saves.push([currentSave, this._mapGrid.dimensions])
+            if ((b_ll+1) > this._backStepSavingMaxCount) saves.shift()
+        }
     }
 
     /**
@@ -307,23 +343,14 @@ class Simulation {
     }
 
     /**
-     * Returns whether the side priority is left or not 
-     * @param {Number?} i The index of the pixel (used internally for the MAP_DEPENDANT mode) 
-     * @param {Number?} mapWidth The width of the map (used internally for the MAP_DEPENDANT mode) 
-     * @returns Whether the side priority is left first or not
-     */
-    #getSideSelectionPriority(i, mapWidth) {
-        const side = this._sidePriority, S = Simulation.SIDE_PRIORITY, isRandom = side==S.RANDOM, isLeft = side==S.LEFT
-        let leftFirst = isLeft
-        if (isRandom) leftFirst = Math.random()<0.5
-        else if (side==S.MAP_DEPENDANT) leftFirst = (i%mapWidth)<(mapWidth/2)
-        return leftFirst
-    }
-
-    /**
      * Updates the display image map according to the pixels array
      */
     updateImgMapFromPixels() {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateImgMapFromPixels())
+            return
+        }
+
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = lastPixels.length==p_ll&&map.lastPixelSize==map.pixelSize, w = map.mapWidth
         for (let i=0;i<p_ll;i++) {
             const y = (i/w)|0, mat = pixels[i]
@@ -346,7 +373,7 @@ class Simulation {
     }
 
     // Updates the cached pixels row used for drawing optimizations
-    #updatedCachedMapPixelsRows() {
+    #updateCachedMapPixelsRows() {
         const C = Simulation.MATERIAL_COLORS, colors = Object.values(C), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
         for (let i=0,ii=0;ii<c_ll;i=!i?1:i*2,ii++) {
             const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
@@ -367,6 +394,11 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
     placePixel(mapPos, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.placePixel(mapPos, material))
+            return
+        }
+
         this._pixels[this._mapGrid.mapPosToIndex(mapPos)] = material
     }
 
@@ -377,6 +409,11 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
     placePixelCoords(x, y, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.placePixelCoords(x, y, material))
+            return
+        }
+
         this._pixels[this._mapGrid.mapPosToIndexCoords(x, y)] = material
     }
 
@@ -387,27 +424,37 @@ class Simulation {
     #placePixelFromMouse(mouse) {
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
         if (this._isMouseWithinSimulation && mapPos) {
-            const B = Simulation.BRUSH_TYPES, [x,y] = mapPos, brush = this._brushType
+            const [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
 
-            if (brush&Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
-                if (brush == B.LINE3 || brush == B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
-                if (brush == B.ROW3 || brush == B.VERTICAL_CROSS) {
-                    if (x) this.placePixelCoords(x-1, y)
-                    if (x != this._mapGrid.mapWidth-1) this.placePixelCoords(x+1, y)
-                }
-                this.placePixel(mapPos)
-            } else if (brush == B.BIG_DOT) {
-                if (x) this.placePixelCoords(x-2, y)
-                if (x != this._mapGrid.mapWidth-2) this.placePixelCoords(x+2, y)
-                    this.placePixelCoords(x, y-2)
-                    this.placePixelCoords(x, y+2)
-                    this.fillArea([x-1,y-1], [x+1,y+1])
-            } else if (brush&Simulation.#BRUSH_GROUPS.X) {
-                const offset = (Simulation.#BRUSHES_X_VALUES[brush]/2)|0
-                this.fillArea([x-offset,y-offset], [x+offset,y+offset])
-            }
+            if (dMax) for (let i=0;i<dMax;i++) {
+                const prog = ((i+1)/dMax)
+                this.#placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
+            } 
+            else this.#placePixelsWithBrush(x, y)
 
+            this.#lastPlacedPos = mapPos
             if (!this._isRunning) this.updateImgMapFromPixels()
+        }
+    }
+
+    #placePixelsWithBrush(x, y, brush=this._brushType) {
+        const B = Simulation.BRUSH_TYPES
+        if (brush&Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
+            if (brush == B.LINE3 || brush == B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
+            if (brush == B.ROW3 || brush == B.VERTICAL_CROSS) {
+                if (x) this.placePixelCoords(x-1, y)
+                if (x != this._mapGrid.mapWidth-1) this.placePixelCoords(x+1, y)
+            }
+            this.placePixelCoords(x, y)
+        } else if (brush == B.BIG_DOT) {
+            if (x) this.placePixelCoords(x-2, y)
+            if (x != this._mapGrid.mapWidth-2) this.placePixelCoords(x+2, y)
+                this.placePixelCoords(x, y-2)
+                this.placePixelCoords(x, y+2)
+                this.fillArea([x-1,y-1], [x+1,y+1])
+        } else if (brush&Simulation.#BRUSH_GROUPS.X) {
+            const offset = (Simulation.#BRUSHES_X_VALUES[brush]/2)|0
+            this.fillArea([x-offset,y-offset], [x+offset,y+offset])
         }
     }
 
@@ -435,6 +482,7 @@ class Simulation {
             else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._selectedMaterial = M.AIR
         }
 
+        // put in loop
         if (keyboard.isDown([K.ARROW_RIGHT])) this.step()
         else if (keyboard.isDown([K.ARROW_LEFT])) this.backStep()
 
@@ -449,6 +497,16 @@ class Simulation {
         this.#placePixelFromMouse(mouse)
     }
 
+    // mouseUp listener, disables smooth drawing when mouse is unpressed
+    #mouseUp() {
+        this.#lastPlacedPos = null
+    }
+
+    #mouseLeaveSimulation() {
+        this.#lastPlacedPos = null
+        this._isMouseWithinSimulation = false
+    }
+
     /**
      * Returns a copy of the current pixels array 
      * @returns A Uint16Array
@@ -459,14 +517,24 @@ class Simulation {
         return pixelsCopy
     }
 
+    getPixelAtMapPos(mapPos) {
+        const i = this._mapGrid.mapPosToIndex(mapPos)
+        return this.usesWebWorkers ? this._lastPixels[i] : this._pixels[i]
+    }
+
     /**
      * Exports/saves the current pixels array as text
      * @param {Boolean} disableCompacting Whether to disable the text compacting (not recommended for large maps)
+     * @param {Function?} callback If using web workers, use this callback to retrieve the return value (stringValue)=>{...}
      * @returns A string representing the current map
      */
-    exportAsText(disableCompacting) {
+    exportAsText(disableCompacting, callback) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>callback&&callback(this.exportAsText(disableCompacting)))
+            return
+        }
+
         let pixels = this._pixels, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
-        
         if (disableCompacting) {
             state = Simulation.EXPORT_STATES.RAW
             textResult += pixels.toString()
@@ -488,15 +556,21 @@ class Simulation {
     /**
      * Sets the state of the simulation to be running
      */
-    start() {
-        this._isRunning = true
+    start(force) {
+        if (!this._isRunning || force) {
+            this._isRunning = true
+            if (this.usesWebWorkers) this.#sendPixelsToWorker(Simulation.#WORKER_MESSAGE_TYPES.START_LOOP)
+        }
     }
 
     /**
      * Sets the state of the simulation to be stopped
      */
     stop() {
-        this._isRunning = false
+        if (this._isRunning) {
+            this._isRunning = false
+            if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.STOP_LOOP})
+        }
     }
 
     /**
@@ -504,10 +578,15 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used
      */
     fill(material=Simulation.MATERIALS.AIR) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.fill(material))
+            return
+        }
+
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length
         lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
         pixels.set(new Uint16Array(p_ll).fill(material))
-        this.updateImgMapFromPixels()
+        if (!this._isRunning) this.updateImgMapFromPixels()
     }
 
     /**
@@ -517,27 +596,32 @@ class Simulation {
      * @param {Simulation.MATERIALS} material The material used
      */
     fillArea(pos1, pos2, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.fillArea(pos1, pos2, material))
+            return
+        }
+
         const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, [x1, y1] = pos1, [x2, y2] = pos2 
         for (let i=0;i<p_ll;i++) {
             const y = (i/w)|0, x = i-y*w
             if (x>=x1 && x<=x2 && y>=y1 && y<=y2) this.placePixelCoords(x, y, material)
         }            
-        this.updateImgMapFromPixels()
+        if (!this._isRunning) this.updateImgMapFromPixels()
     }
 
 
     // TEMP PERFORMANCE BENCHES
     PERF_TEST_FULL_WATER_REG() {
-        simulation._showMapGrid = false
-        simulation.updateMapPixelSize(1)
-        simulation.updateMapSize(700, 600)
+        this._showMapGrid = false
+        this.updateMapPixelSize(1)
+        this.updateMapSize(700, 600)
         this.fill(Simulation.MATERIALS.WATER)
     }
 
     PERF_TEST_FULL_WATER_HIGH() {
-        simulation._showMapGrid = false
-        simulation.updateMapPixelSize(1)
-        simulation.updateMapSize(1000, 1000)
+        this._showMapGrid = false
+        this.updateMapPixelSize(1)
+        this.updateMapSize(1000, 1000)
         this.fill(Simulation.MATERIALS.WATER)
     }
 
@@ -547,7 +631,8 @@ class Simulation {
     get mouse() {return this._CVS.mouse}
     get keyboard() {return this._CVS.keyboard}
 	get mapGrid() {return this._mapGrid}
-	get loopExtras() {return this._loopExtras}
+	get loopExtra() {return this._loopExtra}
+	get stepExtra() {return this._stepExtra}
 	get lastPixels() {return this._lastPixels}
 	get pixels() {return this._pixels}
 	get mapGridRenderStyles() {return this._mapGridRenderStyles}
@@ -561,12 +646,15 @@ class Simulation {
 	get backStepSaves() {return this._backStepSaves}
     get brushType() {return this._brushType}
 	get showMapGrid() {return this._showMapGrid}
+    get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
+    get usesWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
     
-	set loopExtras(_loopExtras) {this._loopExtras = _loopExtras}
+	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
+	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
 	set selectedMaterial(_selectedMaterial) {this._selectedMaterial = _selectedMaterial}
 	set isRunning(isRunning) {this._isRunning = isRunning}
 	set brushType(brushType) {this._brushType = brushType}
-	set sidePriority(sidePriority) {this._sidePriority = sidePriority}
+	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
 	set backStepSavingMaxCount(_backStepSavingMaxCount) {return this._backStepSavingMaxCount = _backStepSavingMaxCount}
 	set showMapGrid(_showMapGrid) {return this._showMapGrid = _showMapGrid}
 	set mapGridRenderStyles(_mapGridRenderStyles) {return this._mapGridRenderStyles = _mapGridRenderStyles}

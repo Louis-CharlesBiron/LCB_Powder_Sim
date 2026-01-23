@@ -43,32 +43,13 @@ class MapGrid {
     }
 
     /**
-     * @returns An array of positions [[x1,y1],[x2,y2]] containing all the lines delimiting the grid of the map
+     * @returns An array of path2d representing the grid lines
      */
-    getDrawableGridPositions() {
+    getDrawableGridLines() {
         const size = this._pixelSize, [w,h] = this.realDimensions, lines = []
-        for (let x=0;x<w;x+=size) lines.push([[x,0],[x,h]])
-        for (let y=0;y<h;y+=size) lines.push([[0,y],[w,y]])
+        for (let x=0;x<w;x+=size) lines.push(Render.getLine([x,0],[x,h]))
+        for (let y=0;y<h;y+=size) lines.push(Render.getLine([0,y],[w,y]))
         return lines
-    }
-
-    /**
-     * Calculates the adjacent index based on the provided index, direction and distance
-     * @param {Number} i The index of a pixel in the pixels array
-     * @param {Simulation.D} direction A direction specified by one of Simulation.D
-     * @param {Number?} distance The distance to go by in the provided direction (defaults to 1)
-     * @returns The calculated adjacent index
-     */
-    getAdjacency(i, direction, distance=1) { // OPTIMIZATION, TODO
-        const D = Simulation.D, w = this._mapWidth, dWidth = w*distance
-        if (direction == D.b)       return i+dWidth
-        else if (direction == D.t)  return i-dWidth
-        else if (direction == D.r)  return (i+1)%w ? i+distance : i
-        else if (direction == D.l)  return i%w     ? i-distance : i
-        else if (direction == D.tr) return (i-dWidth+1)%w ? i-dWidth+distance : i
-        else if (direction == D.br) return (i+dWidth+1)%w ? i+dWidth+distance : i
-        else if (direction == D.tl) return (i-dWidth)%w   ? i-dWidth-distance : i
-        else if (direction == D.bl) return (i+dWidth)%w   ? i+dWidth-distance : i
     }
 
     /**
