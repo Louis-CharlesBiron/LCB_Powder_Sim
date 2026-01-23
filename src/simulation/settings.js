@@ -59,6 +59,7 @@ const SETTINGS = {
     BRUSHES_X_VALUES: [],
     
     WORKER_RELATIVE_PATH: "./physics/RemotePhysicsUnit.js",
+    FILE_SERVED_WARN:`Web workers are disabled when serving with file:// protocol\n  Serve this page over http(s):// to enable them.`,
     WORKER_MESSAGE_TYPES: {
         INIT:0,
         STEP:1,

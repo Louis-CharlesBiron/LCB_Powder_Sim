@@ -73,9 +73,10 @@ class Simulation {
     }
 
     updatePhysicsUnitType(usesWebWorkers) {
-        this._physicsUnit = usesWebWorkers ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
+        const isWebWorker = usesWebWorkers&&!this.fileServed
+        this._physicsUnit = isWebWorker ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
 
-        if (usesWebWorkers) {
+        if (isWebWorker) {
             this.#simulationHasPixelsBuffer = true
             this._physicsUnit.onmessage=this.#physicsUnitMessage.bind(this)
             this._physicsUnit.postMessage({
@@ -86,7 +87,8 @@ class Simulation {
                 aimedFps:this._CVS.fpsLimit
             })
             if (this._isRunning) this.start(true)
-        }
+        } 
+        else if (usesWebWorkers && this.fileServed) console.warn(SETTINGS.FILE_SERVED_WARN)
     }
 
     /**
@@ -649,6 +651,7 @@ class Simulation {
 	get showMapGrid() {return this._showMapGrid}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
     get usesWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
+    get fileServed() {return location.href.startsWith("file")}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
