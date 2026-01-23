@@ -60,7 +60,8 @@ document.getElementById("loadButton").onclick=e=>{
     const v = loadValueInput.value||exportValueInput.value
     if (e.ctrlKey) {
         const size = v.split(Simulation.EXPORT_SEPARATOR)[1].split(",").map(x=>+x)
-        simulation.updateMapSize(...size)
+        simulation.updateMapSize(size[0], size[1])
+        simulation.updateMapPixelSize(size[2])
     }
     simulation.load(v)
 }

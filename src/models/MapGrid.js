@@ -43,12 +43,12 @@ class MapGrid {
     }
 
     /**
-     * @returns An array of positions [[x1,y1],[x2,y2]] containing all the lines delimiting the grid of the map
+     * @returns An array of path2d representing the grid lines
      */
-    getDrawableGridPositions() {
+    getDrawableGridLines() {
         const size = this._pixelSize, [w,h] = this.realDimensions, lines = []
-        for (let x=0;x<w;x+=size) lines.push([[x,0],[x,h]])
-        for (let y=0;y<h;y+=size) lines.push([[0,y],[w,y]])
+        for (let x=0;x<w;x+=size) lines.push(Render.getLine([x,0],[x,h]))
+        for (let y=0;y<h;y+=size) lines.push(Render.getLine([0,y],[w,y]))
         return lines
     }
 

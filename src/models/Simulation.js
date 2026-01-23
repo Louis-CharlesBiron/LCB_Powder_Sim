@@ -5,11 +5,13 @@ class Simulation {
     static MATERIAL_COLORS_INDEXED = []
     static MATERIAL_NAMES = []
     static #CACHED_MATERIALS_ROWS = []
+    static #CACHED_GRID_LINES = null
+    static #CACHED_GRID_BORDER = null
     static DEFAULT_MATERIAL = this.MATERIALS.SAND
     static D = {t:1<<0, r:1<<1, b:1<<2, l:1<<3, tr:1<<4, br:1<<5, bl:1<<6, tl:1<<7}
     static SIDE_PRIORITIES = {RANDOM:0, LEFT:1, RIGHT:2, MAP_DEPENDANT:3}
     static SIDE_PRIORITY_NAMES = []
-    static DEFAULT_BACK_STEP_SAVING_COUNT = 50
+    static DEFAULT_BACK_STEP_SAVING_COUNT = 500
     static EXPORT_STATES = {RAW:0, COMPACTED:1}
     static EXPORT_SEPARATOR = "x"
     static BRUSH_TYPES = {PIXEL:1<<0, VERTICAL_CROSS:1<<1, LINE3:1<<2, ROW3:1<<3, BIG_DOT:1<<4, X3:1<<5, X5:1<<6, X15:1<<7, X25:1<<8, X55:1<<9, X99:1<<10}
@@ -32,6 +34,7 @@ class Simulation {
     }
 
     #simulationHasPixelsBuffer = true
+    #lastPlacedPos = null
     constructor(CVS, mapGrid, usesWebWorkers=true) {
         // SIMULATION
         this._CVS = CVS
@@ -48,7 +51,7 @@ class Simulation {
         this._lastStepTime = null
         this._queuedBufferOperations = []
         this.updatePhysicsUnitType(usesWebWorkers)
-        this.#updatedCachedMapPixelsRows()
+        this.#updateCachedMapPixelsRows()
 
         // DISPLAY
         this._showMapGrid = true
@@ -58,20 +61,21 @@ class Simulation {
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
         this._loopExtra = null
         this._stepExtra = null
+        this.#updateCachedGridDisplays()
 
         // CANVAS
         CVS.loopingCB = this.#main.bind(this)
         CVS.setMouseMove()
         CVS.setMouseLeave()
         CVS.setMouseDown(this.#mouseDown.bind(this))
-        CVS.setMouseUp()
+        CVS.setMouseUp(this.#mouseUp.bind(this))
         CVS.setKeyUp(null, true)
         CVS.setKeyDown(this.#keyDown.bind(this), true)
         CVS.start()
         this._mouseListenerIds = [
             CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
             CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
-            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this._isMouseWithinSimulation = false)
+            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
     }
 
@@ -88,10 +92,7 @@ class Simulation {
                 mapWidth:this._mapGrid.mapWidth,
                 aimedFps:this._CVS.fpsLimit
             })
-            this.start(true)
-        } else {
-            //this._physicsUnit.init(initObject) TODO CHECK CLEANUP
-
+            if (this._isRunning) this.start(true)
         }
     }
 
@@ -153,7 +154,6 @@ class Simulation {
      * @param {Uint16Array} oldPixels The previous/current pixel array
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
-        if (!this._pixels.buffer.byteLength) console.log("updatePixelsFromSize", "CORE GOT BUFFER")// TODO SAFETY CLEANUP
         const arraySize = this._mapGrid.arraySize, pixels = this._pixels = new Uint16Array(arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
         this._pxStepUpdated = new Uint8Array(arraySize)
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_WIDTH, mapWidth:this._mapGrid.mapWidth, arraySize})
@@ -180,6 +180,7 @@ class Simulation {
         height = map.mapHeight = height||map.mapHeight
         width = map.mapWidth = width||map.mapWidth
         this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldPixels)
+        this.#updateCachedGridDisplays()
 
         this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
         this.updateImgMapFromPixels()
@@ -202,7 +203,8 @@ class Simulation {
         const map = this._mapGrid
         map.pixelSize = size
         this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
-        this.#updatedCachedMapPixelsRows()
+        this.#updateCachedMapPixelsRows()
+        this.#updateCachedGridDisplays()
         this.updateImgMapFromPixels()
     }
 
@@ -211,11 +213,16 @@ class Simulation {
         this.ctx.putImageData(this._imgMap, 0, 0)
     }
 
+    #updateCachedGridDisplays() {
+        Simulation.#CACHED_GRID_LINES = this._mapGrid.getDrawableGridLines()
+        Simulation.#CACHED_GRID_BORDER = Render.getRect([0,0], ...this._mapGrid.realDimensions)
+    }
+
     // Draws a border and line to show the map grid on the canvas
     #drawMapGrid() {// OPTIMIZATION, USE CACHE
-        const lines = this._mapGrid.getDrawableGridPositions(), l_ll = lines.length, render = this.render
-        for (let i=0;i<l_ll;i++) render.batchStroke(Render.getLine(lines[i][0], lines[i][1]), this._mapGridRenderStyles)
-        render.batchStroke(Render.getRect([0,0], ...this._mapGrid.realDimensions))
+        const lines = Simulation.#CACHED_GRID_LINES, l_ll = lines.length, batchStroke = this.render.batchStroke.bind(this.render), styles = this._mapGridRenderStyles
+        for (let i=0;i<l_ll;i++) batchStroke(lines[i], styles)
+        batchStroke(Simulation.#CACHED_GRID_BORDER)
     }
 
     #physicsUnitMessage(e) {
@@ -226,8 +233,6 @@ class Simulation {
             this.#simulationHasPixelsBuffer = true
             this.updateImgMapFromPixels()
 
-            // EXECUTE QUEUE
-            // RUNS ON WORKER'S TIME (NOT ANYMORE I THINK, TODO VERIFY)
             this.#executeQueuedOperations()
 
             if (stepExtra) stepExtra()
@@ -267,9 +272,10 @@ class Simulation {
      * Runs and displays one physics step
      */
     step() {
-        const pixels = this._pixels, T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit, stepExtra = this._stepExtra
+        const T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit
         if (this.useLocalPhysics) {
-            // TODO ADD SAVESTEP
+            const stepExtra = this._stepExtra
+            this.saveStep()
             if (stepExtra) stepExtra()
             this._pixels = unit.step(this._pixels, this._pxStepUpdated, this._sidePriority, this._mapGrid.mapWidth)
             this.updateImgMapFromPixels()
@@ -281,20 +287,52 @@ class Simulation {
      * Displays the previous physics step saved
      */
     backStep() {
-        const b_ll = this._backStepSaves.length
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.backStep())
+            return
+        }
+
+        const saves = this._backStepSaves, b_ll = saves.length
         if (b_ll) {
-            const backSave = this._backStepSaves[b_ll-1]
-            this.load(backSave[0], backSave[1])
-            this._backStepSaves.pop()
+            let lastSave = saves[b_ll-1]
+            const lastSaveArray = lastSave[0], l_ll = lastSaveArray.length, currentSave = this.getPixelsCopy()
+            
+            let hasChanges = l_ll != currentSave.length
+            for (let i=0;i<l_ll;i++) {
+                if (lastSaveArray[i] != currentSave[i]) {
+                    hasChanges = true
+                    break
+                }
+            }
+
+            if (!hasChanges) lastSave = saves[b_ll-2]
+
+            if (lastSave) this.load(lastSave[0], lastSave[1])
+            saves.pop()
         }
     }
 
     /**
      * Saves a physics step
      */
-    saveStep() {// TODO
-        if (this.backStepSavingEnabled) this._backStepSaves.push([this.getPixelsCopy(), this._mapGrid.dimensions])
-        if (this._backStepSaves.length > this._backStepSavingMaxCount) this._backStepSaves.shift()
+    saveStep() {
+        if (this.backStepSavingEnabled) {
+            const saves = this._backStepSaves, b_ll = saves.length, lastSave = saves[b_ll-1]?.[0], l_ll = lastSave?.length, currentSave = this.getPixelsCopy()
+
+            if (lastSave) {
+                let hasChanges = l_ll != currentSave.length
+                for (let i=0;i<l_ll;i++) {
+                    if (lastSave[i] != currentSave[i]) {
+                        hasChanges = true
+                        break
+                    }
+                }
+                if (!hasChanges) return
+            }
+            
+            saves.push([currentSave, this._mapGrid.dimensions])
+            if ((b_ll+1) > this._backStepSavingMaxCount) saves.shift()
+        }
     }
 
     /**
@@ -335,7 +373,7 @@ class Simulation {
     }
 
     // Updates the cached pixels row used for drawing optimizations
-    #updatedCachedMapPixelsRows() {
+    #updateCachedMapPixelsRows() {
         const C = Simulation.MATERIAL_COLORS, colors = Object.values(C), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
         for (let i=0,ii=0;ii<c_ll;i=!i?1:i*2,ii++) {
             const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
@@ -386,27 +424,37 @@ class Simulation {
     #placePixelFromMouse(mouse) {
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
         if (this._isMouseWithinSimulation && mapPos) {
-            const B = Simulation.BRUSH_TYPES, [x,y] = mapPos, brush = this._brushType
+            const [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
 
-            if (brush&Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
-                if (brush == B.LINE3 || brush == B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
-                if (brush == B.ROW3 || brush == B.VERTICAL_CROSS) {
-                    if (x) this.placePixelCoords(x-1, y)
-                    if (x != this._mapGrid.mapWidth-1) this.placePixelCoords(x+1, y)
-                }
-                this.placePixel(mapPos)
-            } else if (brush == B.BIG_DOT) {
-                if (x) this.placePixelCoords(x-2, y)
-                if (x != this._mapGrid.mapWidth-2) this.placePixelCoords(x+2, y)
-                    this.placePixelCoords(x, y-2)
-                    this.placePixelCoords(x, y+2)
-                    this.fillArea([x-1,y-1], [x+1,y+1])
-            } else if (brush&Simulation.#BRUSH_GROUPS.X) {
-                const offset = (Simulation.#BRUSHES_X_VALUES[brush]/2)|0
-                this.fillArea([x-offset,y-offset], [x+offset,y+offset])
-            }
+            if (dMax) for (let i=0;i<dMax;i++) {
+                const prog = ((i+1)/dMax)
+                this.#placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
+            } 
+            else this.#placePixelsWithBrush(x, y)
 
+            this.#lastPlacedPos = mapPos
             if (!this._isRunning) this.updateImgMapFromPixels()
+        }
+    }
+
+    #placePixelsWithBrush(x, y, brush=this._brushType) {
+        const B = Simulation.BRUSH_TYPES
+        if (brush&Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
+            if (brush == B.LINE3 || brush == B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
+            if (brush == B.ROW3 || brush == B.VERTICAL_CROSS) {
+                if (x) this.placePixelCoords(x-1, y)
+                if (x != this._mapGrid.mapWidth-1) this.placePixelCoords(x+1, y)
+            }
+            this.placePixelCoords(x, y)
+        } else if (brush == B.BIG_DOT) {
+            if (x) this.placePixelCoords(x-2, y)
+            if (x != this._mapGrid.mapWidth-2) this.placePixelCoords(x+2, y)
+                this.placePixelCoords(x, y-2)
+                this.placePixelCoords(x, y+2)
+                this.fillArea([x-1,y-1], [x+1,y+1])
+        } else if (brush&Simulation.#BRUSH_GROUPS.X) {
+            const offset = (Simulation.#BRUSHES_X_VALUES[brush]/2)|0
+            this.fillArea([x-offset,y-offset], [x+offset,y+offset])
         }
     }
 
@@ -434,6 +482,7 @@ class Simulation {
             else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._selectedMaterial = M.AIR
         }
 
+        // put in loop
         if (keyboard.isDown([K.ARROW_RIGHT])) this.step()
         else if (keyboard.isDown([K.ARROW_LEFT])) this.backStep()
 
@@ -448,12 +497,21 @@ class Simulation {
         this.#placePixelFromMouse(mouse)
     }
 
+    // mouseUp listener, disables smooth drawing when mouse is unpressed
+    #mouseUp() {
+        this.#lastPlacedPos = null
+    }
+
+    #mouseLeaveSimulation() {
+        this.#lastPlacedPos = null
+        this._isMouseWithinSimulation = false
+    }
+
     /**
      * Returns a copy of the current pixels array 
      * @returns A Uint16Array
      */
     getPixelsCopy() {
-        if (!this._pixels.buffer.byteLength) console.log("getPixelsCopy", "CORE GOT BUFFER") // TODO SAFETY CLEANUP
         const arraySize = this._mapGrid.arraySize, pixelsCopy = new Uint16Array(arraySize)
         pixelsCopy.set(this._pixels.subarray(0, arraySize))
         return pixelsCopy
@@ -528,6 +586,7 @@ class Simulation {
         const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length
         lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
         pixels.set(new Uint16Array(p_ll).fill(material))
+        if (!this._isRunning) this.updateImgMapFromPixels()
     }
 
     /**
@@ -547,6 +606,7 @@ class Simulation {
             const y = (i/w)|0, x = i-y*w
             if (x>=x1 && x<=x2 && y>=y1 && y<=y2) this.placePixelCoords(x, y, material)
         }            
+        if (!this._isRunning) this.updateImgMapFromPixels()
     }
 
 
