@@ -4,24 +4,7 @@ class MapGrid {
     static DEFAULT_MAP_HEIGHT = 25
     static GRID_DISPLAY_COLOR = [240, 248, 255, 0.2]
 
-    //static DEFAULT_PIXEL_SIZE = 15
-    //static DEFAULT_MAP_WIDTH = 60
-    //static DEFAULT_MAP_HEIGHT = 45
-
-    //static DEFAULT_PIXEL_SIZE = 5
-    //static DEFAULT_MAP_WIDTH = 235
-    //static DEFAULT_MAP_HEIGHT = 160
-
-    //static DEFAULT_PIXEL_SIZE = 3
-    //static DEFAULT_MAP_WIDTH = 400
-    //static DEFAULT_MAP_HEIGHT = 260
-
-    //static DEFAULT_PIXEL_SIZE = 1
-    //static DEFAULT_MAP_WIDTH = 800
-    //static DEFAULT_MAP_HEIGHT = 600
-
     #lastPixelSize = null
-
     constructor(pixelSize, mapWidth, mapHeight) {
         this._pixelSize = this.#lastPixelSize = pixelSize||MapGrid.DEFAULT_PIXEL_SIZE
         this._mapWidth = mapWidth||MapGrid.DEFAULT_MAP_WIDTH

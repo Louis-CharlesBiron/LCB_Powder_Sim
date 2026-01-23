@@ -17,8 +17,11 @@ simulation.loopExtra=()=>{ // optimise for event updates instead of loop
     const sideP = document.getElementById("sidePriorityText"), sidePriority = Simulation.SIDE_PRIORITY_NAMES[simulation.sidePriority]
     if (sideP.textContent != sidePriority) sideP.textContent = sidePriority
 
-    const isRunningText = document.getElementById("isRunningText"), isRunning = simulation.isRunning
-    if (isRunningText.textContent != isRunning) isRunningText.textContent = isRunning?"RUNNING":"STOPPED"
+    const isRunningText = document.getElementById("isRunningText"), isRunning = simulation.isRunning?"RUNNING":"STOPPED"
+    if (isRunningText.textContent != isRunning) isRunningText.textContent = isRunning
+
+    const unitTypeText = document.getElementById("unitType"), isWorker = simulation.usesWebWorkers ? "WORKER" : "LOCAL"
+    if (unitTypeText.textContent != isWorker) unitTypeText.textContent = isWorker
 
     document.getElementById("fpsStepDisplay").textContent = " | "+stepFps+" step/s"
     if (stepFps>0) stepFps--

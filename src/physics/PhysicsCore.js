@@ -1,7 +1,6 @@
 class PhysicsCore {
     constructor(type) {
         this._type = type
-        console.log(type)
     }
 
     /**
@@ -26,8 +25,8 @@ class PhysicsCore {
     /**
     * Runs one physics step
     */
-    step(pixels, pxStepUpdated, sidePriority, mapWidth, MATERIALS, MATERIAL_GROUPS, D, SIDE_PRIORITIES) {
-        const p_ll = pixels.length-1, AIR = MATERIALS.AIR, getAdjacency = this.getAdjacency
+    step(pixels, pxStepUpdated, sidePriority, mapWidth, M, G, D, SIDE_PRIORITIES) {// TODO OPTIMIZE AGAIN
+        const p_ll = pixels.length-1, AIR = M.AIR, getAdjacency = this.getAdjacency
         pxStepUpdated.fill(0)
 
         for (let i=p_ll;i>=0;i--) {
@@ -36,10 +35,10 @@ class PhysicsCore {
             let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
 
             // SAND
-            if (mat == MATERIALS.SAND) {
-                const transpiercedMaterialIndex = getAdjacency(D, mapWidth, i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpierceable = transpiercedMaterial&MATERIAL_GROUPS.TRANSPIERCEABLE
+            if (mat == M.SAND) {
+                const i_B = getAdjacency(D, mapWidth, i, D.b), transpiercedMaterial = pixels[i_B], transpierceable = transpiercedMaterial&G.TRANSPIERCEABLE
                 // check if can go down or sides
-                if (transpiercedMaterial == AIR || transpierceable) newIndex = transpiercedMaterialIndex
+                if (transpiercedMaterial == AIR || transpierceable) newIndex = i_B
                 else {
                     const isLeftFirst = this.#getSideSelectionPriority(sidePriority, SIDE_PRIORITIES, i, mapWidth), i_BL = getAdjacency(D, mapWidth, i, D.bl), i_BR = getAdjacency(D, mapWidth, i, D.br)
                     if (isLeftFirst) {
@@ -51,13 +50,18 @@ class PhysicsCore {
                     }
                 }
                 // check what to replace prev pos with
-                if (newIndex != -1) replaceMaterial = pixels[newIndex] // && (pixels[getAdjacency(D, i, D.l)]&G.LIQUIDS || pixels[getAdjacency(D, i, D.r)]&G.LIQUIDS)
+                if (newIndex != -1 && (
+                    pixels[getAdjacency(D, mapWidth, i, D.l)]&G.LIQUIDS ||
+                    pixels[getAdjacency(D, mapWidth, i, D.r)]&G.LIQUIDS ||
+                    pixels[getAdjacency(D, mapWidth, i, D.t)]==M.AIR)
+                ) replaceMaterial = pixels[newIndex]
             }
+
             // WATER
-            else if (mat == MATERIALS.WATER) {
-                const transpiercedMaterialIndex = getAdjacency(D, mapWidth, i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex]
+            else if (mat == M.WATER) {
+                const i_B = getAdjacency(D, mapWidth, i, D.b), transpiercedMaterial = pixels[i_B]
                 // check if can go down or sides
-                if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
+                if (transpiercedMaterial == AIR) newIndex = i_B
                 else {
                     const isLeftFirst = this.#getSideSelectionPriority(sidePriority, SIDE_PRIORITIES, i, mapWidth), i_L = getAdjacency(D, mapWidth, i, D.l), leftIsAir = pixels[i_L] == AIR, i_BL = getAdjacency(D, mapWidth, i, D.bl), i_BR = getAdjacency(D, mapWidth, i, D.br), i_R = getAdjacency(D, mapWidth, i, D.r)
                     if (isLeftFirst) {
@@ -73,19 +77,21 @@ class PhysicsCore {
                     }
                 }
             }
+
             // GRAVEL
-            else if (mat == MATERIALS.GRAVEL) {
-                const transpiercedMaterialIndex = getAdjacency(D, mapWidth, i, D.b), transpiercedMaterial = pixels[transpiercedMaterialIndex], transpiercedLiquid = transpiercedMaterial&MATERIAL_GROUPS.LIQUIDS
+            else if (mat == M.GRAVEL) {
+                const i_B = getAdjacency(D, mapWidth, i, D.b), transpiercedMaterial = pixels[i_B], transpiercedLiquid = transpiercedMaterial&G.LIQUIDS
                 // check if can go down
-                if (transpiercedMaterial == AIR || transpiercedLiquid) newIndex = transpiercedMaterialIndex
+                if (transpiercedMaterial == AIR || transpiercedLiquid) newIndex = i_B
                 // check what to replace prev pos with
-                if (transpiercedLiquid && (pixels[getAdjacency(D, mapWidth, i, D.l)]&MATERIAL_GROUPS.LIQUIDS || pixels[getAdjacency(D, mapWidth, i, D.r)]&MATERIAL_GROUPS.LIQUIDS)) replaceMaterial = transpiercedLiquid
+                if (transpiercedLiquid && (pixels[getAdjacency(D, mapWidth, i, D.l)]&G.LIQUIDS || pixels[getAdjacency(D, mapWidth, i, D.r)]&G.LIQUIDS)) replaceMaterial = transpiercedLiquid
             }
+
             // INVERTED WATER
-            else if (mat == MATERIALS.INVERTED_WATER) {
-                const transpiercedMaterialIndex = getAdjacency(D, mapWidth, i, D.t), transpiercedMaterial = pixels[transpiercedMaterialIndex]
+            else if (mat == M.INVERTED_WATER) {
+                const i_T = getAdjacency(D, mapWidth, i, D.t), transpiercedMaterial = pixels[i_T]
                 // check if can go down or sides
-                if (transpiercedMaterial == AIR) newIndex = transpiercedMaterialIndex
+                if (transpiercedMaterial == AIR) newIndex = i_T
                 else {
                     const isLeftFirst = this.#getSideSelectionPriority(sidePriority, SIDE_PRIORITIES, i, mapWidth), i_L = getAdjacency(D, mapWidth, i, D.l), leftIsAir = pixels[i_L] == AIR, i_TL = getAdjacency(D, mapWidth, i, D.tl), i_TR = getAdjacency(D, mapWidth, i, D.tr), i_R = getAdjacency(D, mapWidth, i, D.r)
                     if (isLeftFirst) {
@@ -101,6 +107,106 @@ class PhysicsCore {
                     }
                 }
             }
+
+            // CONTAMINANT
+            else if (mat == M.CONTAMINANT) {
+                const i_B = getAdjacency(D, mapWidth, i, D.b), transpiercedMaterial = pixels[i_B]
+                // check if can go down or sides
+                if (transpiercedMaterial == AIR) newIndex = i_B
+                else {
+                    const isLeftFirst = this.#getSideSelectionPriority(sidePriority, SIDE_PRIORITIES, i, mapWidth), 
+                    i_L = getAdjacency(D, mapWidth, i, D.l), 
+                    i_R = getAdjacency(D, mapWidth, i, D.r),
+                    i_T = getAdjacency(D, mapWidth, i, D.t),
+                    
+                    leftIsAir = pixels[i_L] == AIR, 
+                    i_BL = getAdjacency(D, mapWidth, i, D.bl), 
+                    i_BR = getAdjacency(D, mapWidth, i, D.br)
+
+                    if (Math.random()>0.5 && pixels[i_L]&G.CONTAMINABLE) {
+                        pixels[i_L] = M.CONTAMINANT
+                        pxStepUpdated[i_L] = 1
+                    }
+                    if (Math.random()>0.5 && pixels[i_R]&G.CONTAMINABLE) {
+                        pixels[i_R] = M.CONTAMINANT
+                        pxStepUpdated[i_R] = 1
+                    }
+                    if (Math.random()>0.5 && pixels[i_T]&G.CONTAMINABLE) {
+                        pixels[i_T] = M.CONTAMINANT
+                        pxStepUpdated[i_T] = 1
+                    }
+                    if (Math.random()>0.5 && pixels[i_B]&G.CONTAMINABLE) {
+                        pixels[i_B] = M.CONTAMINANT
+                        pxStepUpdated[i_B] = 1
+                    }
+
+                    if (isLeftFirst) {
+                        if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
+                        else if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
+                        else if (leftIsAir) newIndex = i_L
+                        else if (pixels[i_R] == AIR) newIndex = i_R
+                    } else {
+                        if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
+                        else if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
+                        else if (pixels[i_R] == AIR) newIndex = i_R
+                        else if (leftIsAir) newIndex = i_L
+                    }
+                }
+            }
+
+            // LAVA
+            else if (mat == M.LAVA) {
+                const i_B = getAdjacency(D, mapWidth, i, D.b), transpiercedMaterial = pixels[i_B]
+                // check if can go down or sides
+                if (transpiercedMaterial == AIR) newIndex = i_B
+                else {
+                    const isLeftFirst = this.#getSideSelectionPriority(sidePriority, SIDE_PRIORITIES, i, mapWidth),
+                    i_L = getAdjacency(D, mapWidth, i, D.l),
+                    i_R = getAdjacency(D, mapWidth, i, D.r),
+                    i_T = getAdjacency(D, mapWidth, i, D.t),
+
+                    leftIsAir = pixels[i_L] == AIR,
+                    i_BL = getAdjacency(D, mapWidth, i, D.bl),
+                    i_BR = getAdjacency(D, mapWidth, i, D.br)
+                    
+   
+                    if (pixels[i_L]&G.LIQUIDS || pixels[i_R]&G.LIQUIDS || pixels[i_T]&G.LIQUIDS || pixels[i_B]&G.LIQUIDS) {
+                        pixels[i] = M.STONE
+                        pxStepUpdated[i] = 1
+                    } else if ((pixels[i_L]&G.MELTABLE || pixels[i_R]&G.MELTABLE || pixels[i_T]&G.MELTABLE || pixels[i_B]&G.MELTABLE) && Math.random()>0.999) {
+                        // TODO PLZ SOMETHING BETTER
+                        if (pixels[i_L]&G.MELTABLE) {
+                            pixels[i_L] = M.LAVA
+                            pxStepUpdated[i_L] = 1
+                        } else if (pixels[i_R]&G.MELTABLE) {
+                            pixels[i_R] = M.LAVA
+                            pxStepUpdated[i_R] = 1
+                        } else if (pixels[i_B]&G.MELTABLE) {
+                            pixels[i_B] = M.LAVA
+                            pxStepUpdated[i_B] = 1
+                        } else if (pixels[i_T]&G.MELTABLE) {
+                            pixels[i_T] = M.LAVA
+                            pxStepUpdated[i_T] = 1
+                        }
+                    }
+                    else if (Math.random()>0.935) {
+                        if (isLeftFirst) {
+                            if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
+                            else if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
+                            else if (leftIsAir) newIndex = i_L
+                            else if (pixels[i_R] == AIR) newIndex = i_R
+                        } else {
+                            if (pixels[i_BR] == AIR && pixels[i_R] == AIR) newIndex = i_BR
+                            else if (pixels[i_BL] == AIR && leftIsAir) newIndex = i_BL
+                            else if (pixels[i_R] == AIR) newIndex = i_R
+                            else if (leftIsAir) newIndex = i_L
+                        }
+                    }
+                }
+            }
+
+
+
 
             // UPDATE
             if (newIndex != -1) {

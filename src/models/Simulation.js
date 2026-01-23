@@ -1,41 +1,34 @@
 class Simulation {
-    static MATERIALS = {AIR:0, SAND:1<<0, WATER:1<<1, STONE:1<<2, GRAVEL:1<<3, INVERTED_WATER:1<<4}
-    static MATERIAL_COLORS = {AIR:[0,0,0,0], SAND:[235,235,158,1], WATER:[0,15,242,.75], STONE:[100,100,100,1], GRAVEL:[188,188,188,1], INVERTED_WATER:[81,53,131,.75]}
-    static MATERIAL_GROUPS = {TRANSPIERCEABLE:Simulation.MATERIALS.WATER+Simulation.MATERIALS.INVERTED_WATER+Simulation.MATERIALS.AIR, LIQUIDS:Simulation.MATERIALS.WATER+Simulation.MATERIALS.INVERTED_WATER}
-    static MATERIAL_COLORS_INDEXED = []
-    static MATERIAL_NAMES = []
+    static MATERIALS = SETTINGS.MATERIALS
+    static MATERIAL_COLORS = SETTINGS.MATERIAL_COLORS
+    static MATERIAL_GROUPS = SETTINGS.MATERIAL_GROUPS
+    static MATERIAL_COLORS_INDEXED = SETTINGS.MATERIAL_COLORS_INDEXED
+    static MATERIAL_NAMES = SETTINGS.MATERIAL_NAMES
+    static D = SETTINGS.D
+    static SIDE_PRIORITIES = SETTINGS.SIDE_PRIORITIES
+    static SIDE_PRIORITY_NAMES = SETTINGS.SIDE_PRIORITY_NAMES
+    static EXPORT_STATES = SETTINGS.EXPORT_STATES
+    static EXPORT_SEPARATOR = SETTINGS.EXPORT_SEPARATOR
+    static BRUSH_TYPES = SETTINGS.BRUSH_TYPES
+    static #BRUSHES_X_VALUES = SETTINGS.BRUSHES_X_VALUES
+    static #BRUSH_GROUPS = SETTINGS.BRUSH_GROUPS
+    static #WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
+    static #WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES
+    static PHYSICS_UNIT_TYPE = SETTINGS.PHYSICS_UNIT_TYPE
+    // CACHES
     static #CACHED_MATERIALS_ROWS = []
     static #CACHED_GRID_LINES = null
     static #CACHED_GRID_BORDER = null
-    static DEFAULT_MATERIAL = this.MATERIALS.SAND
-    static D = {t:1<<0, r:1<<1, b:1<<2, l:1<<3, tr:1<<4, br:1<<5, bl:1<<6, tl:1<<7}
-    static SIDE_PRIORITIES = {RANDOM:0, LEFT:1, RIGHT:2, MAP_DEPENDANT:3}
-    static SIDE_PRIORITY_NAMES = []
-    static DEFAULT_BACK_STEP_SAVING_COUNT = 500
-    static EXPORT_STATES = {RAW:0, COMPACTED:1}
-    static EXPORT_SEPARATOR = "x"
-    static BRUSH_TYPES = {PIXEL:1<<0, VERTICAL_CROSS:1<<1, LINE3:1<<2, ROW3:1<<3, BIG_DOT:1<<4, X3:1<<5, X5:1<<6, X15:1<<7, X25:1<<8, X55:1<<9, X99:1<<10}
-    static #BRUSHES_X_VALUES = []
-    static #BRUSH_GROUPS = {SMALL_OPTIMIZED:Simulation.BRUSH_TYPES.PIXEL+Simulation.BRUSH_TYPES.VERTICAL_CROSS+Simulation.BRUSH_TYPES.LINE3+Simulation.BRUSH_TYPES.ROW3, X:Simulation.BRUSH_TYPES.X3+Simulation.BRUSH_TYPES.X5+Simulation.BRUSH_TYPES.X15+Simulation.BRUSH_TYPES.X25+Simulation.BRUSH_TYPES.X55+Simulation.BRUSH_TYPES.X99}
-    static #WORKER_RELATIVE_PATH = "./physics/RemotePhysicsUnit.js"
-    static #WORKER_MESSAGE_TYPES = {INIT:0, STEP:1, START_LOOP:2, STOP_LOOP:3, SIDE_PRIORITY:4, MAP_WIDTH:5, PIXELS:6}
+    // DEFAULTS
+    static DEFAULT_PHYSICS_UNIT_TYPE = Simulation.PHYSICS_UNIT_TYPE.WORKER
+    static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
-    static {
-        const M = Simulation.MATERIALS, materials = Object.keys(M), m_ll = materials.length
-        for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) {
-            Simulation.MATERIAL_NAMES[i] = materials[ii]
-            Simulation.MATERIAL_COLORS_INDEXED[i] = Simulation.MATERIAL_COLORS[materials[ii]]
-        }
+    static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
 
-        Simulation.SIDE_PRIORITY_NAMES = Object.keys(Simulation.SIDE_PRIORITIES)
-
-        const brushesX = Object.keys(Simulation.BRUSH_TYPES).filter(b=>b.startsWith("X")), b_ll = brushesX.length
-        for (let i=Simulation.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) Simulation.#BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
-    }
 
     #simulationHasPixelsBuffer = true
     #lastPlacedPos = null
-    constructor(CVS, mapGrid, usesWebWorkers=true) {
+    constructor(CVS, mapGrid, usesWebWorkers=Simulation.DEFAULT_PHYSICS_UNIT_TYPE) {
         // SIMULATION
         this._CVS = CVS
         this._mapGrid = mapGrid
@@ -426,7 +419,7 @@ class Simulation {
         if (this._isMouseWithinSimulation && mapPos) {
             const [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
 
-            if (dMax) for (let i=0;i<dMax;i++) {
+            if (dMax && !(this._brushType&Simulation.#BRUSH_GROUPS.DISABLES_SMOOTH_DRAWING)) for (let i=0;i<dMax;i++) {
                 const prog = ((i+1)/dMax)
                 this.#placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
             } 
@@ -479,6 +472,8 @@ class Simulation {
             else if (keyboard.isDown([K.DIGIT_3, K.NUMPAD_3])) this._selectedMaterial = M.STONE
             else if (keyboard.isDown([K.DIGIT_4, K.NUMPAD_4])) this._selectedMaterial = M.GRAVEL
             else if (keyboard.isDown([K.DIGIT_5, K.NUMPAD_5])) this._selectedMaterial = M.INVERTED_WATER
+            else if (keyboard.isDown([K.DIGIT_6, K.NUMPAD_6])) this._selectedMaterial = M.CONTAMINANT
+            else if (keyboard.isDown([K.DIGIT_7, K.NUMPAD_7])) this._selectedMaterial = M.LAVA
             else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._selectedMaterial = M.AIR
         }
 
@@ -595,7 +590,7 @@ class Simulation {
      * @param {[rightX, bottomY]} pos2 The bottom-right pos of the area
      * @param {Simulation.MATERIALS} material The material used
      */
-    fillArea(pos1, pos2, material=this._selectedMaterial) {
+    fillArea(pos1, pos2, material=this._selectedMaterial) {// TODO OPTIMIZE
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.fillArea(pos1, pos2, material))
             return
@@ -611,6 +606,12 @@ class Simulation {
 
 
     // TEMP PERFORMANCE BENCHES
+    PERF_TEST_FUN() {
+        this.updateMapPixelSize(2)
+        this.updateMapSize(400, 300)
+        this.fill(Simulation.MATERIALS.AIR)
+    }
+
     PERF_TEST_FULL_WATER_REG() {
         this._showMapGrid = false
         this.updateMapPixelSize(1)
