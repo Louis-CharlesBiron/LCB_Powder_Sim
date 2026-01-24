@@ -4,7 +4,7 @@ simulation.loopExtra=()=>{ // optimise for event updates instead of loop
     document.getElementById("fpsDisplay").textContent = fpsCounter.getFps()+" fps"
 
     const mapPos = simulation.mapGrid.getLocalMapPixel(CVS.mouse.pos)
-    if (simulation.isMouseWithinSimulation && mapPos) document.getElementById("mousePos").textContent = mapPos+" | "+simulation.mapGrid.mapPosToIndex(mapPos)
+    document.getElementById("mousePos").textContent = (mapPos||"")+" | "+(mapPos?simulation.mapGrid.mapPosToIndex(mapPos):"")+" | "+CVS.mouse.pos
 
     if (simulation.isMouseWithinSimulation && mapPos) document.getElementById("mouseMaterial").textContent = "("+Simulation.MATERIAL_NAMES[simulation.getPixelAtMapPos(mapPos)]+")"
     
@@ -32,8 +32,10 @@ simulation.stepExtra=()=>{
     stepFps = stepFpsCounter.getFps()
 }
 
-simulation.start()
 
+simulation.load("1x30,25,25x0,262,4,1,0,29,4,1,0,29,4,1,0,29,4,1,0,1,4,1,0,27,4,1,0,1,4,1,0,13,4,1,0,1,4,1,0,11,4,1,256,1,4,1,0,13,4,1,256,1,4,1,0,11,4,1,256,1,4,1,0,13,4,1,256,1,4,1,0,11,4,1,256,1,4,1,0,13,4,1,256,1,4,1,0,11,4,1,256,1,4,1,0,13,4,1,256,1,4,13,256,1,4,1,0,13,4,1,256,15,4,1,0,13,4,17,0,155")
+
+simulation.start()
 
 //simulation.PERF_TEST_FULL_WATER_REG()
 //simulation.PERF_TEST_FULL_WATER_HIGH()

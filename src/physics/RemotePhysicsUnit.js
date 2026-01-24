@@ -1,49 +1,52 @@
 importScripts("PhysicsCore.js")
+importScripts("../simulation/settings.js")
 
-const WORKER_MESSAGE_TYPES = {INIT:0, STEP:1, START_LOOP:2, STOP_LOOP:3, SIDE_PRIORITY:4, MAP_WIDTH:5, PIXELS:6},
+// CONSTANTS
+const WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES,
+      WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS,
+      MATERIALS = SETTINGS.MATERIALS,
+      MATERIAL_GROUPS = SETTINGS.MATERIAL_GROUPS,
+      MATERIAL_STATES = SETTINGS.MATERIAL_STATES,
+      MATERIAL_STATES_GROUPS = SETTINGS.MATERIAL_STATES_GROUPS,
+      SIDE_PRIORITIES = SETTINGS.SIDE_PRIORITIES,
+      D  = SETTINGS.D,
       physicsCore = new PhysicsCore("WORKER")
+
+// ATTRIBUTES / VARABLES
+let pixels, pxStepUpdated, pxStates, sidePriority,
+    mapWidth
 
 let isLoopStarted = false, lastTime = 0, lastStepTime = 0, PHYSICS_DELAY = 1000/60, timeAcc = 0
 
-// CONSTANTS
-let MATERIALS, D, MATERIAL_GROUPS, SIDE_PRIORITIES
-// ATTRIBUTES
-let pixels, pxStepUpdated, sidePriority,
-    mapWidth
-
 self.onmessage=e=>{
     const data = e.data, type = data.type
-    if (type == WORKER_MESSAGE_TYPES.STEP) {// SINGLE STEP
+    if (type & WORKER_MESSAGE_GROUPS.GIVES_PIXELS_TO_WORKER) {
         pixels = data.pixels
-        step()
-    } 
-    else if (type == WORKER_MESSAGE_TYPES.PIXELS) {
-        pixels = data.pixels
-        if (performance.now()-lastStepTime > PHYSICS_DELAY) step()
+        pxStates = data.pxStates
     }
-    else if (type == WORKER_MESSAGE_TYPES.START_LOOP) {// START LOOP
-        pixels = data.pixels
-        startLoop()
-    }
+
+    // SINGLE STEP
+    if (type === WORKER_MESSAGE_TYPES.STEP) step()
+    // AUTO STEP
+    else if (type === WORKER_MESSAGE_TYPES.PIXELS && performance.now()-lastStepTime > PHYSICS_DELAY) step()
+    // START LOOP
+    else if (type === WORKER_MESSAGE_TYPES.START_LOOP) startLoop()
     // STOP LOOP
-    else if (type == WORKER_MESSAGE_TYPES.STOP_LOOP) stopLoop()
+    else if (type === WORKER_MESSAGE_TYPES.STOP_LOOP) stopLoop()
     // UPDATE SIDE PRIORITY
-    else if (type == WORKER_MESSAGE_TYPES.SIDE_PRIORITY) sidePriority = data.sidePriority
+    else if (type === WORKER_MESSAGE_TYPES.SIDE_PRIORITY) sidePriority = data.sidePriority
     // UPDATE MAP SIZE
     else if (type === WORKER_MESSAGE_TYPES.MAP_WIDTH) {
         mapWidth = data.mapWidth
         pxStepUpdated = new Uint8Array(data.arraySize)
+        pxStates = new Uint8Array(data.arraySize)
     }
-    else if (type == WORKER_MESSAGE_TYPES.INIT) {// INIT
-        MATERIALS = data.MATERIALS
-        D = data.D
-        MATERIAL_GROUPS = data.MATERIAL_GROUPS
-        SIDE_PRIORITIES = data.SIDE_PRIORITIES
-
+    else if (type === WORKER_MESSAGE_TYPES.INIT) {// INIT
         PHYSICS_DELAY = 1000/(data.aimedFps)
 
         pixels = data.pixels
         pxStepUpdated = data.pxStepUpdated
+        pxStates = data.pxStates
         sidePriority = data.sidePriority
 
         mapWidth = data.mapWidth
@@ -74,14 +77,16 @@ function startLoop() {
 function stopLoop() {
     if (isLoopStarted) {
         isLoopStarted = false
-        if (pixels.buffer.byteLength) postMessage({type:WORKER_MESSAGE_TYPES.PIXELS, pixels}, [pixels.buffer])
+        if (pixels.buffer.byteLength) postMessage({type:WORKER_MESSAGE_TYPES.PIXELS, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
     }
 }
 
 function step() {
     if (pixels.buffer.byteLength) {
         lastStepTime = performance.now()
-        pixels = physicsCore.step(pixels, pxStepUpdated, sidePriority, mapWidth, MATERIALS, MATERIAL_GROUPS, D, SIDE_PRIORITIES)
-        postMessage({type:WORKER_MESSAGE_TYPES.STEP, pixels}, [pixels.buffer])
+        physicsCore.step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, MATERIALS, MATERIAL_GROUPS, D, MATERIAL_STATES, MATERIAL_STATES_GROUPS, SIDE_PRIORITIES)
+
+        
+        postMessage({type:WORKER_MESSAGE_TYPES.STEP, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
     }
 }
