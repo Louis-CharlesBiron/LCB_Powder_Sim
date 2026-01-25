@@ -216,19 +216,19 @@ class PhysicsCore {
                 if (p_B === AIR) newIndex = i_B
                 else {
                     // TODO OPTIMIZE PLZPLZPLPZLZ BITMASK THIS
-                    if (p_B === M.COPPER && (!pxStates[i_B] || pxStates[i_B] === S.COPPER.DISABLED)) {
+                    if (p_B === M.COPPER && (!pxStates[i_B] || pxStates[i_B] === S.COPPER.DISABLED || pxStates[i_B] === S.COPPER.LIT)) {
                         pxStates[i_B] = S.COPPER.ORIGIN
                         pxStepUpdated[i_B] = STATE
                     }
-                    if (pixels[i_T] === M.COPPER && (!pxStates[i_T] || pxStates[i_T] === S.COPPER.DISABLED)) {
+                    if (pixels[i_T] === M.COPPER && (!pxStates[i_T] || pxStates[i_T] === S.COPPER.DISABLED || pxStates[i_T] === S.COPPER.LIT)) {
                         pxStates[i_T] = S.COPPER.ORIGIN
                         pxStepUpdated[i_T] = STATE
                     }
-                    if (pixels[i_R] === M.COPPER && (!pxStates[i_R] || pxStates[i_R] === S.COPPER.DISABLED)) {
+                    if (pixels[i_R] === M.COPPER && (!pxStates[i_R] || pxStates[i_R] === S.COPPER.DISABLED || pxStates[i_R] === S.COPPER.LIT)) {
                         pxStates[i_R] = S.COPPER.ORIGIN
                         pxStepUpdated[i_R] = STATE
                     }
-                    if (pixels[i_L] === M.COPPER && (!pxStates[i_L] ||pxStates[i_L] === S.COPPER.DISABLED)) {
+                    if (pixels[i_L] === M.COPPER && (!pxStates[i_L] ||pxStates[i_L] === S.COPPER.DISABLED || pxStates[i_L] === S.COPPER.LIT)) {
                         pxStates[i_L] = S.COPPER.ORIGIN
                         pxStepUpdated[i_L] = STATE
                     }
@@ -238,19 +238,20 @@ class PhysicsCore {
             else if (mat === M.COPPER) {
                 
                 /*
+                    // TODO SEVERE OPTIMIZATIONS PLZPLZPLPZLZ 
                     FIRST LIT (DONE)
                     0 -> ORIGIN (by electricity) OK
-                    0 -> LIT (by origin) OK
-                    0 -> LIT (by lit) [propagation] OK
+                    0 -> LIT (by origin) OK ---1
+                    0 -> LIT (by lit) [propagation] OK ---2
 
                     FIRST DISABLE (DONE)
-                    ORIGIN -> DISABLED (by !electricity) OK
-                    LIT -> DISABLED (by disabled) [propagation] OK
+                    ORIGIN -> DISABLED (by !electricity) OK ---3
+                    LIT -> DISABLED (by disabled) [propagation] OK ---4
 
                     SECOND LIT (TODO)
                     DISABLED -> ORIGIN (by electricity) OK
-                    DISABLED -> 0 (by origin) 
-                    DISABLED -> 0 (by 0) [propagation] OK
+                    DISABLED -> 0 (by origin) ---5
+                    DISABLED -> 0 (by 0) [propagation] OK ---6
                 */
 
                 const i_B = getAdjacency(D, mapWidth, i, D.b),
@@ -258,103 +259,113 @@ class PhysicsCore {
                       i_R = getAdjacency(D, mapWidth, i, D.r),
                       i_L = getAdjacency(D, mapWidth, i, D.l)
 
-                // START RESET
-                if (pxStates[i] === S.COPPER.ORIGIN) {
 
-                    if (pixels[i_B] === mat && pxStates[i_B] === S.COPPER.DISABLED) {
-                        pxStates[i_B] = 0
-                    }
-                    if (pixels[i_T] === mat && pxStates[i_T] === S.COPPER.DISABLED) {
-                        pxStates[i_T] = 0
-                    }
-                    if (pixels[i_R] === mat && pxStates[i_R] === S.COPPER.DISABLED) {
-                        pxStates[i_R] = 0
-                    }
-                    if (pixels[i_L] === mat && pxStates[i_L] === S.COPPER.DISABLED) {
-                        pxStates[i_L] = 0
-                    }
-                } 
-
-                // RESET DISABLED
-                if (!pxStates[i]) {
-
-                    if (pixels[i_B] === mat && pxStates[i_B] === S.COPPER.DISABLED) {
-                        pxStates[i_B] = 0
-                    }
-                    if (pixels[i_T] === mat && pxStates[i_T] === S.COPPER.DISABLED) {
-                        pxStates[i_T] = 0
-                    }
-                    if (pixels[i_R] === mat && pxStates[i_R] === S.COPPER.DISABLED) {
-                        pxStates[i_R] = 0
-                    }
-                    if (pixels[i_L] === mat && pxStates[i_L] === S.COPPER.DISABLED) {
-                        pxStates[i_L] = 0
-                    }
-
-                    continue
-                } 
-
-                // TURN OFF
-                if (pxStates[i] === S.COPPER.ORIGIN) {
+                // IF ORIGIN AND NOT CONNETED TO ELECTRICITY -> DISABLED
+                if (pxStates[i] === S.COPPER.ORIGIN) {// ---3
                     if (pixels[i_B] !== M.ELECTRICITY && pixels[i_T] !== M.ELECTRICITY && pixels[i_R] !== M.ELECTRICITY && pixels[i_L] !== M.ELECTRICITY) {
+                        //console.log("TURN OFF")
                         pxStates[i] = S.COPPER.DISABLED
                         pxStepUpdated[i] = STATE
                     }
                 }
+                // IF EMPTY AND CONNECTED TO LIT/ORIGIN -> LIT
+                else if (!pxStates[i]) {// ---1 + ---2
+                    if (pixels[i_B] === mat && pxStates[i_B]&SG.COPPER.ACTIVATED) {
+                        //console.log("LIT")
+                        pxStates[i] = S.COPPER.LIT
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (pixels[i_T] === mat && pxStates[i_T]&SG.COPPER.ACTIVATED) {
+                        //console.log("LIT")
+                        pxStates[i] = S.COPPER.LIT
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (pixels[i_R] === mat && pxStates[i_R]&SG.COPPER.ACTIVATED) {
+                        //console.log("LIT")
+                        pxStates[i] = S.COPPER.LIT
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (pixels[i_L] === mat && pxStates[i_L]&SG.COPPER.ACTIVATED) {
+                        //console.log("LIT")
+                        pxStates[i] = S.COPPER.LIT
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                    }
+                } else if (pxStates[i] === S.COPPER.LIT) {// ---4
+                    // IF NOT CONNECTED TO ELECTRICITY ANYMORE -> DISABLE
+                    if (pixels[i_B] === mat && pxStates[i_B] === S.COPPER.DISABLED) {
+                        //console.log("-> DISABLE")
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE//
+                        pxStepUpdated[i_B] = STATE//
+                        pxStepUpdated[i_R] = STATE//
+                        pxStepUpdated[i_L] = STATE//
+                    }
+                    if (pixels[i_T] === mat && pxStates[i_T] === S.COPPER.DISABLED) {
+                        //console.log("-> DISABLE")
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (pixels[i_R] === mat && pxStates[i_R] === S.COPPER.DISABLED) {
+                        //console.log("-> DISABLE")
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (pixels[i_L] === mat && pxStates[i_L] === S.COPPER.DISABLED) {
+                        //console.log("-> DISABLE")
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                } 
+                else if (pxStates[i] === S.COPPER.DISABLED) {// ---5 + ---6
+                    // START RESET
+                    if (pixels[i_B] === mat && (pxStates[i_B] === S.COPPER.ORIGIN || !pxStates[i_B])) {
+                        //console.log("START RESET")
+                        pxStates[i] = 0
+                        //pxStepUpdated[i] = STATE
+                    }
+                    if (pixels[i_T] === mat && (pxStates[i_T] === S.COPPER.ORIGIN || !pxStates[i_T])) {
+                        //console.log("START RESET")
+                        pxStates[i] = 0
+                        //pxStepUpdated[i] = STATE
+                    }
+                    if (pixels[i_R] === mat && (pxStates[i_R] === S.COPPER.ORIGIN || !pxStates[i_R])) {
+                        //console.log("START RESET")
+                        pxStates[i] = 0
+                        //pxStepUpdated[i] = STATE
+                    }
+                    if (pixels[i_L] === mat && (pxStates[i_L] === S.COPPER.ORIGIN || !pxStates[i_L])) {
+                        //console.log("START RESET")
+                        pxStates[i] = 0
+                        //pxStepUpdated[i] = STATE
+                    }
+                }
 
-                // TODO OPTIMIZE PLZPLZPLPZLZ BITMASK THIS
-                // IF CONNECTED TO ELECTRICITY -> LIT
-                if (pixels[i_B] === mat && !pxStates[i_B]) {
-                    pxStates[i_B] = S.COPPER.LIT
-                    pxStepUpdated[i_B] = STATE
-                }
-                if (pixels[i_T] === mat && !pxStates[i_T]) {
-                    pxStates[i_T] = S.COPPER.LIT
-                    pxStepUpdated[i_T] = STATE
-                }
-                if (pixels[i_R] === mat && !pxStates[i_R]) {
-                    pxStates[i_R] = S.COPPER.LIT
-                    pxStepUpdated[i_R] = STATE
-                }
-                if (pixels[i_L] === mat && !pxStates[i_L]) {
-                    pxStates[i_L] = S.COPPER.LIT
-                    pxStepUpdated[i_L] = STATE
-                }
 
-                // TODO OPTIMIZE PLZPLZPLPZLZ BITMASK THIS ++
-                // IF NOT CONNECTED TO ELECTRICITY ANYMORE -> DISABLE
-                if (pixels[i_B] === mat && pxStates[i_B] === S.COPPER.DISABLED && pxStates[i] === S.COPPER.LIT) {
-                    pxStates[i] = S.COPPER.DISABLED
-                    pxStepUpdated[i] = STATE
-                    pxStepUpdated[i_T] = STATE
-                    pxStepUpdated[i_B] = STATE
-                    pxStepUpdated[i_R] = STATE
-                    pxStepUpdated[i_L] = STATE
-                }
-                if (pixels[i_T] === mat && pxStates[i_T] === S.COPPER.DISABLED && pxStates[i] === S.COPPER.LIT) {
-                    pxStates[i] = S.COPPER.DISABLED
-                    pxStepUpdated[i] = STATE
-                    pxStepUpdated[i_T] = STATE
-                    pxStepUpdated[i_B] = STATE
-                    pxStepUpdated[i_R] = STATE
-                    pxStepUpdated[i_L] = STATE
-                }
-                if (pixels[i_R] === mat && pxStates[i_R] === S.COPPER.DISABLED && pxStates[i] === S.COPPER.LIT) {
-                    pxStates[i] = S.COPPER.DISABLED
-                    pxStepUpdated[i] = STATE
-                    pxStepUpdated[i_T] = STATE
-                    pxStepUpdated[i_B] = STATE
-                    pxStepUpdated[i_R] = STATE
-                    pxStepUpdated[i_L] = STATE
-                }
-                if (pixels[i_L] === mat && pxStates[i_L] === S.COPPER.DISABLED && pxStates[i] === S.COPPER.LIT) {
-                    pxStates[i] = S.COPPER.DISABLED
-                    pxStepUpdated[i] = STATE
-                    pxStepUpdated[i_T] = STATE
-                    pxStepUpdated[i_B] = STATE
-                    pxStepUpdated[i_R] = STATE
-                    pxStepUpdated[i_L] = STATE
-                }
             }
 
 
@@ -368,7 +379,7 @@ class PhysicsCore {
             }
         }
 
-        console.log(
+        /*console.log(
             pxStates[429],
             pxStates[459],
             pxStates[489],
@@ -394,7 +405,7 @@ class PhysicsCore {
             pxStates[473],
             pxStates[443],
             pxStates[413],
-        )
+        )*/
     }
 
     /**
