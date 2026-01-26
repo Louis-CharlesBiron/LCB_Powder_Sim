@@ -52,7 +52,7 @@ const SETTINGS = {
         }
     },
 
-    D: {t:1<<0, r:1<<1, b:1<<2, l:1<<3, tr:1<<4, br:1<<5, bl:1<<6, tl:1<<7},
+    D: {t:1<<0, r:1<<1, b:1<<2, l:1<<3, br:1<<4, bl:1<<5, tr:1<<6, tl:1<<7},
 
     SIDE_PRIORITIES: {
         RANDOM:0,
@@ -92,7 +92,7 @@ const SETTINGS = {
         START_LOOP:1<<2,
         STOP_LOOP:1<<3,
         SIDE_PRIORITY:1<<4,
-        MAP_WIDTH:1<<5,
+        MAP_SIZE:1<<5,
         PIXELS:1<<6,
     },
     WORKER_MESSAGE_GROUPS: {

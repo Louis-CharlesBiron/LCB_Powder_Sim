@@ -43,7 +43,7 @@ class Simulation {
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
         this._isRunning = false
-        this._selectedMaterial = Simulation.MATERIALS.ELECTRICITY
+        this._selectedMaterial = Simulation.MATERIALS.SAND
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
         this._lastStepTime = null
         this._queuedBufferOperations = []
@@ -180,7 +180,7 @@ class Simulation {
             const stepExtra = this._stepExtra
             this.saveStep()
             if (stepExtra) stepExtra()
-            this._pixels = unit.step(this._pixels, this._pxStepUpdated, this._pxStates, this._sidePriority, this._mapGrid.mapWidth)
+            unit.step(this._pixels, this._pxStepUpdated, this._pxStates, this._sidePriority, this._mapGrid.mapWidth, this._mapGrid.mapHeight)
             this.updateImgMapFromPixels()
         }
         else if (this.#simulationHasPixelsBuffer) this.#sendPixelsToWorker(T.STEP)
@@ -271,11 +271,11 @@ class Simulation {
             this._physicsUnit.postMessage({
                 type:Simulation.#WORKER_MESSAGE_TYPES.INIT,
                 pixels:this._pixels, pxStepUpdated:this._pxStepUpdated, pxStates:this._pxStates, sidePriority:this._sidePriority, 
-                mapWidth:this._mapGrid.mapWidth,
+                mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight,
                 aimedFps:this._CVS.fpsLimit
             })
             if (this._isRunning) this.start(true)
-        } 
+        }
         else if (usesWebWorkers && this.fileServed) console.warn(SETTINGS.FILE_SERVED_WARN)
     }
 
@@ -344,7 +344,7 @@ class Simulation {
         const arraySize = this._mapGrid.arraySize, pixels = this._pixels = new Uint16Array(arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
         this._pxStepUpdated = new Uint8Array(arraySize)
         this._pxStates = new Uint8Array(arraySize)
-        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_WIDTH, mapWidth:this._mapGrid.mapWidth, arraySize})
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
         
         for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
             pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)

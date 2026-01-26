@@ -10,11 +10,11 @@ const WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES,
       MATERIAL_STATES_GROUPS = SETTINGS.MATERIAL_STATES_GROUPS,
       SIDE_PRIORITIES = SETTINGS.SIDE_PRIORITIES,
       D  = SETTINGS.D,
-      physicsCore = new PhysicsCore("WORKER")
+      physicsCore = new PhysicsCore()
 
 // ATTRIBUTES / VARABLES
 let pixels, pxStepUpdated, pxStates, sidePriority,
-    mapWidth
+    mapWidth, mapHeight
 
 let isLoopStarted = false, lastTime = 0, lastStepTime = 0, PHYSICS_DELAY = 1000/60, timeAcc = 0
 
@@ -36,8 +36,9 @@ self.onmessage=e=>{
     // UPDATE SIDE PRIORITY
     else if (type === WORKER_MESSAGE_TYPES.SIDE_PRIORITY) sidePriority = data.sidePriority
     // UPDATE MAP SIZE
-    else if (type === WORKER_MESSAGE_TYPES.MAP_WIDTH) {
+    else if (type === WORKER_MESSAGE_TYPES.MAP_SIZE) {
         mapWidth = data.mapWidth
+        mapHeight = data.mapHeight
         pxStepUpdated = new Uint8Array(data.arraySize)
         pxStates = new Uint8Array(data.arraySize)
     }
@@ -50,6 +51,7 @@ self.onmessage=e=>{
         sidePriority = data.sidePriority
 
         mapWidth = data.mapWidth
+        mapHeight = data.mapHeight
     }
 }
 
@@ -84,7 +86,7 @@ function stopLoop() {
 function step() {
     if (pixels.buffer.byteLength) {
         lastStepTime = performance.now()
-        physicsCore.step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, MATERIALS, MATERIAL_GROUPS, D, MATERIAL_STATES, MATERIAL_STATES_GROUPS, SIDE_PRIORITIES)
+        physicsCore.step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, MATERIALS, MATERIAL_GROUPS, D, MATERIAL_STATES, MATERIAL_STATES_GROUPS, SIDE_PRIORITIES)
 
         
         postMessage({type:WORKER_MESSAGE_TYPES.STEP, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
