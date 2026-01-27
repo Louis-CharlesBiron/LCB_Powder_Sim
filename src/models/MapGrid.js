@@ -26,6 +26,26 @@ class MapGrid {
     }
 
     /**
+    * Calculates the adjacent index based on the provided index, direction and distance
+    * @param {Number} i The index of a pixel in the pixels array
+    * @param {Simulation.D} direction A direction specified by one of Simulation.D
+    * @param {Number?} distance The distance to go by in the provided direction (defaults to 1)
+    * @returns The calculated adjacent index
+    */
+    getAdjacency(i, direction, distance=1) {
+        const D = Simulation.D, mapWidth = this._mapWidth, mapHeight = this._mapHeight, dWidth = mapWidth*distance,
+              x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>=distance, hasR = x+distance<mapWidth, hasT = y>=distance, hasB = y+distance<mapHeight
+        if (direction === D.b)       return hasB ? i+dWidth:i
+        else if (direction === D.t)  return hasT ? i-dWidth:i
+        else if (direction === D.l)  return hasL ? i-distance:i
+        else if (direction === D.r)  return hasR ? i+distance:i
+        else if (direction === D.bl) return (hasB&&hasL) ? i+dWidth-distance:i
+        else if (direction === D.br) return (hasB&&hasR) ? i+dWidth+distance:i
+        else if (direction === D.tl) return (hasT&&hasL) ? i-dWidth-distance:i
+        else if (direction === D.tr) return (hasT&&hasR) ? i-dWidth+distance:i
+    }
+
+    /**
      * @returns An array of path2d representing the grid lines
      */
     getDrawableGridLines() {

@@ -1,284 +1,249 @@
 class PhysicsCore {
-    static D = {t:1<<0, r:1<<1, b:1<<2, l:1<<3, br:1<<4, bl:1<<5, tr:1<<6, tl:1<<7}
+    static D = {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7}
+    static #TEMP_DEBUG_CLS = 0
 
     static #RANDOM_CACHE = null
     static #RANDOM_TABLE_SIZE = 1<<16
     static #RANDOM_INDEX = 0
 
-    static #SAND_SP_BIT = 1<<6
-    static #SAND_TABLE_SIZE = 1<<7
-    static #SAND_MOVES = {I:0, B:1, BR:2, BL:3}
-    static #SAND_CACHE = new Int32Array(PhysicsCore.#SAND_TABLE_SIZE)
+    static #REGULAR_MOVES = {I:0, B:1, R:2, L:3, BR:4, BL:5, T:6, TR:7, TL:8}
 
-    static #WATER_SP_BIT = 1<<6
-    static #WATER_TABLE_SIZE = 1<<7
-    static #WATER_MOVES = {I:0, B:1, R:2, L:3, BR:4, BL:5}
-    static #WATER_CACHE = new Int32Array(PhysicsCore.#WATER_TABLE_SIZE)
+    static #SAND_SP_BIT = PhysicsCore.D.bl<<1
+    static #SAND_CACHE = new Uint8Array(PhysicsCore.#SAND_SP_BIT<<1)
+
+    static #WATER_SP_BIT = PhysicsCore.D.bl<<1
+    static #WATER_CACHE = new Uint8Array(PhysicsCore.#WATER_SP_BIT<<1)
+
+    static #INVERTED_WATER_SP_BIT = PhysicsCore.D.tl<<1
+    static #INVERTED_WATER_CACHE = new Uint8Array(PhysicsCore.#INVERTED_WATER_SP_BIT<<1)
 
     static {
+        const D = PhysicsCore.D
         // FILL CACHED RANDOM TABLE 
         const rt_ll = PhysicsCore.#RANDOM_TABLE_SIZE, table = PhysicsCore.#RANDOM_CACHE = new Float32Array(rt_ll)
         for (let i=0;i<rt_ll;i++) table[i] = Math.random()
 
-        const D = PhysicsCore.D
+        // FILL CACHED SAND TABLE
+        const sandCache = PhysicsCore.#SAND_CACHE, sand_ll = sandCache.length 
+        for (let i=0;i<sand_ll;i++) sandCache[i] = PhysicsCore.#updateCachedSandTable(D, i)
 
         // FILL CACHED WATER TABLE
-        const water_ll = PhysicsCore.#WATER_TABLE_SIZE, water_cache = PhysicsCore.#WATER_CACHE
-        for (let i=0;i<water_ll;i++) water_cache[i] = PhysicsCore.#updateCachedWaterTable(PhysicsCore.D, i)
+        const waterCache = PhysicsCore.#WATER_CACHE, water_ll = waterCache.length
+        for (let i=0;i<water_ll;i++) waterCache[i] = PhysicsCore.#updateCachedWaterTable(D, i)
 
-        // FILL CACHED WATER TABLE
-        const sand_ll = PhysicsCore.#SAND_TABLE_SIZE, sand_cache = PhysicsCore.#SAND_CACHE
-        for (let i=0;i<sand_ll;i++) sand_cache[i] = PhysicsCore.#updateCachedSandTable(PhysicsCore.D, i)
+        // FILL CACHED INVERTED WATER TABLE
+        const invertedWaterCache = PhysicsCore.#INVERTED_WATER_CACHE, invertedWater_ll = invertedWaterCache.length 
+        for (let i=0;i<invertedWater_ll;i++) invertedWaterCache[i] = PhysicsCore.#updateCachedInvertedWaterTable(D, i)
     }
 
-    static #updateCachedWaterTable(D, mask) {
-        const isLeftFirst = mask & PhysicsCore.#WATER_SP_BIT, MOVES = PhysicsCore.#WATER_MOVES,
-              b = mask & D.b,
-              r = mask & D.r,
-              l = mask & D.l,
-              br = mask & D.br,
-              bl = mask & D.bl
-
-        if (b) return MOVES.B
-        if (isLeftFirst) {
-            if (bl) return MOVES.BL
-            if (br) return MOVES.BR
-            if (l) return MOVES.L
-            if (r) return MOVES.R
-        } else {
-            if (br) return MOVES.BR
-            if (bl) return MOVES.BL
-            if (r) return MOVES.R
-            if (l) return MOVES.L
-        }
-        return MOVES.I
-    }
-
-    static #updateCachedSandTable(D, mask) {
-        const isLeftFirst = mask & PhysicsCore.#SAND_SP_BIT, MOVES = PhysicsCore.#SAND_MOVES,
-              b = mask & D.b,
-              br = mask & D.br,
-              bl = mask & D.bl
-
-        if (b) return MOVES.B
-        if (isLeftFirst) {
-            if (bl) return MOVES.BL
-            if (br) return MOVES.BR
-        } else {
-            if (br) return MOVES.BR
-            if (bl) return MOVES.BL
-        }
-        return MOVES.I
-    }
 
     /**
     * Runs one physics step
     */
-    step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {// TODO OPTIMIZE AGAIN
-        const p_ll = pixels.length-1, AIR = M.AIR, PX = 1, STATE = 2,
+    step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
+        const p_ll = pixels.length-1, PX = 1, STATE = 2, AIR = M.AIR, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE,
               RT = PhysicsCore.#RANDOM_CACHE, RS = PhysicsCore.#RANDOM_TABLE_SIZE-1, SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGHT, width2 = mapWidth>>1
+        
         pxStepUpdated.fill(0)
 
-
         // TODO CLEANUP
-        const WATER_MOVES = PhysicsCore.#WATER_MOVES, WATER_CACHE = PhysicsCore.#WATER_CACHE, WATER_SP_BIT = PhysicsCore.#WATER_SP_BIT
-        const SAND_MOVES = PhysicsCore.#SAND_MOVES, SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT
+        const {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES
+        const SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT
+        const WATER_CACHE = PhysicsCore.#WATER_CACHE, WATER_SP_BIT = PhysicsCore.#WATER_SP_BIT
+        const INVERTED_WATER_CACHE = PhysicsCore.#INVERTED_WATER_CACHE, INVERTED_WATER_SP_BIT = PhysicsCore.#INVERTED_WATER_SP_BIT
 
         function getSideSelectionPriority(i) {
             if (SP_LEFT) return true
             if (SP_RIGHT) return false
-            if (SP_RANDOM) return RT[PhysicsCore.#RANDOM_INDEX++&(PhysicsCore.#RANDOM_TABLE_SIZE-1)] < 0.5
+            if (SP_RANDOM) return RT[PhysicsCore.#RANDOM_INDEX++&RS] < 0.5
             return (i%mapWidth) < width2
         }
 
-        const a = 0             // TODO CLEANUP 
-        if (a) console.time(".")// (8.63ms avg)
+        // TODO TEMP
+        const timer = 0
+        if (timer) {
+            if (PhysicsCore.#TEMP_DEBUG_CLS++ > 18) {
+                console.clear()
+                PhysicsCore.#TEMP_DEBUG_CLS = 0
+            }
+            console.time(".")
+        }// (8.63ms avg)
 
         for (let i=p_ll;i>=0;i--) {
             const mat = pixels[i]
             if (mat === AIR || pxStepUpdated[i]) continue
             const x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>0, hasR = x<mapWidth-1, hasT = y>0, hasB = y<mapHeight-1,
-                  i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i, i_BL = (hasB&&hasL) ? i+mapWidth - 1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i,
+                  i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i, i_BL = (hasB&&hasL) ? i+mapWidth-1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i, i_TL = (hasT&&hasL) ? i-mapWidth-1:i, i_TR = (hasT&&hasR) ? i-mapWidth+1:i,
                   p_B = pixels[i_B], p_R = pixels[i_R], p_L = pixels[i_L]
 
             let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
 
             // SAND
             if (mat === M.SAND) {
-                const m_B = p_B&G.TRANSPIERCEABLE
-
-                let stack = 0
-                stack |= (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0)*D.b // B - GO THROUGH TRANSPIERCEABLE
-                stack |= (pixels[i_BR] === AIR)*D.br                        // BR - GO THROUGH AIR
-                stack |= (pixels[i_BL] === AIR)*D.bl                        // BL - GO THROUGH AIR
-                if (getSideSelectionPriority(i)) stack |= SAND_SP_BIT
+                const m_B = p_B&G.TRANSPIERCEABLE, 
+                      stack = (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0)*D.b | // B  - GO THROUGH TRANSPIERCEABLE
+                              (pixels[i_BR] === AIR)*D.br |                        // BR - GO THROUGH AIR
+                              (pixels[i_BL] === AIR)*D.bl |                        // BL - GO THROUGH AIR
+                              getSideSelectionPriority(i)*SAND_SP_BIT
 
                 const move = SAND_CACHE[stack]
-                if      (move === SAND_MOVES.B)  newIndex = i_B
-                else if (move === SAND_MOVES.BR) newIndex = i_BR
-                else if (move === SAND_MOVES.BL) newIndex = i_BL
+                if      (move === B)  newIndex = i_B
+                else if (move === BR) newIndex = i_BR
+                else if (move === BL) newIndex = i_BL
 
-                if (newIndex !== -1 && (p_L&G.LIQUIDS || p_R&G.LIQUIDS || pixels[i_T]===AIR)) replaceMaterial = m_B
+                if (newIndex !== -1 && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
             }
 
             // WATER
             else if (mat === M.WATER) {
-                let stack = 0
-                stack |= (p_B === AIR)*D.b           // B - GO THROUGH AIR
-                stack |= (pixels[i_BR] === AIR)*D.br // BR - GO THROUGH AIR
-                stack |= (pixels[i_BL] === AIR)*D.bl // BL - GO THROUGH AIR
-                stack |= (p_R === AIR)*D.r           // R - GO THROUGH AIR
-                stack |= (p_L === AIR)*D.l           // L - GO THROUGH AIR
-                if (getSideSelectionPriority(i)) stack |= WATER_SP_BIT
+                const stack = (p_B === AIR)*D.b |         // B  - GO THROUGH AIR
+                            (pixels[i_BR] === AIR)*D.br | // BR - GO THROUGH AIR
+                            (pixels[i_BL] === AIR)*D.bl | // BL - GO THROUGH AIR
+                            (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
+                            (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                            getSideSelectionPriority(i)*WATER_SP_BIT
 
                 const move = WATER_CACHE[stack]
-                if      (move === WATER_MOVES.B)  newIndex = i_B
-                else if (move === WATER_MOVES.BR) newIndex = i_BR
-                else if (move === WATER_MOVES.BL) newIndex = i_BL
-                else if (move === WATER_MOVES.R)  newIndex = i_R
-                else if (move === WATER_MOVES.L)  newIndex = i_L
+                if      (move === B)  newIndex = i_B
+                else if (move === BR) newIndex = i_BR
+                else if (move === BL) newIndex = i_BL
+                else if (move === R)  newIndex = i_R
+                else if (move === L)  newIndex = i_L
             }
 
             // GRAVEL
             else if (mat === M.GRAVEL) {
-                const transpiercedLiquid = p_B&G.LIQUIDS
-                // check if can go down
-                if (p_B === AIR || transpiercedLiquid) newIndex = i_B
+                const m_B = p_B&LIQUIDS 
+                if (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0) newIndex = i_B // GO THROUGH TRANSPIERCEABLE
+
                 // check what to replace prev pos with
-                if (transpiercedLiquid && (p_L&G.LIQUIDS || p_R&G.LIQUIDS)) replaceMaterial = transpiercedLiquid
+                if (m_B && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
             }
 
             // INVERTED WATER
             else if (mat === M.INVERTED_WATER) {
-                const i_T = ADJ[D.t], transpiercedMaterial = pixels[i_T]
-                // check if can go up or sides
-                if (transpiercedMaterial === AIR) newIndex = i_T
-                else {
-                    const isLeftFirst = getSideSelectionPriority(i), leftIsAir = p_L === AIR, i_TL = ADJ[D.tl], i_TR = ADJ[D.tr]
-                    if (isLeftFirst) {
-                        if (pixels[i_TL] === AIR && leftIsAir) newIndex = i_TL
-                        else if (pixels[i_TR] === AIR && p_R === AIR) newIndex = i_TR
-                        else if (leftIsAir) newIndex = i_L
-                        else if (p_R === AIR) newIndex = i_R
-                    } else {
-                        if (pixels[i_TR] === AIR && p_R === AIR) newIndex = i_TR
-                        else if (pixels[i_TL] === AIR && leftIsAir) newIndex = i_TL
-                        else if (p_R === AIR) newIndex = i_R
-                        else if (leftIsAir) newIndex = i_L
-                    }
-                }
+                const stack = (pixels[i_T] === AIR)*D.t |   // T  - GO THROUGH AIR
+                              (pixels[i_TR] === AIR)*D.tr | // TR - GO THROUGH AIR
+                              (pixels[i_TL] === AIR)*D.tl | // TL - GO THROUGH AIR
+                              (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
+                              (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                              getSideSelectionPriority(i)*INVERTED_WATER_SP_BIT
+
+                const move = INVERTED_WATER_CACHE[stack]
+                if      (move === T)  newIndex = i_T
+                else if (move === TR) newIndex = i_TR
+                else if (move === TL) newIndex = i_TL
+                else if (move === R)  newIndex = i_R
+                else if (move === L)  newIndex = i_L
             }
 
             // CONTAMINANT
             else if (mat === M.CONTAMINANT) {
-                // check if can go down or sides
-                if (p_B === AIR) newIndex = i_B
-                else {
-                    const isLeftFirst = getSideSelectionPriority(i),  i_T = ADJ[D.t],
-                    leftIsAir = p_L === AIR, 
-                    i_BL = ADJ[D.bl], 
-                    i_BR = ADJ[D.br]
+                let move = WATER_CACHE[
+                        (p_B === AIR)*D.b // B  - GO THROUGH AIR
+                ]
 
-                    if (RT[PhysicsCore.#RANDOM_INDEX++&RS]>0.5 && p_L&G.CONTAMINABLE) {
-                        pixels[i_L] = M.CONTAMINANT
+                const contaminationThreshold = 0.5
+                if (move === B)  newIndex = i_B
+                else {
+                    move = WATER_CACHE[
+                        (pixels[i_BR] === AIR)*D.br | // BR - GO THROUGH AIR
+                        (pixels[i_BL] === AIR)*D.bl | // BL - GO THROUGH AIR
+                        (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
+                        (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                        getSideSelectionPriority(i)*WATER_SP_BIT
+                    ]
+
+                    if (move === BR) newIndex = i_BR
+                    else if (move === BL) newIndex = i_BL
+                    else if (move === R)  newIndex = i_R
+                    else if (move === L)  newIndex = i_L
+
+                    if (p_L&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                        pixels[i_L] = mat
                         pxStepUpdated[i_L] = PX
                     }
-                    if (RT[PhysicsCore.#RANDOM_INDEX++&RS]>0.5 && p_R&G.CONTAMINABLE) {
-                        pixels[i_R] = M.CONTAMINANT
+                    if (p_R&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                        pixels[i_R] = mat
                         pxStepUpdated[i_R] = PX
                     }
-                    if (RT[PhysicsCore.#RANDOM_INDEX++&RS]>0.5 && pixels[i_T]&G.CONTAMINABLE) {
-                        pixels[i_T] = M.CONTAMINANT
-                        pxStepUpdated[i_T] = PX
-                    }
-                    if (RT[PhysicsCore.#RANDOM_INDEX++&RS]>0.5 && p_B&G.CONTAMINABLE) {
-                        pixels[i_B] = M.CONTAMINANT
+                    if (p_B&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                        pixels[i_B] = mat
                         pxStepUpdated[i_B] = PX
                     }
-
-                    if (isLeftFirst) {
-                        if (pixels[i_BL] === AIR && leftIsAir) newIndex = i_BL
-                        else if (pixels[i_BR] === AIR && p_R === AIR) newIndex = i_BR
-                        else if (leftIsAir) newIndex = i_L
-                        else if (p_R === AIR) newIndex = i_R
-                    } else {
-                        if (pixels[i_BR] === AIR && p_R === AIR) newIndex = i_BR
-                        else if (pixels[i_BL] === AIR && leftIsAir) newIndex = i_BL
-                        else if (p_R === AIR) newIndex = i_R
-                        else if (leftIsAir) newIndex = i_L
+                    if (pixels[i_T]&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                        pixels[i_T] = mat
+                        pxStepUpdated[i_T] = PX
                     }
                 }
             }
 
             // LAVA
             else if (mat === M.LAVA) {
-                // check if can go down or sides
-                if (p_B === AIR) newIndex = i_B
-                else {
-                    const isLeftFirst = getSideSelectionPriority(i), i_T = ADJ[D.t],
-                    leftIsAir = p_L === AIR,
-                    i_BL = ADJ[D.bl],
-                    i_BR = ADJ[D.br],
-                    p_T = pixels[i_T]
-                    
-   
-                    if (p_L&G.LIQUIDS || p_R&G.LIQUIDS || p_T&G.LIQUIDS || p_B&G.LIQUIDS) {
-                        pixels[i] = M.STONE
-                        pxStepUpdated[i] = PX
-                    } else if ((p_L&G.MELTABLE || p_R&G.MELTABLE || p_T&G.MELTABLE || p_B&G.MELTABLE) && RT[PhysicsCore.#RANDOM_INDEX++&RS]>0.999) {
-                        // TODO PLZ SOMETHING BETTER
-                        if (p_L&G.MELTABLE) {
-                            pixels[i_L] = M.LAVA
-                            pxStepUpdated[i_L] = PX
-                        } else if (p_R&G.MELTABLE) {
-                            pixels[i_R] = M.LAVA
-                            pxStepUpdated[i_R] = PX
-                        } else if (p_B&G.MELTABLE) {
-                            pixels[i_B] = M.LAVA
-                            pxStepUpdated[i_B] = PX
-                        } else if (p_T&G.MELTABLE) {
-                            pixels[i_T] = M.LAVA
-                            pxStepUpdated[i_T] = PX
-                        }
+                const p_T = pixels[i_T]
+                if (p_L&LIQUIDS || p_R&LIQUIDS || p_T&LIQUIDS || p_B&LIQUIDS) {// CREATE STONE
+                    pixels[i] = M.STONE
+                    pxStepUpdated[i] = PX
+                }
+                else {// FALL DOWN
+                    let move = WATER_CACHE[
+                        (p_B === AIR)*D.b // B  - GO THROUGH AIR
+                    ]
+
+                    const movementThreshold = 0.935, meltThreshold = 0.9992
+                    if (move === B)  newIndex = i_B
+                    else if (RT[PhysicsCore.#RANDOM_INDEX++&RS]>movementThreshold) {// MOVE SOMETIMES
+                        move = WATER_CACHE[
+                            (pixels[i_BR] === AIR)*D.br | // BR - GO THROUGH AIR
+                            (pixels[i_BL] === AIR)*D.bl | // BL - GO THROUGH AIR
+                            (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
+                            (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                            getSideSelectionPriority(i)*WATER_SP_BIT
+                        ]
+
+                        if (move === BR) newIndex = i_BR
+                        else if (move === BL) newIndex = i_BL
+                        else if (move === R)  newIndex = i_R
+                        else if (move === L)  newIndex = i_L
                     }
-                    else if (RT[PhysicsCore.#RANDOM_INDEX++&RS]>0.935) {
-                        if (isLeftFirst) {
-                            if (pixels[i_BL] === AIR && leftIsAir) newIndex = i_BL
-                            else if (pixels[i_BR] === AIR && p_R === AIR) newIndex = i_BR
-                            else if (leftIsAir) newIndex = i_L
-                            else if (p_R === AIR) newIndex = i_R
-                        } else {
-                            if (pixels[i_BR] === AIR && p_R === AIR) newIndex = i_BR
-                            else if (pixels[i_BL] === AIR && leftIsAir) newIndex = i_BL
-                            else if (p_R === AIR) newIndex = i_R
-                            else if (leftIsAir) newIndex = i_L
+                    else if ((p_L&MELTABLE || p_R&MELTABLE || p_T&MELTABLE || p_B&MELTABLE) && RT[PhysicsCore.#RANDOM_INDEX++&RS]>meltThreshold) {// MELT SOMETIMES
+                        if (p_L&MELTABLE) {
+                            pixels[i_L] = mat
+                            pxStepUpdated[i_L] = PX
+                        } else if (p_R&MELTABLE) {
+                            pixels[i_R] = mat
+                            pxStepUpdated[i_R] = PX
+                        } else if (p_B&MELTABLE) {
+                            pixels[i_B] = mat
+                            pxStepUpdated[i_B] = PX
+                        } else if (p_T&MELTABLE) {
+                            pixels[i_T] = mat
+                            pxStepUpdated[i_T] = PX
                         }
                     }
                 }
             }
             // ELECTRICITY
             else if (mat === M.ELECTRICITY) {
-                const i_T = ADJ[D.t]
-                      ORIGIN = SG.COPPER.ORIGIN
+                const ORIGIN = S.COPPER.ORIGIN
 
-
-                // check if can go down or sides
+                // check if can go down
                 if (p_B === AIR) newIndex = i_B
                 else {
-                    // TODO OPTIMIZE PLZPLZPLPZLZ BITMASK THIS
-                    if (p_B === M.COPPER && (!pxStates[i_B] || pxStates[i_B] === S.COPPER.DISABLED || pxStates[i_B] === S.COPPER.LIT)) {
+                    let COPPER = M.COPPER, SOURCEABLE = SG.COPPER.SOURCEABLE, s_B, s_T, s_R, s_L
+                    if (p_B === COPPER && ((s_B=pxStates[i_B]) === 0 || s_B&SOURCEABLE)) {
                         pxStates[i_B] = ORIGIN
                         pxStepUpdated[i_B] = STATE
                     }
-                    if (pixels[i_T] === M.COPPER && (!pxStates[i_T] || pxStates[i_T] === S.COPPER.DISABLED || pxStates[i_T] === S.COPPER.LIT)) {
+                    if (pixels[i_T] === COPPER && ((s_T=pxStates[i_T]) === 0 || s_T&SOURCEABLE)) {
                         pxStates[i_T] = ORIGIN
                         pxStepUpdated[i_T] = STATE
                     }
-                    if (p_R === M.COPPER && (!pxStates[i_R] || pxStates[i_R] === S.COPPER.DISABLED || pxStates[i_R] === S.COPPER.LIT)) {
+                    if (p_R === COPPER&& ((s_R=pxStates[i_R]) === 0 || s_R&SOURCEABLE)) {
                         pxStates[i_R] = ORIGIN
                         pxStepUpdated[i_R] = STATE
                     }
-                    if (p_L === M.COPPER && (!pxStates[i_L] ||pxStates[i_L] === S.COPPER.DISABLED || pxStates[i_L] === S.COPPER.LIT)) {
+                    if (p_L === COPPER && ((s_L=pxStates[i_L]) === 0 || s_L&SOURCEABLE)) {
                         pxStates[i_L] = ORIGIN
                         pxStepUpdated[i_L] = STATE
                     }
@@ -301,13 +266,12 @@ class PhysicsCore {
                 //    DISABLED -> ORIGIN (by electricity) OK
                 //    DISABLED -> 0 (by origin) ---5
                 //    DISABLED -> 0 (by 0) [propagation] OK ---6
-                
 
-                const i_T = ADJ[D.t], p_T = pixels[i_T],
+                const p_T = pixels[i_T],
                       state = pxStates[i],
 
                       ACTIVATED = SG.COPPER.ACTIVATED,
-                      ORIGIN = SG.COPPER.ORIGIN,
+                      ORIGIN = S.COPPER.ORIGIN,
                       ELECTRICITY = M.ELECTRICITY
 
 
@@ -395,7 +359,6 @@ class PhysicsCore {
             }
 
 
-
             // UPDATE
             if (newIndex !== -1) {
                 pxStepUpdated[newIndex] = PX
@@ -403,45 +366,72 @@ class PhysicsCore {
                 pixels[i] = replaceMaterial
             }
         }
-        if (a) console.timeEnd(".")
+        if (timer) console.timeEnd(".")
 
         return [pixels, pxStates]
     }
+
+
+    static #updateCachedSandTable(D, stack) {
+        const isLeftFirst = stack & PhysicsCore.#SAND_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
+              b = stack & D.b,
+              br = stack & D.br,
+              bl = stack & D.bl
+
+        if (b) return MOVES.B// OPTIMIZE
+        if (isLeftFirst) {
+            if (bl) return MOVES.BL
+            if (br) return MOVES.BR
+        } else {
+            if (br) return MOVES.BR
+            if (bl) return MOVES.BL
+        }
+        return MOVES.I
+    }
+
+    static #updateCachedWaterTable(D, stack) {
+        const isLeftFirst = stack & PhysicsCore.#WATER_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
+              b = stack & D.b,
+              r = stack & D.r,
+              l = stack & D.l,
+              br = stack & D.br,
+              bl = stack & D.bl
+
+        if (b) return MOVES.B// OPTIMIZE
+        if (isLeftFirst) {
+            if (bl) return MOVES.BL
+            if (br) return MOVES.BR
+            if (l) return MOVES.L
+            if (r) return MOVES.R
+        } else {
+            if (br) return MOVES.BR
+            if (bl) return MOVES.BL
+            if (r) return MOVES.R
+            if (l) return MOVES.L
+        }
+        return MOVES.I
+    }
+
+    static #updateCachedInvertedWaterTable(D, stack) {
+        const isLeftFirst = stack & PhysicsCore.#INVERTED_WATER_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
+              t = stack & D.t,
+              r = stack & D.r,
+              l = stack & D.l,
+              tr = stack & D.tr,
+              tl = stack & D.tl
+
+        if (t) return MOVES.T
+        if (isLeftFirst) {
+            if (tl) return MOVES.TL// OPTIMIZE
+            if (tr) return MOVES.TR
+            if (l) return MOVES.L
+            if (r) return MOVES.R
+        } else {
+            if (tr) return MOVES.TR
+            if (tl) return MOVES.TL
+            if (r) return MOVES.R
+            if (l) return MOVES.L
+        }
+        return MOVES.I
+    }
 }
-
-// TODO CLEANUP
-    //updateCachedAdjacencyTable(D, mapWidth, mapHeight, arraySize) {
-    //    const arr = PhysicsCore.#ADJACENCY_CACHE = new Array(arraySize)
-    //    for (let i=0;i<arraySize;i++) {
-    //        const row = (i/mapWidth)|0, col = i%mapWidth
-    //        arr[i] = {
-    //            [D.b]:  row<mapHeight-1 ? i+mapWidth : i,
-    //            [D.t]:  row>0           ? i-mapWidth : i,
-    //            [D.r]:  col<mapWidth-1  ? i+1        : i,
-    //            [D.l]:  col>0           ? i-1        : i,
-    //            [D.br]: (row<mapHeight-1 && col<mapWidth-1) ? i+mapWidth+1 : i,
-    //            [D.bl]: (row<mapHeight-1 && col>0)          ? i+mapWidth-1 : i,
-    //            [D.tr]: (row>0 && col<mapWidth-1)           ? i-mapWidth+1 : i,
-    //            [D.tl]: (row>0 && col>0)                    ? i-mapWidth-1 : i,
-    //        }
-    //    }
-    //}
-
-    ///**
-    //* Calculates the adjacent index based on the provided index, direction and distance
-    //* @param {Number} i The index of a pixel in the pixels array
-    //* @param {Simulation.D} direction A direction specified by one of Simulation.D
-    //* @param {Number?} distance The distance to go by in the provided direction (defaults to 1)
-    //* @returns The calculated adjacent index
-    //*/
-    //getAdjacency(D, mapWidth, i, direction, distance=1) { // OPTIMIZATION, TODO
-    //    const dWidth = mapWidth*distance
-    //    if (direction === D.b)       return i+dWidth
-    //    else if (direction === D.t)  return i-dWidth
-    //    else if (direction === D.r)  return (i+1)%mapWidth ? i+distance : i
-    //    else if (direction === D.l)  return i%mapWidth     ? i-distance : i
-    //    else if (direction === D.tr) return (i-dWidth+1)%mapWidth ? i-dWidth+distance : i
-    //    else if (direction === D.br) return (i+dWidth+1)%mapWidth ? i+dWidth+distance : i
-    //    else if (direction === D.tl) return (i-dWidth)%mapWidth   ? i-dWidth-distance : i
-    //    else if (direction === D.bl) return (i+dWidth)%mapWidth   ? i+dWidth-distance : i
-    //}
