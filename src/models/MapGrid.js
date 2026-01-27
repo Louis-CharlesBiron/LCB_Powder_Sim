@@ -2,7 +2,8 @@ class MapGrid {
     static DEFAULT_PIXEL_SIZE = 25
     static DEFAULT_MAP_WIDTH = 30
     static DEFAULT_MAP_HEIGHT = 25
-    static GRID_DISPLAY_COLOR = [240, 248, 255, 0.2]
+    static GRID_DISPLAY_COLOR =   [240, 248, 255, 0.2]
+    static BORDER_DISPLAY_COLOR = [240, 248, 255, 0.99]
 
     #lastPixelSize = null
     constructor(pixelSize, mapWidth, mapHeight) {

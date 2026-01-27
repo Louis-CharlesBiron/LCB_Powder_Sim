@@ -31,14 +31,14 @@ class Simulation {
 
     #simulationHasPixelsBuffer = true
     #lastPlacedPos = null
-    constructor(CVS, mapGrid, usesWebWorkers=Simulation.DEFAULT_PHYSICS_UNIT_TYPE) {
+    constructor(CVS, readyCB, usesWebWorkers=Simulation.DEFAULT_PHYSICS_UNIT_TYPE) {
         // SIMULATION
         this._CVS = CVS
-        this._mapGrid = mapGrid
-        this._pixels = new Uint16Array(mapGrid.arraySize)
-        this._lastPixels = new Uint16Array(mapGrid.arraySize)
-        this._pxStepUpdated = new Uint8Array(mapGrid.arraySize)
-        this._pxStates = new Uint8Array(mapGrid.arraySize)
+        this._mapGrid = new MapGrid()
+        this._pixels = new Uint16Array(this._mapGrid.arraySize)
+        this._lastPixels = new Uint16Array(this._mapGrid.arraySize)
+        this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
+        this._pxStates = new Uint8Array(this._mapGrid.arraySize)
         this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
@@ -57,8 +57,9 @@ class Simulation {
             smoothDrawingEnabled: true,
             visualEffectsEnabled: true,
         }
-        this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.GRID_DISPLAY_COLOR, null, null, null, 1)
-        this._imgMap = CVS.ctx.createImageData(...mapGrid.realDimensions)
+        this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.BORDER_DISPLAY_COLOR, null, null, null, 1)
+        this._mapBorderRenderStyles = CVS.render.profile2.update(MapGrid.BORDER_DISPLAY_COLOR, null, null, null, 3)
+        this._imgMap = CVS.ctx.createImageData(...this._mapGrid.realDimensions)
         this._simImgMapDrawLoop = CanvasUtils.createEmptyObj(CVS, null, this.#simImgMapDraw.bind(this))
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
         this._loopExtra = null
@@ -75,10 +76,12 @@ class Simulation {
         CVS.setKeyDown(this.#keyDown.bind(this), true)
         CVS.start()
         this._mouseListenerIds = [
-            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
-            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
-            CVS.mouse.addListener([[0,0],mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
+            CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
+            CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
+            CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
+
+        if (typeof readyCB === "function") setTimeout(()=>readyCB(this))
     }
 
     /* RENDERING */
@@ -141,7 +144,7 @@ class Simulation {
     }
 
     #drawBorder() {
-        this.render.batchStroke(Simulation.#CACHED_GRID_BORDER)
+        this.render.batchStroke(Simulation.#CACHED_GRID_BORDER, this._mapBorderRenderStyles)
     }
 
     /**
@@ -269,7 +272,7 @@ class Simulation {
 
     /* USER CALL INTERFACE */
     updatePhysicsUnitType(usesWebWorkers) {
-        const isWebWorker = usesWebWorkers&&!this.fileServed
+        const isWebWorker = usesWebWorkers&&!this.isFileServed
         this._physicsUnit = isWebWorker ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
 
         if (isWebWorker) {
@@ -283,7 +286,7 @@ class Simulation {
             })
             if (this._isRunning) this.start(true)
         }
-        else if (usesWebWorkers && this.fileServed) console.warn(SETTINGS.FILE_SERVED_WARN)
+        else if (usesWebWorkers && this.isFileServed) console.warn(SETTINGS.FILE_SERVED_WARN)
     }
 
     /**
@@ -731,7 +734,7 @@ class Simulation {
     get backStepSavingEnabled() {return Boolean(this._backStepSavingMaxCount)}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
     get usesWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
-    get fileServed() {return location.href.startsWith("file")}
+    get isFileServed() {return location.href.startsWith("file")}
 	get showGrid() {return this._userSettings.showGrid}
 	get showBorder() {return this._userSettings.showBorder}
 	get smoothDrawingEnabled() {return this._userSettings.smoothDrawingEnabled}

@@ -41,16 +41,16 @@ class PhysicsCore {
     * Runs one physics step
     */
     step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
-        const p_ll = pixels.length-1, PX = 1, STATE = 2, AIR = M.AIR, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE,
+        const p_ll = pixels.length-1, PX = 1, STATE = 2, AIR = M.AIR, STONE = M.STONE, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE,
               RT = PhysicsCore.#RANDOM_CACHE, RS = PhysicsCore.#RANDOM_TABLE_SIZE-1, SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGHT, width2 = mapWidth>>1
         
         pxStepUpdated.fill(0)
 
         // TODO CLEANUP
-        const {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES
-        const SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT
-        const WATER_CACHE = PhysicsCore.#WATER_CACHE, WATER_SP_BIT = PhysicsCore.#WATER_SP_BIT
-        const INVERTED_WATER_CACHE = PhysicsCore.#INVERTED_WATER_CACHE, INVERTED_WATER_SP_BIT = PhysicsCore.#INVERTED_WATER_SP_BIT
+        const {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES,
+              SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT,
+              WATER_CACHE = PhysicsCore.#WATER_CACHE, WATER_SP_BIT = PhysicsCore.#WATER_SP_BIT,
+              INVERTED_WATER_CACHE = PhysicsCore.#INVERTED_WATER_CACHE, INVERTED_WATER_SP_BIT = PhysicsCore.#INVERTED_WATER_SP_BIT
 
         function getSideSelectionPriority(i) {
             if (SP_LEFT) return true
@@ -67,14 +67,16 @@ class PhysicsCore {
                 PhysicsCore.#TEMP_DEBUG_CLS = 0
             }
             console.time(".")
-        }// (8.63ms avg)
+        }
 
         for (let i=p_ll;i>=0;i--) {
             const mat = pixels[i]
-            if (mat === AIR || pxStepUpdated[i]) continue
+            if (mat === AIR || pxStepUpdated[i] || mat === STONE) continue
             const x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>0, hasR = x<mapWidth-1, hasT = y>0, hasB = y<mapHeight-1,
                   i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i, i_BL = (hasB&&hasL) ? i+mapWidth-1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i, i_TL = (hasT&&hasL) ? i-mapWidth-1:i, i_TR = (hasT&&hasR) ? i-mapWidth+1:i,
-                  p_B = pixels[i_B], p_R = pixels[i_R], p_L = pixels[i_L]
+                  p_B = pixels[i_B], p_R = pixels[i_R], p_L = pixels[i_L], p_T = pixels[i_T]
+
+            if (mat & CONTAINED_SKIPABLE && (p_B^mat|p_R^mat|p_L^mat|p_T^mat) === 0) continue
 
             let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
 
@@ -122,7 +124,7 @@ class PhysicsCore {
 
             // INVERTED WATER
             else if (mat === M.INVERTED_WATER) {
-                const stack = (pixels[i_T] === AIR)*D.t |   // T  - GO THROUGH AIR
+                const stack = (p_T === AIR)*D.t |   // T  - GO THROUGH AIR
                               (pixels[i_TR] === AIR)*D.tr | // TR - GO THROUGH AIR
                               (pixels[i_TL] === AIR)*D.tl | // TL - GO THROUGH AIR
                               (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
@@ -171,7 +173,7 @@ class PhysicsCore {
                         pixels[i_B] = mat
                         pxStepUpdated[i_B] = PX
                     }
-                    if (pixels[i_T]&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                    if (p_T&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
                         pixels[i_T] = mat
                         pxStepUpdated[i_T] = PX
                     }
@@ -180,7 +182,6 @@ class PhysicsCore {
 
             // LAVA
             else if (mat === M.LAVA) {
-                const p_T = pixels[i_T]
                 if (p_L&LIQUIDS || p_R&LIQUIDS || p_T&LIQUIDS || p_B&LIQUIDS) {// CREATE STONE
                     pixels[i] = M.STONE
                     pxStepUpdated[i] = PX
@@ -235,7 +236,7 @@ class PhysicsCore {
                         pxStates[i_B] = ORIGIN
                         pxStepUpdated[i_B] = STATE
                     }
-                    if (pixels[i_T] === COPPER && ((s_T=pxStates[i_T]) === 0 || s_T&SOURCEABLE)) {
+                    if (p_T === COPPER && ((s_T=pxStates[i_T]) === 0 || s_T&SOURCEABLE)) {
                         pxStates[i_T] = ORIGIN
                         pxStepUpdated[i_T] = STATE
                     }
@@ -267,8 +268,7 @@ class PhysicsCore {
                 //    DISABLED -> 0 (by origin) ---5
                 //    DISABLED -> 0 (by 0) [propagation] OK ---6
 
-                const p_T = pixels[i_T],
-                      state = pxStates[i],
+                const state = pxStates[i],
 
                       ACTIVATED = SG.COPPER.ACTIVATED,
                       ORIGIN = S.COPPER.ORIGIN,
