@@ -73,10 +73,12 @@ class PhysicsCore {
             const mat = pixels[i]
             if (mat === AIR || pxStepUpdated[i] || mat === STONE) continue
             const x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>0, hasR = x<mapWidth-1, hasT = y>0, hasB = y<mapHeight-1,
-                  i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i, i_BL = (hasB&&hasL) ? i+mapWidth-1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i, i_TL = (hasT&&hasL) ? i-mapWidth-1:i, i_TR = (hasT&&hasR) ? i-mapWidth+1:i,
+                  i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i,
                   p_B = pixels[i_B], p_R = pixels[i_R], p_L = pixels[i_L], p_T = pixels[i_T]
 
             if (mat & CONTAINED_SKIPABLE && (p_B^mat|p_R^mat|p_L^mat|p_T^mat) === 0) continue
+
+            const i_BL = (hasB&&hasL) ? i+mapWidth-1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i, i_TL = (hasT&&hasL) ? i-mapWidth-1:i, i_TR = (hasT&&hasR) ? i-mapWidth+1:i
 
             let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
 

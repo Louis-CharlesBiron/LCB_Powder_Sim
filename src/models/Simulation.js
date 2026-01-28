@@ -31,7 +31,7 @@ class Simulation {
 
     #simulationHasPixelsBuffer = true
     #lastPlacedPos = null
-    constructor(CVS, readyCB, usesWebWorkers=Simulation.DEFAULT_PHYSICS_UNIT_TYPE) {
+    constructor(CVS, usesWebWorkers=Simulation.DEFAULT_PHYSICS_UNIT_TYPE) {
         // SIMULATION
         this._CVS = CVS
         this._mapGrid = new MapGrid()
@@ -57,8 +57,8 @@ class Simulation {
             smoothDrawingEnabled: true,
             visualEffectsEnabled: true,
         }
-        this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.BORDER_DISPLAY_COLOR, null, null, null, 1)
-        this._mapBorderRenderStyles = CVS.render.profile2.update(MapGrid.BORDER_DISPLAY_COLOR, null, null, null, 3)
+        this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.GRID_DISPLAY_COLOR, null, null, null, 1)
+        this._mapBorderRenderStyles = CVS.render.profile2.update(MapGrid.BORDER_DISPLAY_COLOR, null, null, null, 2)
         this._imgMap = CVS.ctx.createImageData(...this._mapGrid.realDimensions)
         this._simImgMapDrawLoop = CanvasUtils.createEmptyObj(CVS, null, this.#simImgMapDraw.bind(this))
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
@@ -80,8 +80,6 @@ class Simulation {
             CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
             CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
-
-        if (typeof readyCB === "function") setTimeout(()=>readyCB(this))
     }
 
     /* RENDERING */
@@ -117,7 +115,6 @@ class Simulation {
             if ((mat&G.HAS_VISUAL_EFFECTS) === 0) continue
 
             const py = (i/w)|0, x = (i-py*w)*pxSize, y = py*pxSize, state = pxStates[i]
-            
 
             // ELECTRICITY
             if (mat === M.ELECTRICITY) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,0,0.45*random])
@@ -125,10 +122,6 @@ class Simulation {
             else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.LIT) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,0,0.35*random])
             else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.ORIGIN) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,220,0.4])
             else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.DISABLED) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [0,0,220,0.3])
-            // WATER TODO
-            //else if (Math.random() > 0.9975 && mat === M.WATER && pixels[map.getAdjacency(i, D.t)] === M.WATER && pixels[map.getAdjacency(i, D.b)] === M.WATER && pixels[map.getAdjacency(i, D.l)] === M.WATER && pixels[map.getAdjacency(i, D.r)] === M.WATER) {
-            //    batchStroke(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [200,200,255, 0.65])
-            //}
         }  
     }
 
@@ -139,12 +132,12 @@ class Simulation {
 
     // Draws a border and line to show the map grid on the canvas
     #drawMapGrid() {
-        const lines = Simulation.#CACHED_GRID_LINES, l_ll = lines.length, batchStroke = this.render.batchStroke.bind(this.render), styles = this._mapGridRenderStyles
+        const lines = Simulation.#CACHED_GRID_LINES, l_ll = lines.length, batchStroke = this.render.batchStroke.bind(this.render), styles = this._mapGridRenderStyles//.update(MapGrid.GRID_DISPLAY_COLOR)
         for (let i=0;i<l_ll;i++) batchStroke(lines[i], styles)
     }
 
     #drawBorder() {
-        this.render.batchStroke(Simulation.#CACHED_GRID_BORDER, this._mapBorderRenderStyles)
+        this.render.batchStroke(Simulation.#CACHED_GRID_BORDER, this._mapBorderRenderStyles)//.update(MapGrid.BORDER_DISPLAY_COLOR)
     }
 
     /**
