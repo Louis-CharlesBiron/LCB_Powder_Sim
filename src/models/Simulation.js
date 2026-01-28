@@ -18,6 +18,7 @@ class Simulation {
     static #WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES
     static #WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS
     static PHYSICS_UNIT_TYPE = SETTINGS.PHYSICS_UNIT_TYPE
+    static #INIT_STATES = SETTINGS.INITIALIZED_STATES
     // CACHES
     static #CACHED_MATERIALS_ROWS = []
     static #CACHED_GRID_LINES = null
@@ -27,12 +28,18 @@ class Simulation {
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
+    static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
+    static DEFAULT_AUTO_START_VALUE = true
 
 
     #simulationHasPixelsBuffer = true
     #lastPlacedPos = null
-    constructor(CVS, usesWebWorkers=Simulation.DEFAULT_PHYSICS_UNIT_TYPE) {
+    constructor(CVS, readyCB, autoStart, usesWebWorkers, userSettings) {
+        autoStart??=Simulation.DEFAULT_AUTO_START_VALUE
+        usesWebWorkers??=Simulation.DEFAULT_PHYSICS_UNIT_TYPE
+
         // SIMULATION
+        this._initialized = autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
         this._CVS = CVS
         this._mapGrid = new MapGrid()
         this._pixels = new Uint16Array(this._mapGrid.arraySize)
@@ -51,17 +58,12 @@ class Simulation {
         this.#updateCachedMapPixelsRows()
 
         // DISPLAY
-        this._userSettings = {
-            showBorder: true,
-            showGrid: true,
-            smoothDrawingEnabled: true,
-            visualEffectsEnabled: true,
-        }
+        this._brushType = Simulation.BRUSH_TYPES.PIXEL
+        this._userSettings = this.#getAdjustedUserSettings(userSettings)
         this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.GRID_DISPLAY_COLOR, null, null, null, 1)
         this._mapBorderRenderStyles = CVS.render.profile2.update(MapGrid.BORDER_DISPLAY_COLOR, null, null, null, 2)
         this._imgMap = CVS.ctx.createImageData(...this._mapGrid.realDimensions)
         this._simImgMapDrawLoop = CanvasUtils.createEmptyObj(CVS, null, this.#simImgMapDraw.bind(this))
-        this._brushType = Simulation.BRUSH_TYPES.PIXEL
         this._loopExtra = null
         this._stepExtra = null
         this.#updateCachedGridDisplays()
@@ -80,6 +82,13 @@ class Simulation {
             CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
             CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
+
+        if (typeof readyCB === "function") {
+            this._initialized = Simulation.#INIT_STATES.READY
+            readyCB(this)
+            this._initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
+        }
+        if (autoStart) this.start()
     }
 
     /* RENDERING */
@@ -245,6 +254,7 @@ class Simulation {
      * Sets the state of the simulation to be running
      */
     start(force) {
+        if (this._initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this._initialized = Simulation.#INIT_STATES.INITIALIZED)
         if (!this._isRunning || force) {
             this._isRunning = true
             if (this.usesWebWorkers) this.#sendPixelsToWorker(Simulation.#WORKER_MESSAGE_TYPES.START_LOOP)
@@ -279,7 +289,7 @@ class Simulation {
             })
             if (this._isRunning) this.start(true)
         }
-        else if (usesWebWorkers && this.isFileServed) console.warn(SETTINGS.FILE_SERVED_WARN)
+        else if (usesWebWorkers && this.isFileServed && !this.disableAllWarnings) console.warn(SETTINGS.FILE_SERVED_WARN)
     }
 
     /**
@@ -354,6 +364,12 @@ class Simulation {
             oi += oldWidth
             i += oldWidth+skipOffset
         }
+    }
+
+    #getAdjustedUserSettings(userSettings) {
+        const newUserSettings = {...Simulation.DEFAULT_USER_SETTINGS}
+        if (userSettings) Object.entries(userSettings).forEach(([key, value])=>newUserSettings[key] = value)
+        return newUserSettings
     }
     /* USER CALL INTERFACE -end */
 
@@ -491,7 +507,7 @@ class Simulation {
         if (this._isMouseWithinSimulation && mapPos) {
             const [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
 
-            if (this.smoothDrawingEnabled && dMax && !(this._brushType & Simulation.#BRUSH_GROUPS.DISABLES_SMOOTH_DRAWING)) for (let i=0;i<dMax;i++) {
+            if (this.smoothDrawingEnabled && dMax) for (let i=0;i<dMax;i++) {
                 const prog = ((i+1)/dMax)
                 this.#placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
             } 
@@ -526,13 +542,28 @@ class Simulation {
      * @param {Number} y The Y value of the pixel on the map
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
-    placePixelCoords(x, y, material=this._selectedMaterial) {
+    placePixelAtCoords(x, y, material=this._selectedMaterial) {
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.placePixelCoords(x, y, material))
+            this._queuedBufferOperations.push(()=>this.placePixelAtCoords(x, y, material))
             return
         }
 
         const i = this._mapGrid.mapPosToIndexCoords(x, y)
+        this._pixels[i] = material
+        this._pxStates[i] = 0
+    }
+
+    /**
+     * Places a pixel of a specified material at the specified index on the pixel map
+     * @param {Number} i The index value of the pixel on the map
+     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     */
+    placePixelAtIndex(i, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material))
+            return
+        }
+
         this._pixels[i] = material
         this._pxStates[i] = 0
     }
@@ -542,15 +573,15 @@ class Simulation {
         if (brush & Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
             if (brush === B.LINE3 || brush === B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
             if (brush === B.ROW3 || brush === B.VERTICAL_CROSS) {
-                if (x) this.placePixelCoords(x-1, y)
-                if (x !== this._mapGrid.mapWidth-1) this.placePixelCoords(x+1, y)
+                if (x) this.placePixelAtCoords(x-1, y)
+                if (x !== this._mapGrid.mapWidth-1) this.placePixelAtCoords(x+1, y)
             }
-            this.placePixelCoords(x, y)
+            this.placePixelAtCoords(x, y)
         } else if (brush === B.BIG_DOT) {
-            if (x) this.placePixelCoords(x-2, y)
-            if (x !== this._mapGrid.mapWidth-2) this.placePixelCoords(x+2, y)
-                this.placePixelCoords(x, y-2)
-                this.placePixelCoords(x, y+2)
+            if (x) this.placePixelAtCoords(x-2, y)
+            if (x !== this._mapGrid.mapWidth-2) this.placePixelAtCoords(x+2, y)
+                this.placePixelAtCoords(x, y-2)
+                this.placePixelAtCoords(x, y+2)
                 this.fillArea([x-1,y-1], [x+1,y+1])
         } else if (brush & Simulation.#BRUSH_GROUPS.X) {
             const offset = (Simulation.#BRUSHES_X_VALUES[brush]/2)|0
@@ -593,11 +624,28 @@ class Simulation {
             return
         }
 
-        const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, [x1, y1] = pos1, [x2, y2] = pos2 
-        for (let i=0;i<p_ll;i++) {
-            const y = (i/w)|0, x = i-y*w
-            if (x>=x1 && x<=x2 && y>=y1 && y<=y2) this.placePixelCoords(x, y, material)// TODO OPTIMIZE
-        }            
+        const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, x1 = pos1[0]<0?0:pos1[0], y1 = pos1[1]<0?0:pos1[1], x2 = pos2[0]<0?0:pos2[0], y2 = pos2[1]<0?0:pos2[1]
+        for (let i=map.mapPosToIndex([x1, y1]);i<p_ll;i++) {
+            let y = (i/w)|0, x = i-y*w, isXPassed = x>x2, isYPassed = y>y2, isXLooping = x<x1, isYLooping = y<y1
+            if (isXPassed && !isYPassed) {
+                i += w-(x2-x1+2)+1
+                y = (i/w)|0
+                x = i-y*w
+                isXPassed = x>x2
+                isYPassed = y>y2
+                isXLooping = x<x1
+                isYLooping = y<y1
+            }
+            if (isXLooping) {
+                i += x1
+                x = i-y*w
+                isXPassed = x>x2
+                isXLooping = x<x1
+            }
+            if (isYPassed) break
+            this.placePixelAtIndex(i, material)
+        }
+
         if (!this._isRunning) this.updateImgMapFromPixels()
     }
     /* PIXEL EDIT -end */
@@ -623,6 +671,11 @@ class Simulation {
      * @param {[width, height]} saveDimensions Specifies the save data dimensions when mapData is of Uint16Array type (leave undefined, used internally)
      */
     load(mapData, saveDimensions=null) {
+        if (this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
+            if (!this.disableAllWarnings) console.warn(SETTINGS.NOT_INITIALIZED_LOAD_WARN)
+            return
+        }
+
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.load(mapData, saveDimensions))
             return
@@ -732,6 +785,7 @@ class Simulation {
 	get showBorder() {return this._userSettings.showBorder}
 	get smoothDrawingEnabled() {return this._userSettings.smoothDrawingEnabled}
 	get visualEffectsEnabled() {return this._userSettings.visualEffectsEnabled}
+	get disableAllWarnings() {return this._userSettings.disableAllWarnings}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
@@ -745,4 +799,5 @@ class Simulation {
     set showBorder(showBorder) {this._userSettings.showBorder = showBorder}
     set smoothDrawingEnabled(smoothDrawingEnabled) {this._userSettings.smoothDrawingEnabled = smoothDrawingEnabled}
     set visualEffectsEnabled(visualEffectsEnabled) {this._userSettings.visualEffectsEnabled = visualEffectsEnabled}
+    set disableAllWarnings(disableAllWarnings) {this._userSettings.disableAllWarnings = disableAllWarnings}
 }
