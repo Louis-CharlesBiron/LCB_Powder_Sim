@@ -30,11 +30,16 @@ class Simulation {
     static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
     static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
     static DEFAULT_AUTO_START_VALUE = true
+    static MIN_ZOOM_THRESHOLD = .1
+    static MAX_ZOOM_THRESHOLD = Infinity
+    static ZOOM_IN_INCREMENT = .25
+    static ZOOM_OUT_INCREMENT = -.2
 
 
     #simulationHasPixelsBuffer = true
     #lastPlacedPos = null
-    constructor(CVS, readyCB, autoStart, usesWebWorkers, userSettings) {
+    // TODO
+    constructor(CVS, readyCB, autoStart, usesWebWorkers, userSettings) {// TODO GET/SET
         autoStart??=Simulation.DEFAULT_AUTO_START_VALUE
         usesWebWorkers??=Simulation.DEFAULT_PHYSICS_UNIT_TYPE
 
@@ -69,6 +74,7 @@ class Simulation {
         this._loopExtra = null
         this._stepExtra = null
         this.#updateCachedGridDisplays()
+        this.#setCanvasZoomAndDrag()
 
         // CANVAS
         CVS.loopingCB = this.#main.bind(this)
@@ -112,6 +118,7 @@ class Simulation {
         if (this._isRunning && this.useLocalPhysics) this.step()
     }
 
+    // DOC TODO
     #drawVisualEffects() {// OPTIMIZE / TODO
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.#drawVisualEffects())
@@ -148,6 +155,7 @@ class Simulation {
         for (let i=0;i<l_ll;i++) batchStroke(lines[i], styles)
     }
 
+    // DOC TODO
     #drawBorder() {
         this.render.batchStroke(Simulation.#CACHED_GRID_BORDER, this._mapBorderRenderStyles)
     }
@@ -255,6 +263,7 @@ class Simulation {
     
     /**
      * Sets the state of the simulation to be running
+     * @param {Boolean} force If true, forces the start even if simulation is already running
      */
     start(force) {
         if (this._initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this._initialized = Simulation.#INIT_STATES.INITIALIZED)
@@ -277,7 +286,10 @@ class Simulation {
     
 
     /* USER CALL INTERFACE */
+    // DOC TODO
     updatePhysicsUnitType(usesWebWorkers) {
+        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
+
         const isWebWorker = usesWebWorkers&&!this.isFileServed
         this._physicsUnit = isWebWorker ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
 
@@ -292,7 +304,7 @@ class Simulation {
             })
             if (this._isRunning) this.start(true)
         }
-        else if (usesWebWorkers && this.isFileServed && !this.disableAllWarnings) console.warn(SETTINGS.FILE_SERVED_WARN)
+        else if (usesWebWorkers && this.isFileServed && !this.warningsDisabled) console.warn(SETTINGS.FILE_SERVED_WARN)
     }
 
     /**
@@ -300,6 +312,8 @@ class Simulation {
      * @param {Number} size The new map pixel size
      */
     updateMapPixelSize(size) {
+        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
+
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.updateMapPixelSize(size))
             return
@@ -323,6 +337,8 @@ class Simulation {
      * @param {Number?} height The new height of the map
      */
     updateMapSize(width, height) {
+        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
+
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.updateMapSize(width, height))
             return
@@ -342,11 +358,13 @@ class Simulation {
         this.#updateMouseListeners()
     }
 
+    // DOC TODO
     updateSidePriority(sidePriority) {
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
         return this._sidePriority = sidePriority
     }
 
+    // DOC TODO
     getPixelAtMapPos(mapPos) {
         const i = this._mapGrid.mapPosToIndex(mapPos)
         return this.usesWebWorkers ? this._lastPixels[i] : this._pixels[i]
@@ -373,14 +391,24 @@ class Simulation {
         }
     }
 
+    // DOC TODO
     #getAdjustedUserSettings(userSettings) {
         const newUserSettings = {...Simulation.DEFAULT_USER_SETTINGS}
         if (userSettings) Object.entries(userSettings).forEach(([key, value])=>newUserSettings[key] = value)
         return newUserSettings
     }
+
+    // DOC TODO
+    #checkInitializationState(warningMessage) {
+        if (this._userSettings && this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
+            if (!this.warningsDisabled) console.warn(warningMessage)
+            return true
+        }
+    }
     /* USER CALL INTERFACE -end */
 
     /* WEB WORKER CONTROL */
+    // DOC TODO
     #physicsUnitMessage(e) {
         const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES, stepExtra = this._stepExtra
 
@@ -405,6 +433,7 @@ class Simulation {
         }
     }
 
+    // DOC TODO
     #sendPixelsToWorker(type) {
         const pixels = this._pixels, pxStates = this._pxStates
         this.saveStep()
@@ -412,6 +441,7 @@ class Simulation {
         else this.#simulationHasPixelsBuffer = true
     }
 
+    // DOC TODO
     #executeQueuedOperations() {
         const queued = this._queuedBufferOperations, q_ll = queued.length
         for (let i=0;i<q_ll;i++) {
@@ -438,11 +468,13 @@ class Simulation {
         }
     }
 
+    // DOC TODO
     #updateCachedGridDisplays() {
         Simulation.#CACHED_GRID_LINES = this._mapGrid.getDrawableGridLines()
         Simulation.#CACHED_GRID_BORDER = Render.getRect([0,0], ...this._mapGrid.realDimensions)
     }
 
+    // DOC TODO
     #updateMouseListeners() {
         const mouse = this.mouse, dimensions = this._mapGrid.realDimensions
         mouse.updateListener(Mouse.LISTENER_TYPES.ENTER, this._mouseListenerIds[0], [[0,0], dimensions])
@@ -452,6 +484,7 @@ class Simulation {
     /* CACHE UPADTES -end */
 
     /* USER INPUT */
+    // DOC TODO
     #keyDown(keyboard, e) {// cleanup TODO
         const K = TypingDevice.KEYS, M = Simulation.MATERIALS, B = Simulation.BRUSH_TYPES, ctrlKey = keyboard.isDown(K.CONTROL)
         if (ctrlKey) {
@@ -480,7 +513,7 @@ class Simulation {
             else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._selectedMaterial = M.AIR
         }
 
-        // put in loop
+        // TODO put in loop
         if (keyboard.isDown([K.ARROW_RIGHT])) this.step()
         else if (keyboard.isDown([K.ARROW_LEFT])) this.backStep()
 
@@ -500,6 +533,7 @@ class Simulation {
         this.#lastPlacedPos = null
     }
 
+    // DOC TODO
     #mouseLeaveSimulation() {
         this.#lastPlacedPos = null
         this._isMouseWithinSimulation = false
@@ -524,6 +558,61 @@ class Simulation {
             if (!this._isRunning) this.updateImgMapFromPixels()
         }
     }
+
+    #zoomTowardsPos(pos,  zoomDirection) {
+        const newZoom = this._CVS.zoom + (zoomDirection<0 ? Simulation.ZOOM_IN_INCREMENT : Simulation.ZOOM_OUT_INCREMENT)
+        if (newZoom > Simulation.MIN_ZOOM_THRESHOLD && newZoom < Simulation.MAX_ZOOM_THRESHOLD) {
+            this._CVS.zoomAtPos(pos, newZoom)
+            return pos
+        }  else return false
+    }
+
+    // DOC TODO
+    #setCanvasZoomAndDrag() {
+        const CVS = this._CVS
+
+        Canvas.preventNativeZoom((dir, isMouse)=>{
+            if (this.dragAndZoomCanvasEnabled && !isMouse) this.#zoomTowardsPos(CVS.getCenter(), dir)
+        })
+
+        if (this.dragAndZoomCanvasEnabled) {
+            const frame = CVS.frame, mouse = CVS.mouse
+            let isCameraMoving = false, lastDragPos = [0,0]
+
+            frame.addEventListener("wheel", e=>{
+                if (this.dragAndZoomCanvasEnabled) {
+                    if (this.#zoomTowardsPos(mouse.rawPos, e.deltaY)) lastDragPos = [...mouse.rawPos]
+                }
+            })
+
+            frame.addEventListener("mousedown", e=>{
+                if (this.dragAndZoomCanvasEnabled) {
+                    if (e.button === Mouse.BUTTON_TYPES.RIGHT) {
+                        isCameraMoving = true
+                        lastDragPos = [e.clientX, e.clientY]
+                    }
+                    else if (e.button === Mouse.BUTTON_TYPES.MIDDLE) CVS.resetTransformations(true)
+                }
+            })
+
+            frame.addEventListener("mousemove", e=>{
+                if (this.dragAndZoomCanvasEnabled && isCameraMoving) {
+                    const {clientX, clientY} = e, [vx, vy] = CVS.viewPos, dx = clientX-lastDragPos[0], dy = clientY-lastDragPos[1]
+                    CVS.moveViewAt([vx+dx, vy+dy])
+                    lastDragPos = [clientX, clientY]
+                }
+            })
+
+            frame.addEventListener("mouseup", e=>{
+                if (isCameraMoving && e.button === Mouse.BUTTON_TYPES.RIGHT) isCameraMoving = false
+            })
+
+            frame.addEventListener("contextmenu", e=>e.preventDefault())
+
+            return true
+        }
+        else return false
+    }
     /* USER INPUT -end */
 
     /* PIXEL EDIT */
@@ -538,7 +627,7 @@ class Simulation {
             return
         }
 
-        const i = this._mapGrid.mapPosToIndex(mapPos)// TODO COULD OPTIMIZE CACHE THAT
+        const i = this._mapGrid.mapPosToIndex(mapPos)
         this._pixels[i] = material
         this._pxStates[i] = 0
     }
@@ -575,6 +664,7 @@ class Simulation {
         this._pxStates[i] = 0
     }
 
+    // DOC TODO
     #placePixelsWithBrush(x, y, brush=this._brushType) {
         const B = Simulation.BRUSH_TYPES
         if (brush & Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
@@ -675,24 +765,27 @@ class Simulation {
      * - Either a Uint16Array containing the material value for each index
      * - Or a string in the format created by the function exportAsText()
      * - Or an Object containing the material value for each index {"index": material}
-     * @param {[width, height]} saveDimensions Specifies the save data dimensions when mapData is of Uint16Array type (leave undefined, used internally)
+     * @param {Boolean? | [width, height]?} useSaveSizes Whether to resize the map size and pixel size to the save's values (Also used internally to specify the save data dimensions when mapData is of Uint16Array type)
      */
-    load(mapData, saveDimensions=null) {
-        if (this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
-            if (!this.disableAllWarnings) console.warn(SETTINGS.NOT_INITIALIZED_LOAD_WARN)
-            return
-        }
+    load(mapData, useSaveSizes=null) {
+        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_LOAD_WARN)) return
 
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.load(mapData, saveDimensions))
+            this._queuedBufferOperations.push(()=>this.load(mapData, useSaveSizes))
             return
         }
 
         if (mapData) {
-            if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(saveDimensions[0], saveDimensions[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
+            if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(useSaveSizes[0], useSaveSizes[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
             else if (typeof mapData === "string") {
-                const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight] = rawSize.split(",").map(x=>+x)
+                const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x)
                 let savePixels = null
+
+                if (useSaveSizes) {
+                    this.updateMapSize(saveWidth, saveHeight)
+                    this.updateMapPixelSize(pixelSize)
+                }
+
                 if (exportType==Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data)
                 else if (exportType==Simulation.EXPORT_STATES.COMPACTED) {
                     let m_ll = data.length, offset = 0 
@@ -792,7 +885,8 @@ class Simulation {
 	get showBorder() {return this._userSettings.showBorder}
 	get smoothDrawingEnabled() {return this._userSettings.smoothDrawingEnabled}
 	get visualEffectsEnabled() {return this._userSettings.visualEffectsEnabled}
-	get disableAllWarnings() {return this._userSettings.disableAllWarnings}
+	get warningsDisabled() {return this._userSettings.warningsDisabled}
+	get dragAndZoomCanvasEnabled() {return this._userSettings.dragAndZoomCanvasEnabled}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
@@ -806,5 +900,9 @@ class Simulation {
     set showBorder(showBorder) {this._userSettings.showBorder = showBorder}
     set smoothDrawingEnabled(smoothDrawingEnabled) {this._userSettings.smoothDrawingEnabled = smoothDrawingEnabled}
     set visualEffectsEnabled(visualEffectsEnabled) {this._userSettings.visualEffectsEnabled = visualEffectsEnabled}
-    set disableAllWarnings(disableAllWarnings) {this._userSettings.disableAllWarnings = disableAllWarnings}
+    set warningsDisabled(warningsDisabled) {this._userSettings.warningsDisabled = warningsDisabled}
+    set dragAndZoomCanvasEnabled(dragAndZoomCanvasEnabled) {
+        this._userSettings.dragAndZoomCanvasEnabled = dragAndZoomCanvasEnabled
+        if (!dragAndZoomCanvasEnabled) CVS.resetTransformations(true)
+    }
 }

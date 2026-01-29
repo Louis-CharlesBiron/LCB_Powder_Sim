@@ -55,6 +55,7 @@ self.onmessage=e=>{
     }
 }
 
+    // DOC TODO
 function loopCore() {
     if (isLoopStarted) {
         const time = performance.now(), deltaTime = time-lastTime
@@ -69,6 +70,7 @@ function loopCore() {
     }
 }
 
+    // DOC TODO
 function startLoop() {
     if (!isLoopStarted) {
         isLoopStarted = true
@@ -76,6 +78,7 @@ function startLoop() {
     }
 }
 
+    // DOC TODO
 function stopLoop() {
     if (isLoopStarted) {
         isLoopStarted = false
@@ -83,6 +86,7 @@ function stopLoop() {
     }
 }
 
+    // DOC TODO
 function step() {
     if (pixels.buffer.byteLength) {
         lastStepTime = performance.now()

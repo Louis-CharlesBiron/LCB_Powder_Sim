@@ -36,21 +36,17 @@ class PhysicsCore {
         for (let i=0;i<invertedWater_ll;i++) invertedWaterCache[i] = PhysicsCore.#updateCachedInvertedWaterTable(D, i)
     }
 
-
-    /**
-    * Runs one physics step
-    */
+    // DOC TODO
     step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
-        const p_ll = pixels.length-1, PX = 1, STATE = 2, AIR = M.AIR, STONE = M.STONE, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE,
-              RT = PhysicsCore.#RANDOM_CACHE, RS = PhysicsCore.#RANDOM_TABLE_SIZE-1, SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGHT, width2 = mapWidth>>1
-        
-        pxStepUpdated.fill(0)
-
-        // TODO CLEANUP
-        const {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES,
+        const p_ll = pixels.length-1, width2 = mapWidth>>1, PX = 1, STATE = 2,
+              AIR = M.AIR, STONE = M.STONE, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE,
+              RT = PhysicsCore.#RANDOM_CACHE, RS = PhysicsCore.#RANDOM_TABLE_SIZE-1, SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGH,
+              {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES,
               SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT,
               WATER_CACHE = PhysicsCore.#WATER_CACHE, WATER_SP_BIT = PhysicsCore.#WATER_SP_BIT,
               INVERTED_WATER_CACHE = PhysicsCore.#INVERTED_WATER_CACHE, INVERTED_WATER_SP_BIT = PhysicsCore.#INVERTED_WATER_SP_BIT
+        
+        pxStepUpdated.fill(0)
 
         function getSideSelectionPriority(i) {
             if (SP_LEFT) return true
@@ -374,6 +370,7 @@ class PhysicsCore {
     }
 
 
+    // DOC TODO
     static #updateCachedSandTable(D, stack) {
         const isLeftFirst = stack & PhysicsCore.#SAND_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
               b = stack & D.b,
@@ -391,6 +388,7 @@ class PhysicsCore {
         return MOVES.I
     }
 
+    // DOC TODO
     static #updateCachedWaterTable(D, stack) {
         const isLeftFirst = stack & PhysicsCore.#WATER_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
               b = stack & D.b,
@@ -414,6 +412,7 @@ class PhysicsCore {
         return MOVES.I
     }
 
+    // DOC TODO
     static #updateCachedInvertedWaterTable(D, stack) {
         const isLeftFirst = stack & PhysicsCore.#INVERTED_WATER_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
               t = stack & D.t,
