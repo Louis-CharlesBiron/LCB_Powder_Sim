@@ -16,7 +16,7 @@ const SETTINGS = {
     MATERIAL_COLORS: {
         AIR:[0,0,0,0],
         SAND:[235,235,158,1],
-        WATER:[0,15,242,.75],
+        WATER:[0,15,242,.7],
         STONE:[100,100,100,1],
         GRAVEL:[188,188,188,1], 
         INVERTED_WATER:[55,75,180,.75],

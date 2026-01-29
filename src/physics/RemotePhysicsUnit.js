@@ -56,7 +56,7 @@ self.onmessage=e=>{
 }
 
     // DOC TODO
-function loopCore() {
+function statusLoopCore() {
     if (isLoopStarted) {
         const time = performance.now(), deltaTime = time-lastTime
         timeAcc += deltaTime
@@ -66,7 +66,7 @@ function loopCore() {
             step()
             timeAcc -= PHYSICS_DELAY
         }
-        setTimeout(loopCore, 0)
+        setTimeout(statusLoopCore, 0)
     }
 }
 
@@ -74,7 +74,7 @@ function loopCore() {
 function startLoop() {
     if (!isLoopStarted) {
         isLoopStarted = true
-        loopCore()
+        statusLoopCore()
     }
 }
 

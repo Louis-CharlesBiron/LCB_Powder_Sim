@@ -35,7 +35,7 @@ class CDEUtils {
      * Returns a random number within the min and max range
      * @param {Number} min: the minimal possible value (included)
      * @param {Number} max: the maximal possible value (included)
-     * @param {Number?} decimals: the decimal point. (Defaults to integers)
+     * @param {Number?} decimals: the decimal point. (Defaults to 0 (integers))
      * @returns the generated number
      */
     static random(min, max, decimals=0) {
@@ -44,6 +44,17 @@ class CDEUtils {
             const precision = 10**decimals
             return Math.round((Math.random()*(max-min)+min)*precision)/precision
         } else return (Math.random()*(max-min)+min)>>0
+    }
+
+    /**
+     * Truncates a number to a specific decimal point
+     * @param {Number} num: the number to truncate
+     * @param {Number?} decimals: the decimal point to cut off. (Defaults to 6)
+     * @returns the truncated number
+     */
+    static truncateDecimals(num, decimals=6) {
+        const factor = 10**decimals
+        return Math.trunc(num*factor)/factor
     }
 
     /**
@@ -3750,7 +3761,7 @@ class Canvas {
 
     /**
      * Prevents all native zooming shortcuts (Both with on mouse and keyboard)
-     * @param {Function?} callback Custom callback called with a number from -1 to 1 representing the zoom direction and the device on a zoom attempt. (zoomDirection, isK)=>{}
+     * @param {Function?} callback Custom callback called with a number from -1 to 1 representing the zoom direction and the device on a zoom attempt. (zoomDirection, isMouse)=>{}
      */
     static preventNativeZoom(callback) {
         const hasCallback = CDEUtils.isFunction(callback)

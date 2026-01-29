@@ -70,7 +70,6 @@ class Simulation {
         this._imgMap = CVS.ctx.createImageData(...this._mapGrid.realDimensions)
         this._offscreenCanvas = new OffscreenCanvas(...this._mapGrid.realDimensions)
         this._offscreenCtx = this._offscreenCanvas.getContext("2d")
-        this._simImgMapDrawLoop = CanvasUtils.createEmptyObj(CVS, null, this.#simImgMapDraw.bind(this))
         this._loopExtra = null
         this._stepExtra = null
         this.#updateCachedGridDisplays()
@@ -105,9 +104,9 @@ class Simulation {
      * @param {Number} deltaTime The deltaTime
      */
     #main(deltaTime) {
-        const mouse = this.mouse, settings = this._userSettings
+        const mouse = this.mouse, settings = this._userSettings, loopExtra = this._loopExtra
 
-        if (this._loopExtra) this._loopExtra(deltaTime)
+        if (loopExtra) loopExtra(deltaTime)
 
         if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.CONTROL)) this.#placePixelFromMouse(mouse)
         
@@ -116,6 +115,9 @@ class Simulation {
 
         if (settings.visualEffectsEnabled) this.#drawVisualEffects()
         if (this._isRunning && this.useLocalPhysics) this.step()
+
+        this._offscreenCtx.putImageData(this._imgMap, 0, 0)
+        this.ctx.drawImage(this._offscreenCanvas, 0, 0)
     }
 
     // DOC TODO
@@ -141,12 +143,6 @@ class Simulation {
             else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.ORIGIN) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,220,0.4])
             else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.DISABLED) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [0,0,220,0.3])
         }  
-    }
-
-    // Draws the imageMap on the canvas
-    #simImgMapDraw() {
-        this._offscreenCtx.putImageData(this._imgMap, 0, 0)
-        this.ctx.drawImage(this._offscreenCanvas, 0, 0)
     }
 
     // Draws a border and line to show the map grid on the canvas
