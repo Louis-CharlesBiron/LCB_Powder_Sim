@@ -281,7 +281,7 @@ class Simulation {
     /* SIMULATION CONTROL -end */
     
 
-    /* USER CALL INTERFACE */
+    /* SIMULATION API */
     // DOC TODO
     updatePhysicsUnitType(usesWebWorkers) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
@@ -366,6 +366,20 @@ class Simulation {
         return this.usesWebWorkers ? this._lastPixels[i] : this._pixels[i]
     }
 
+    // DOC TODO
+    updateSelectedMaterial(material) {
+        material = +material
+        if (Simulation.MATERIAL_NAMES[material]) return this._selectedMaterial = material
+        return this._selectedMaterial
+    }
+
+    // DOC TODO
+    updateBrushType(brushType) {
+        brushType = +brushType
+        if (Object.values(Simulation.BRUSH_TYPES).includes(brushType)) return this._brushType = brushType
+        return this._brushType
+    }
+
     /**
      * Offsets the pixel array to match the updated size 
      * @param {Number} oldWidth The previous/current width of the map
@@ -401,7 +415,7 @@ class Simulation {
             return true
         }
     }
-    /* USER CALL INTERFACE -end */
+    /* SIMULATION API -end */
 
     /* WEB WORKER CONTROL */
     // DOC TODO
@@ -886,9 +900,9 @@ class Simulation {
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
-	set selectedMaterial(_selectedMaterial) {this._selectedMaterial = _selectedMaterial}
+	set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
 	set isRunning(isRunning) {this._isRunning = isRunning}
-	set brushType(brushType) {this._brushType = brushType}
+	set brushType(brushType) {return this.updateBrushType(brushType)}
 	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
 	set backStepSavingMaxCount(_backStepSavingMaxCount) {this._backStepSavingMaxCount = _backStepSavingMaxCount}
 	set mapGridRenderStyles(_mapGridRenderStyles) {this._mapGridRenderStyles = _mapGridRenderStyles}

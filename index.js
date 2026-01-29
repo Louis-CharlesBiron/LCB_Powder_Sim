@@ -116,16 +116,16 @@ pixelSizeInput.value = simulation.mapGrid.pixelSize
 setRegularNumberInput(pixelSizeInput, v=>simulation.updateMapPixelSize(v))
 addWheelIncrement(pixelSizeInput, [1,5,10], v=>simulation.updateMapPixelSize(v))
 
-// BRUSH TYPES
-const brushTypeOptions = document.getElementById("brushTypeOptions")
-brushTypeOptions.value = Simulation.DEFAULT_BRUSH_TYPE
-brushTypeOptions.onchange=()=>simulation.brushType = +brushTypeOptions.value
-fillSelectOptions(brushTypeOptions, Object.keys(Simulation.BRUSH_TYPES), i=>1<<i)
-addWheelIncrement(brushTypeOptions, null, v=>simulation.brushType = +v)
-
 // MATERIAL TYPES
 const materialOptions = document.getElementById("materialOptions")
-materialOptions.value = Simulation.DEFAULT_MATERIAL
-materialOptions.onchange=()=>simulation.selectedMaterial = +materialOptions.value
+materialOptions.onchange=()=>simulation.updateSelectedMaterial(materialOptions.value)
 fillSelectOptions(materialOptions, Object.keys(Simulation.MATERIALS), i=>i?1<<(i-1):0)
-addWheelIncrement(materialOptions, null, v=>simulation.selectedMaterial = +v)
+addWheelIncrement(materialOptions, null, v=>simulation.updateSelectedMaterial(v))
+materialOptions.value = Simulation.DEFAULT_MATERIAL
+
+// BRUSH TYPES
+const brushTypeOptions = document.getElementById("brushTypeOptions")
+brushTypeOptions.onchange=()=>simulation.updateBrushType(brushTypeOptions.value)
+fillSelectOptions(brushTypeOptions, Object.keys(Simulation.BRUSH_TYPES), i=>1<<i)
+addWheelIncrement(brushTypeOptions, null, v=>simulation.updateBrushType(v))
+brushTypeOptions.value = Simulation.DEFAULT_BRUSH_TYPE
