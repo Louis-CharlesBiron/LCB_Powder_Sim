@@ -38,7 +38,6 @@ function readyCB(sim) {
     //sim.PERF_TEST_FULL_WATER_REG()
 }
 
-document.onwheel=e=>CVS.zoomAtPos(CVS.mouse.rawPos,CVS.zoom+=e.deltaY<0?.1:-.1)
 
 
 //simulation.load("1x30,25,25x0,262,4,1,0,29,4,1,0,29,4,1,0,29,4,1,0,1,4,1,0,27,4,1,0,1,4,1,0,13,4,1,0,1,4,1,0,11,4,1,256,1,4,1,0,13,4,1,256,1,4,1,0,11,4,1,256,1,4,1,0,13,4,1,256,1,4,1,0,11,4,1,256,1,4,1,0,13,4,1,256,1,4,1,0,11,4,1,256,1,4,1,0,13,4,1,256,1,4,13,256,1,4,1,0,13,4,1,256,15,4,1,0,13,4,17,0,155")
@@ -53,9 +52,38 @@ document.onwheel=e=>CVS.zoomAtPos(CVS.mouse.rawPos,CVS.zoom+=e.deltaY<0?.1:-.1)
 //simulation.stop()
 
 // GENERAL
-document.oncontextmenu=e=>{
-    e.preventDefault()
+
+// ZOOM AND DRAG
+let isCameraMoving = false, lastDragPos = [0,0]
+document.onwheel=e=>{
+    const newZoom = CVS.zoom + (e.deltaY<0 ? .25 : -.2)
+    if (newZoom > .1) {
+        CVS.zoomAtPos(CVS.mouse.rawPos, newZoom)
+        lastDragPos[0] = CVS.mouse.rawX
+        lastDragPos[1] = CVS.mouse.rawY
+    }
 }
+document.onmousedown=e=>{
+    if (e.button === Mouse.BUTTON_TYPES.RIGHT) {
+        isCameraMoving = true
+        lastDragPos[0] = e.clientX
+        lastDragPos[1] = e.clientY
+    }
+    else if (e.button === Mouse.BUTTON_TYPES.MIDDLE) CVS.resetTransformations(true)
+}
+document.onmousemove=e=>{
+    if (isCameraMoving) {
+        const {clientX, clientY} = e, [vx, vy] = CVS.viewPos, dx = clientX-lastDragPos[0], dy = clientY-lastDragPos[1]
+
+        CVS.moveViewAt([vx+dx, vy+dy])
+        lastDragPos[0] = clientX
+        lastDragPos[1] = clientY
+    }
+}
+document.onmouseup=e=>{
+    if (e.button === Mouse.BUTTON_TYPES.RIGHT) isCameraMoving = false
+}
+document.oncontextmenu=e=>e.preventDefault()
 
 // CONTROLS BUTTONS
 document.getElementById("startButton").onclick=()=>simulation.start()

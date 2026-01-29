@@ -63,6 +63,8 @@ class Simulation {
         this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.GRID_DISPLAY_COLOR, null, null, null, 1)
         this._mapBorderRenderStyles = CVS.render.profile2.update(MapGrid.BORDER_DISPLAY_COLOR, null, null, null, 2)
         this._imgMap = CVS.ctx.createImageData(...this._mapGrid.realDimensions)
+        this._offscreenCanvas = new OffscreenCanvas(...this._mapGrid.realDimensions)
+        this._offscreenCtx = this._offscreenCanvas.getContext("2d")
         this._simImgMapDrawLoop = CanvasUtils.createEmptyObj(CVS, null, this.#simImgMapDraw.bind(this))
         this._loopExtra = null
         this._stepExtra = null
@@ -136,17 +138,18 @@ class Simulation {
 
     // Draws the imageMap on the canvas
     #simImgMapDraw() {
-        this.ctx.putImageData(this._imgMap, 0, 0)
+        this._offscreenCtx.putImageData(this._imgMap, 0, 0)
+        this.ctx.drawImage(this._offscreenCanvas, 0, 0)
     }
 
     // Draws a border and line to show the map grid on the canvas
     #drawMapGrid() {
-        const lines = Simulation.#CACHED_GRID_LINES, l_ll = lines.length, batchStroke = this.render.batchStroke.bind(this.render), styles = this._mapGridRenderStyles//.update(MapGrid.GRID_DISPLAY_COLOR)
+        const lines = Simulation.#CACHED_GRID_LINES, l_ll = lines.length, batchStroke = this.render.batchStroke.bind(this.render), styles = this._mapGridRenderStyles
         for (let i=0;i<l_ll;i++) batchStroke(lines[i], styles)
     }
 
     #drawBorder() {
-        this.render.batchStroke(Simulation.#CACHED_GRID_BORDER, this._mapBorderRenderStyles)//.update(MapGrid.BORDER_DISPLAY_COLOR)
+        this.render.batchStroke(Simulation.#CACHED_GRID_BORDER, this._mapBorderRenderStyles)
     }
 
     /**
@@ -305,6 +308,8 @@ class Simulation {
         const map = this._mapGrid
         map.pixelSize = size
         this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
+        this._offscreenCanvas.width = map.realDimensions[0]
+        this._offscreenCanvas.height = map.realDimensions[1]
         this.#updateCachedMapPixelsRows()
         this.#updateCachedGridDisplays()
         this.updateImgMapFromPixels()
@@ -330,6 +335,8 @@ class Simulation {
         this.#updateCachedGridDisplays()
 
         this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
+        this._offscreenCanvas.width = map.realDimensions[0]
+        this._offscreenCanvas.height = map.realDimensions[1]
         this.updateImgMapFromPixels()
 
         this.#updateMouseListeners()
@@ -485,7 +492,7 @@ class Simulation {
 
     // mouseDown listener, allows the mouse to place pixels
     #mouseDown(mouse) {
-        this.#placePixelFromMouse(mouse)
+        if (!mouse.rightClicked) this.#placePixelFromMouse(mouse)
     }
 
     // mouseUp listener, disables smooth drawing when mouse is unpressed
