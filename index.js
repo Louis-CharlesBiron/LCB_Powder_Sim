@@ -22,6 +22,7 @@ simulation.loopExtra=()=>{
 const mousePosStatus = document.getElementById("mousePosStatus"),
       mouseMaterialStatus = document.getElementById("mouseMaterialStatus"),
       selectedMaterialStatus = document.getElementById("selectedMaterialStatus"),
+      brushTypeStatus = document.getElementById("brushTypeStatus"),
       mapDimensionsStatus = document.getElementById("mapDimensionsStatus"),
       sidePriorityStatus = document.getElementById("sidePriorityStatus"),
       isRunningStatus = document.getElementById("isRunningStatus"),
@@ -43,6 +44,10 @@ function statusLoopCore() {
     // SELECTED MATERIAL
     const selectedMaterialText = Simulation.MATERIAL_NAMES[simulation.selectedMaterial]
     if (selectedMaterialStatus.textContent !== selectedMaterialText) selectedMaterialStatus.textContent = selectedMaterialText
+
+    // BRUSH TYPE
+    const brushTypeText = Simulation.BRUSH_TYPE_NAMES[simulation.brushType]
+    if (brushTypeStatus.textContent !== brushTypeText) brushTypeStatus.textContent = brushTypeText
 
     // MAP DIMENSIONS
     const mapDimensionsText = simulation.mapGrid.displayDimensions+" | "+simulation.mapGrid.pixelSize+"p ("+simulation.mapGrid.mapWidth*simulation.mapGrid.mapHeight+")"

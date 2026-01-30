@@ -83,6 +83,7 @@ const SETTINGS = {
         X99:1<<10,
     },
 
+    BRUSH_TYPE_NAMES: [],
     BRUSH_GROUPS: {},
     BRUSHES_X_VALUES: [],
     
@@ -117,6 +118,8 @@ const SETTINGS = {
     NOT_INITIALIZED_MAP_SIZE_WARN:`Tried updating map size with 'updateMapSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update map size on launch.`,
     NOT_INITIALIZED_PIXEL_SIZE_WARN:`Tried updating pixel size with 'updateMapPixelSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update pixel size on launch.`,
     NOT_INITIALIZED_PHYSICS_TYPE_WARN:`Tried updating physics unit type with 'updatePhysicsUnitType()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update physics unit type on launch.`,
+    
+    STANDALONE_KEYBIND_WARN:`The keybind pressed is not linked to any function.`,
 
     DEFAULT_USER_SETTINGS: {
         dragAndZoomCanvasEnabled: true,
@@ -125,7 +128,7 @@ const SETTINGS = {
         showGrid: true,
         smoothDrawingEnabled: true,
         visualEffectsEnabled: true,
-    }
+    },
 }
 
 // SET MATERIAL GROUPS
@@ -166,6 +169,12 @@ const M = SETTINGS.MATERIALS, materials = Object.keys(M), m_ll = materials.lengt
 for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) {
     SETTINGS.MATERIAL_NAMES[i] = materials[ii]
     SETTINGS.MATERIAL_COLORS_INDEXED[i] = SETTINGS.MATERIAL_COLORS[materials[ii]]
+}
+
+// SET BRUSH TYPE NAMES
+const B = SETTINGS.BRUSH_TYPES, brushTypes = Object.keys(B), bt_ll = brushTypes.length
+for (let i=1,ii=0;ii<bt_ll;i=!i?1:i*2,ii++) {
+    SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
 }
 
 // SET SIDE PRIORITY NAMES

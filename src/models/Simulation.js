@@ -12,6 +12,7 @@ class Simulation {
     static EXPORT_STATES = SETTINGS.EXPORT_STATES
     static EXPORT_SEPARATOR = SETTINGS.EXPORT_SEPARATOR
     static BRUSH_TYPES = SETTINGS.BRUSH_TYPES
+    static BRUSH_TYPE_NAMES = SETTINGS.BRUSH_TYPE_NAMES
     static #BRUSHES_X_VALUES = SETTINGS.BRUSHES_X_VALUES
     static #BRUSH_GROUPS = SETTINGS.BRUSH_GROUPS
     static #WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
@@ -34,11 +35,11 @@ class Simulation {
     static MAX_ZOOM_THRESHOLD = Infinity
     static ZOOM_IN_INCREMENT = .25
     static ZOOM_OUT_INCREMENT = -.2
-
+    static DEFAULT_KEYBINDS = DEFAULT_KEYBINDS
 
     #simulationHasPixelsBuffer = true
     #lastPlacedPos = null
-    // TODO
+    // DOC TODO
     constructor(CVS, readyCB, autoStart, usesWebWorkers, userSettings) {// TODO GET/SET
         autoStart??=Simulation.DEFAULT_AUTO_START_VALUE
         usesWebWorkers??=Simulation.DEFAULT_PHYSICS_UNIT_TYPE
@@ -74,7 +75,8 @@ class Simulation {
         this._stepExtra = null
         this.#updateCachedGridDisplays()
         this.#setCanvasZoomAndDrag()
-
+        this.setKeyBinds()
+        
         // CANVAS
         CVS.loopingCB = this.#main.bind(this)
         CVS.setMouseMove()
@@ -82,7 +84,7 @@ class Simulation {
         CVS.setMouseDown(this.#mouseDown.bind(this))
         CVS.setMouseUp(this.#mouseUp.bind(this))
         CVS.setKeyUp(null, true)
-        CVS.setKeyDown(this.#keyDown.bind(this), true)
+        CVS.setKeyDown(null, true)
         CVS.start()
         this._mouseListenerIds = [
             CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
@@ -108,7 +110,7 @@ class Simulation {
 
         if (loopExtra) loopExtra(deltaTime)
 
-        if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.CONTROL)) this.#placePixelFromMouse(mouse)
+        if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.SHIFT)) this.#placePixelFromMouse(mouse)
         
         if (settings.showGrid) this.#drawMapGrid()
         if (settings.showBorder) this.#drawBorder()
@@ -300,31 +302,33 @@ class Simulation {
             })
             if (this._isRunning) this.start(true)
         }
-        else if (usesWebWorkers && this.isFileServed && !this.warningsDisabled) console.warn(SETTINGS.FILE_SERVED_WARN)
+        else if (usesWebWorkers && this.isFileServed) this.#warn(SETTINGS.FILE_SERVED_WARN)
     }
 
     /**
      * Updates the map pixel size
-     * @param {Number} size The new map pixel size
+     * @param {Number} pixelSize The new map pixel size
      */
-    updateMapPixelSize(size) {
+    updateMapPixelSize(pixelSize) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
 
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.updateMapPixelSize(size))
+            this._queuedBufferOperations.push(()=>this.updateMapPixelSize(pixelSize))
             return
         }
 
         const map = this._mapGrid
-        map.pixelSize = size
-        this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
-        this._offscreenCanvas.width = map.realDimensions[0]
-        this._offscreenCanvas.height = map.realDimensions[1]
-        this.#updateCachedMapPixelsRows()
-        this.#updateCachedGridDisplays()
-        this.updateImgMapFromPixels()
+        if (pixelSize !== map.pixelSize) {
+            map.pixelSize = pixelSize
+            this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
+            this._offscreenCanvas.width = map.realDimensions[0]
+            this._offscreenCanvas.height = map.realDimensions[1]
+            this.#updateCachedMapPixelsRows()
+            this.#updateCachedGridDisplays()
+            this.updateImgMapFromPixels()
 
-        this.#updateMouseListeners()
+            this.#updateMouseListeners()
+        }
     }
 
     /**
@@ -340,18 +344,21 @@ class Simulation {
             return
         }
 
-        const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight, oldPixels = this.#getPixelsCopy()
-        height = map.mapHeight = height||map.mapHeight
-        width = map.mapWidth = width||map.mapWidth
-        this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldPixels)
-        this.#updateCachedGridDisplays()
+        const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight
+            if (width && width !== oldWidth && height && height !== oldHeight) {
+            const oldPixels = this.#getPixelsCopy()
+            height = map.mapHeight = height||map.mapHeight
+            width = map.mapWidth = width||map.mapWidth
+            this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldPixels)
+            this.#updateCachedGridDisplays()
 
-        this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
-        this._offscreenCanvas.width = map.realDimensions[0]
-        this._offscreenCanvas.height = map.realDimensions[1]
-        this.updateImgMapFromPixels()
+            this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
+            this._offscreenCanvas.width = map.realDimensions[0]
+            this._offscreenCanvas.height = map.realDimensions[1]
+            this.updateImgMapFromPixels()
 
-        this.#updateMouseListeners()
+            this.#updateMouseListeners()
+        }
     }
 
     // DOC TODO
@@ -411,9 +418,14 @@ class Simulation {
     // DOC TODO
     #checkInitializationState(warningMessage) {
         if (this._userSettings && this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
-            if (!this.warningsDisabled) console.warn(warningMessage)
+            this.#warn(warningMessage)
             return true
         }
+    }
+
+    // DOC TODO
+    #warn(warningMessage) {
+        if (!this.warningsDisabled) console.warn(warningMessage)
     }
     /* SIMULATION API -end */
 
@@ -495,42 +507,30 @@ class Simulation {
 
     /* USER INPUT */
     // DOC TODO
-    #keyDown(keyboard, e) {// cleanup TODO
-        const K = TypingDevice.KEYS, M = Simulation.MATERIALS, B = Simulation.BRUSH_TYPES, ctrlKey = keyboard.isDown(K.CONTROL)
-        if (ctrlKey) {
-            if (!keyboard.isDown([K.R, K.C, K.V, K.W, K.SHIFT, K.A])) e.preventDefault()
-            
-            if (keyboard.isDown([K.DIGIT_1, K.NUMPAD_1]))      this._brushType = B.PIXEL
-            else if (keyboard.isDown([K.DIGIT_2, K.NUMPAD_2])) this._brushType = B.VERTICAL_CROSS
-            else if (keyboard.isDown([K.DIGIT_3, K.NUMPAD_3])) this._brushType = B.X3
-            else if (keyboard.isDown([K.DIGIT_4, K.NUMPAD_4])) this._brushType = B.BIG_DOT
-            else if (keyboard.isDown([K.DIGIT_5, K.NUMPAD_5])) this._brushType = B.X5
-            else if (keyboard.isDown([K.DIGIT_6, K.NUMPAD_6])) this._brushType = B.X15
-            else if (keyboard.isDown([K.DIGIT_7, K.NUMPAD_7])) this._brushType = B.X25
-            else if (keyboard.isDown([K.DIGIT_8, K.NUMPAD_8])) this._brushType = B.X99
-            else if (keyboard.isDown([K.DIGIT_9, K.NUMPAD_9])) this._brushType = B.X99
-            else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._brushType = B.PIXEL
-        } else {
-            if (keyboard.isDown([K.DIGIT_1, K.NUMPAD_1]))      this._selectedMaterial = M.SAND 
-            else if (keyboard.isDown([K.DIGIT_2, K.NUMPAD_2])) this._selectedMaterial = M.WATER
-            else if (keyboard.isDown([K.DIGIT_3, K.NUMPAD_3])) this._selectedMaterial = M.STONE
-            else if (keyboard.isDown([K.DIGIT_4, K.NUMPAD_4])) this._selectedMaterial = M.GRAVEL
-            else if (keyboard.isDown([K.DIGIT_5, K.NUMPAD_5])) this._selectedMaterial = M.INVERTED_WATER
-            else if (keyboard.isDown([K.DIGIT_6, K.NUMPAD_6])) this._selectedMaterial = M.CONTAMINANT
-            else if (keyboard.isDown([K.DIGIT_7, K.NUMPAD_7])) this._selectedMaterial = M.LAVA
-            else if (keyboard.isDown([K.DIGIT_8, K.NUMPAD_8, K.E])) this._selectedMaterial = M.ELECTRICITY
-            else if (keyboard.isDown([K.DIGIT_9, K.NUMPAD_9])) this._selectedMaterial = M.COPPER
-            else if (keyboard.isDown([K.DIGIT_0, K.NUMPAD_0])) this._selectedMaterial = M.AIR
+    setKeyBinds(keybinds=Simulation.DEFAULT_KEYBINDS) {
+        const keyboard = this._CVS.typingDevice, DOWN = TypingDevice.LISTENER_TYPES.DOWN
+
+        // SET DEFAULTS
+        Object.entries(keybinds).filter(bind=>bind[1].defaultFunction).forEach(([bindName, bindValue])=>{
+            const {defaultFunction, defaultParams, keys, triggerType} = bindValue
+            keyboard.addListener(DOWN, keys, (keyboard, e)=>this.#keybindTryAction(keyboard, e, ()=>this[defaultFunction](...(defaultParams||[])), bindValue), triggerType)
+        })
+
+        if (keybinds.MY_CUSTOM_SIZE_KEYBIND) keyboard.addListener(DOWN, keybinds.MY_CUSTOM_SIZE_KEYBIND.keys, (keyboard, e)=>this.#keybindTryAction(keyboard, e, ()=>{
+            this.updateMapSize(48, 38)
+            this.updateMapPixelSize(18)
+        }, keybinds.MY_CUSTOM_SIZE_KEYBIND), keybinds.MY_CUSTOM_SIZE_KEYBIND.triggerType)
+    }
+
+    // DOC TODO
+    #keybindTryAction(typingDevice, e, actionCB, bindValue) {
+        const hasAction = CDEUtils.isFunction(actionCB), {requiredKeys, cancelKeys, preventDefault} = bindValue
+        if (preventDefault) e.preventDefault()
+        if (!hasAction) {
+            this.#warn(SETTINGS.STANDALONE_KEYBIND_WARN)
+            return
         }
-
-        // TODO put in loop
-        if (keyboard.isDown([K.ARROW_RIGHT])) this.step()
-        else if (keyboard.isDown([K.ARROW_LEFT])) this.backStep()
-
-        else if (keyboard.isDown([K.SPACE])) this.start()
-        else if (keyboard.isDown([K.ESCAPE])) this.stop()
-
-        if (ctrlKey && keyboard.isDown(K.BACKSPACE)) this.clear()
+        if ((!requiredKeys || typingDevice.isDown(requiredKeys)) && (!cancelKeys || !typingDevice.isDown(cancelKeys))) actionCB.bind(this)()
     }
 
     // mouseDown listener, allows the mouse to place pixels
