@@ -685,8 +685,8 @@ class Simulation {
             }
             this.placePixelAtCoords(x, y)
         } else if (brush === B.BIG_DOT) {
-            if (x) this.placePixelAtCoords(x-2, y)
-            if (x !== this._mapGrid.mapWidth-2) this.placePixelAtCoords(x+2, y)
+            if (x-2 >= 0) this.placePixelAtCoords(x-2, y)
+            if (x+2 < this._mapGrid.mapWidth) this.placePixelAtCoords(x+2, y)
                 this.placePixelAtCoords(x, y-2)
                 this.placePixelAtCoords(x, y+2)
                 this.fillArea([x-1,y-1], [x+1,y+1])
