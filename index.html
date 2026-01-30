@@ -10,7 +10,7 @@
 
     <div class="main">
       <div class="cvsParent">
-        <canvas id="sim"></canvas>
+        <canvas id="simulationCanvas"></canvas>
       </div>
 
       <div class="controls">
@@ -24,9 +24,8 @@
           </div>
 
           <div class="settings">
-            <input id="speedInput" type="number" step="0.1" min="0.1" max="10" placeholder="Speed...">
-            <input id="widthInput" type="number" step="1" min="1" max="1200" placeholder="Width...">
-            <input id="heightInput" type="number" step="1" min="1" max="1000" placeholder="Height...">
+            <input id="widthInput" type="number" step="1" min="1" max="1920" placeholder="Width...">
+            <input id="heightInput" type="number" step="1" min="1" max="1080" placeholder="Height...">
             <input id="pixelSizeInput" type="number" step="1" min="1" max="200" placeholder="Pixel size...">
             <select id="brushTypeOptions"></select>
             <select id="materialOptions"></select>
@@ -50,22 +49,26 @@
 
     <div class="status">
       <span><span id="fpsDisplay"></span><span id="fpsStepDisplay"></span></span>
-      <span id="mousePos"></span>
-      <span id="mapDim"></span>
-      <span id="selectedMaterial"></span>
-      <span id="mouseMaterial"></span>
-      <span id="sidePriorityText"></span>
-      <span id="isRunningText"></span>
-      <span id="unitType"></span>
+      <span id="mousePosStatus"></span>
+      <span id="mapDimensionsStatus"></span>
+      <span id="selectedMaterialStatus"></span>
+      <span id="brushTypeStatus"></span>
+      <span id="mouseMaterialStatus"></span>
+      <span id="sidePriorityStatus"></span>
+      <span id="isRunningStatus"></span>
+      <span id="physicsUnitTypeStatus"></span>
+      <span id="zoomStatus"></span>
     </div>
 
 
     <script src="./src/engine/canvasDotEffect.js"></script>
     <script src="./src/simulation/settings.js"></script>
+    <script src="./src/simulation/defaultKeybinds.js"></script>
     <script src="./src/physics/PhysicsCore.js"></script>
     <script src="./src/physics/LocalPhysicsUnit.js"></script>
     <script src="./src/models/MapGrid.js"></script>
     <script src="./src/models/Simulation.js"></script>
+    <script src="./utils.js"></script>
     <script src="./index.js"></script>
   </body>
 </html>
