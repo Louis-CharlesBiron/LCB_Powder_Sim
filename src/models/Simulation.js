@@ -391,6 +391,10 @@ class Simulation {
     // DOC TODO
     updateColors(colorSettings) {
         this._colorSettings = this.getAdjustedSettings(colorSettings, this._colorSettings)
+
+        if (colorSettings.grid) this._mapGridRenderStyles.update(this._colorSettings.grid)
+        if (colorSettings.border) this._mapBorderRenderStyles.update(this._colorSettings.border)
+
         this.#updateCachedMapPixelsRows()
         this.updateImgMapFromPixels(true)
     }
