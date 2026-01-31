@@ -1,4 +1,9 @@
-// DOC TODO
+/**
+ * Adds a custom wheel increment functionality to the provided input
+ * @param {HTMLInputElement | HTMLSelectElement} input The input
+ * @param {Number? | Array} step Defines the value of possible increments. [normalStep, ctrlStep, shiftStep]
+ * @param {Function?} actionCB A callback called on wheel. (value)=>{}
+ */
 function addWheelIncrement(input, step=[1,1,1], actionCB) {
     if (typeof step === "number" || !step) step = [step||1, step||1, step||1]
     let callback = null
@@ -34,7 +39,12 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
     input.onwheel=callback
 }
 
-// DOC TODO
+/**
+ * Fills the options of a select element
+ * @param {HTMLSelectElement} input The input of 'number' type
+ * @param {Array} optionNames The name of each option 
+ * @param {Function?} valueMapper Can be used to define a custom option's value. (index, optionName)=>{return optionValue}
+ */
 function fillSelectOptions(input, optionNames, valueMapper) {
     const hasValueMapper = CDEUtils.isFunction(valueMapper)
     optionNames.forEach((name, i)=>{
@@ -45,11 +55,15 @@ function fillSelectOptions(input, optionNames, valueMapper) {
     })
 }
 
-// DOC TODO
+/**
+ * Sets a regular onInput listener, but with min/max clamping
+ * @param {HTMLInputElement} input The input of 'number' type
+ * @param {Function?} actionCB A callback called on input. (value)=>{}
+ */
 function setRegularNumberInput(input, actionCB) {
     const hasActionCB = CDEUtils.isFunction(actionCB), min = +input.min||0, max = +input.max||Infinity
-    input.oninput=()=>{
+    input.addEventListener("input", ()=>{
         input.value = CDEUtils.clamp(+input.value, min, max)
         if (hasActionCB) actionCB(+input.value)
-    }
+    })
 }

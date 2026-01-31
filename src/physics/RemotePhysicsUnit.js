@@ -55,8 +55,10 @@ self.onmessage=e=>{
     }
 }
 
-    // DOC TODO
-function statusLoopCore() {
+/**
+ * The physics loop core
+ */
+function loopCore() {
     if (isLoopStarted) {
         const time = performance.now(), deltaTime = time-lastTime
         timeAcc += deltaTime
@@ -66,19 +68,23 @@ function statusLoopCore() {
             step()
             timeAcc -= PHYSICS_DELAY
         }
-        setTimeout(statusLoopCore, 0)
+        setTimeout(loopCore, 0)
     }
 }
 
-    // DOC TODO
+/**
+ * Starts the physics loop
+ */
 function startLoop() {
     if (!isLoopStarted) {
         isLoopStarted = true
-        statusLoopCore()
+        loopCore()
     }
 }
 
-    // DOC TODO
+/**
+ * Stops the physics loop
+ */
 function stopLoop() {
     if (isLoopStarted) {
         isLoopStarted = false
@@ -86,7 +92,9 @@ function stopLoop() {
     }
 }
 
-    // DOC TODO
+/**
+ * Runs a physics step and returns the result to the main thread
+ */
 function step() {
     if (pixels.buffer.byteLength) {
         lastStepTime = performance.now()

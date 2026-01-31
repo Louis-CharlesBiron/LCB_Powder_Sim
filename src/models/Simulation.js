@@ -38,7 +38,16 @@ class Simulation {
 
     #simulationHasPixelsBuffer = true
     #lastPlacedPos = null
-    // DOC TODO
+
+    /**
+     * The core of the simulation and manages all rendering and world manipulation. (except for physics)
+     * @param {Canvas} CVS A CDEJS Canvas instance
+     * @param {Function?} readyCB A callback ran once the simulation is started. (simulation)=>{}
+     * @param {Boolean?} autoStart Whether the simulation automatically starts once instanciated. (Defaults to true)
+     * @param {Boolean?} usesWebWorkers Whether the physics calculations are offloaded to a worker thread. (Defaults to true)
+     * @param {Object?} userSettings An object defining the user settings
+     * @param {Object?} colorSettings An object defining the color settings
+     */
     constructor(CVS, readyCB, autoStart, usesWebWorkers, userSettings, colorSettings) {// TODO GET/SET
         autoStart??=Simulation.DEFAULT_AUTO_START_VALUE
         usesWebWorkers??=Simulation.DEFAULT_PHYSICS_UNIT_TYPE
@@ -115,14 +124,16 @@ class Simulation {
         if (settings.showGrid) this.#drawMapGrid()
         if (settings.showBorder) this.#drawBorder()
 
-        if (settings.visualEffectsEnabled) this.#drawVisualEffects()
         if (this._isRunning && this.useLocalPhysics) this.step()
 
         this._offscreenCtx.putImageData(this._imgMap, 0, 0)
         this.ctx.drawImage(this._offscreenCanvas, 0, 0)
+        if (settings.visualEffectsEnabled) this.#drawVisualEffects()
     }
 
-    // DOC TODO
+    /**
+     * Draws visual effects on certain materials if visualEffects are enabled 
+     */
     #drawVisualEffects() {// OPTIMIZE / TODO
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.#drawVisualEffects())
@@ -147,20 +158,20 @@ class Simulation {
         }  
     }
 
-    // Draws a border and line to show the map grid on the canvas
+    // Draws lines to show the map grid on the canvas
     #drawMapGrid() {
         const lines = Simulation.#CACHED_GRID_LINES, l_ll = lines.length, batchStroke = this.render.batchStroke.bind(this.render), styles = this._mapGridRenderStyles
         for (let i=0;i<l_ll;i++) batchStroke(lines[i], styles)
     }
 
-    // DOC TODO
+    // Draws a border to show the map bounding box on the canvas
     #drawBorder() {
         this.render.batchStroke(Simulation.#CACHED_GRID_BORDER, this._mapBorderRenderStyles)
     }
 
     /**
      * Updates the display image map according to the pixels array (renders a frame)
-     * @param {Boolean} force If true, disables optimization and forces every pixel to get redrawn
+     * @param {Boolean?} force If true, disables optimization and forces every pixel to get redrawn
      */
     updateImgMapFromPixels(force) {
         if (!this.#simulationHasPixelsBuffer) {
@@ -285,8 +296,11 @@ class Simulation {
     
 
     /* SIMULATION API */
-    // DOC TODO
-    updatePhysicsUnitType(usesWebWorkers) {
+    /**
+     * Updates whether the physics calculations are offloaded to a worker thread 
+     * @param {Boolean} usesWebWorkers Whether an other thread is used. (Defaults to true)
+     */
+    updatePhysicsUnitType(usesWebWorkers=true) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = usesWebWorkers&&!this.isFileServed
@@ -308,9 +322,9 @@ class Simulation {
 
     /**
      * Updates the map pixel size
-     * @param {Number} pixelSize The new map pixel size
+     * @param {Number?} pixelSize The new map pixel size
      */
-    updateMapPixelSize(pixelSize) {
+    updateMapPixelSize(pixelSize=MapGrid.DEFAULT_PIXEL_SIZE) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
 
         if (!this.#simulationHasPixelsBuffer) {
@@ -334,8 +348,8 @@ class Simulation {
 
     /**
      * Updates the map dimensions
-     * @param {Number?} width The new width of the map
-     * @param {Number?} height The new height of the map
+     * @param {Number?} width The new width of the map, in local pixels
+     * @param {Number?} height The new height of the map, in local pixels
      */
     updateMapSize(width, height) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
@@ -362,33 +376,50 @@ class Simulation {
         }
     }
 
-    // DOC TODO
+    /**
+     * Updates the side prioritised first by the physics.
+     * @param {Simulation.SIDE_PRIORITIES} sidePriority The side priority value
+     * @returns The new priority
+     */
     updateSidePriority(sidePriority) {
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
         return this._sidePriority = sidePriority
     }
 
-    // DOC TODO
+    /**
+     * Returns the material at the provided local pos
+     * @param {[x,y]} mapPos The map pos
+     * @returns The material location at the map pos
+     */
     getPixelAtMapPos(mapPos) {
         const i = this._mapGrid.mapPosToIndex(mapPos)
         return this.usesWebWorkers ? this._lastPixels[i] : this._pixels[i]
     }
 
-    // DOC TODO
+    /**
+     * Updates the material used by default for world manipulations.
+     * @param {Simulation.MATERIALS} material The materials to select
+     */
     updateSelectedMaterial(material) {
         material = +material
         if (Simulation.MATERIAL_NAMES[material]) return this._selectedMaterial = material
         return this._selectedMaterial
     }
 
-    // DOC TODO
+    /**
+     * Updates the shape used to draw materials on the simulation with mouse.
+     * @param {Simulation.BRUSH_TYPES} brushType The brush type to use 
+     */
     updateBrushType(brushType) {
         brushType = +brushType
         if (Object.values(Simulation.BRUSH_TYPES).includes(brushType)) return this._brushType = brushType
         return this._brushType
     }
 
-    // DOC TODO
+    /**
+     * Updates the colors used for the grid and/or the materials.
+     * @param {Object} colorSettings The colors to update. (Materials keys need to be in UPPERCASE)
+     */
     updateColors(colorSettings) {
         this._colorSettings = this.getAdjustedSettings(colorSettings, this._colorSettings)
 
@@ -420,14 +451,23 @@ class Simulation {
         }
     }
 
-    // DOC TODO
+    /**
+     * Merges a modification object and a base object
+     * @param {Object} inputSettings The object with modifications
+     * @param {Object} defaultSettings The object to update
+     * @returns The merged object
+     */
     getAdjustedSettings(inputSettings, defaultSettings) {
         const newSettings = {...defaultSettings}
         if (inputSettings) Object.entries(inputSettings).forEach(([key, value])=>newSettings[key] = value)
         return newSettings
     }
 
-    // DOC TODO
+    /**
+     * Check whether the simulation is initialized
+     * @param {String} warningMessage Warning message to log if no initialized
+     * @returns True if the simulation is NOT initialized
+     */
     #checkInitializationState(warningMessage) {
         if (this._userSettings && this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
             this.#warn(warningMessage)
@@ -435,14 +475,17 @@ class Simulation {
         }
     }
 
-    // DOC TODO
+    /**
+     * Logs a warning messages if warnings are enabled
+     * @param {String} warningMessage Warning message to log
+     */
     #warn(warningMessage) {
         if (!this.warningsDisabled) console.warn(warningMessage)
     }
     /* SIMULATION API -end */
 
     /* WEB WORKER CONTROL */
-    // DOC TODO
+    // Listener for web worker messages
     #physicsUnitMessage(e) {
         const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES, stepExtra = this._stepExtra
 
@@ -467,7 +510,10 @@ class Simulation {
         }
     }
 
-    // DOC TODO
+    /**
+     * Sends a command of a certain type to the worker, needing pixels 
+     * @param {Simulation.#WORKER_MESSAGE_TYPES} type The worker message type
+     */
     #sendPixelsToWorker(type) {
         const pixels = this._pixels, pxStates = this._pxStates
         this.saveStep()
@@ -475,7 +521,7 @@ class Simulation {
         else this.#simulationHasPixelsBuffer = true
     }
 
-    // DOC TODO
+    // Executes queued operations
     #executeQueuedOperations() {
         const queued = this._queuedBufferOperations, q_ll = queued.length
         for (let i=0;i<q_ll;i++) {
@@ -502,13 +548,13 @@ class Simulation {
         }
     }
 
-    // DOC TODO
+    // Updates cached lines / borders paths
     #updateCachedGridDisplays() {
         Simulation.#CACHED_GRID_LINES = this._mapGrid.getDrawableGridLines()
         Simulation.#CACHED_GRID_BORDER = Render.getRect([0,0], ...this._mapGrid.realDimensions)
     }
 
-    // DOC TODO
+    // Updates current mouse listeners area
     #updateMouseListeners() {
         const mouse = this.mouse, dimensions = this._mapGrid.realDimensions
         mouse.updateListener(Mouse.LISTENER_TYPES.ENTER, this._mouseListenerIds[0], [[0,0], dimensions])
@@ -518,7 +564,10 @@ class Simulation {
     /* CACHE UPADTES -end */
 
     /* USER INPUT */
-    // DOC TODO
+    /**
+     * Creates functional keybinds
+     * @param {Object} keybinds The keybinds to set (Defaults to Simulation.DEFAULT_KEYBINDS)
+     */
     setKeyBinds(keybinds=Simulation.DEFAULT_KEYBINDS) {
         const keyboard = this._CVS.typingDevice, DOWN = TypingDevice.LISTENER_TYPES.DOWN
 
@@ -534,10 +583,10 @@ class Simulation {
         }, keybinds.MY_CUSTOM_SIZE_KEYBIND), keybinds.MY_CUSTOM_SIZE_KEYBIND.triggerType)
     }
 
-    // DOC TODO
+    // Utils function to check if keybind's conditions are met before executing the action
     #keybindTryAction(typingDevice, e, actionCB, bindValue) {
         const hasAction = CDEUtils.isFunction(actionCB), {requiredKeys, cancelKeys, preventDefault} = bindValue
-        if (preventDefault) e.preventDefault()
+        if (preventDefault && e.target.value === undefined) e.preventDefault()
         if (!hasAction) {
             this.#warn(SETTINGS.STANDALONE_KEYBIND_WARN)
             return
@@ -555,7 +604,7 @@ class Simulation {
         this.#lastPlacedPos = null
     }
 
-    // DOC TODO
+    // Runs when the mouse leaves the simulation's bounding box
     #mouseLeaveSimulation() {
         this.#lastPlacedPos = null
         this._isMouseWithinSimulation = false
@@ -572,9 +621,9 @@ class Simulation {
 
             if (this.smoothDrawingEnabled && dMax) for (let i=0;i<dMax;i++) {
                 const prog = ((i+1)/dMax)
-                this.#placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
+                this.placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
             } 
-            else this.#placePixelsWithBrush(x, y)
+            else this.placePixelsWithBrush(x, y)
 
             this.#lastPlacedPos = mapPos
             if (!this._isRunning) this.updateImgMapFromPixels()
@@ -589,7 +638,7 @@ class Simulation {
         }  else return false
     }
 
-    // DOC TODO
+    // Adds the ability do zoom/move around the canvas (if dragAndZoomCanvasEnabled)
     #setCanvasZoomAndDrag() {
         const CVS = this._CVS
 
@@ -639,7 +688,7 @@ class Simulation {
 
     /* PIXEL EDIT */
     /**
-     * Places a pixel of a specified material at the specified position on the pixel map
+     * Places a pixel of a specified material at the specified position on the pixel map.
      * @param {[x,y]} mapPos The map position of the pixel
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
@@ -655,7 +704,7 @@ class Simulation {
     }
 
     /**
-     * Places a pixel of a specified material at the specified position on the pixel map
+     * Places a pixel of a specified material at the specified position on the pixel map.
      * @param {Number} x The X value of the pixel on the map
      * @param {Number} y The Y value of the pixel on the map
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
@@ -672,7 +721,7 @@ class Simulation {
     }
 
     /**
-     * Places a pixel of a specified material at the specified index on the pixel map
+     * Places a pixel of a specified material at the specified index on the pixel map.
      * @param {Number} i The index value of the pixel on the map
      * @param {Simulation.MATERIALS} material The material used to draw the pixel
      */
@@ -686,40 +735,45 @@ class Simulation {
         this._pxStates[i] = 0
     }
 
-    // DOC TODO
-    #placePixelsWithBrush(x, y, brush=this._brushType) {
+    /**
+     * Places pixels at the specified coordinates, according to the provided brush pattern
+     * @param {Number} x The X value of the center positions
+     * @param {Number} y The Y value of the center positions
+     * @param {Simulation.BRUSH_TYPES?} brushType The brush type used (Defaults to the current brush type)
+     */
+    placePixelsWithBrush(x, y, brushType=this._brushType) {
         const B = Simulation.BRUSH_TYPES
-        if (brush & Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
-            if (brush === B.LINE3 || brush === B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
-            if (brush === B.ROW3 || brush === B.VERTICAL_CROSS) {
+        if (brushType & Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
+            if (brushType === B.LINE3 || brushType === B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
+            if (brushType === B.ROW3 || brushType === B.VERTICAL_CROSS) {
                 if (x) this.placePixelAtCoords(x-1, y)
                 if (x !== this._mapGrid.mapWidth-1) this.placePixelAtCoords(x+1, y)
             }
             this.placePixelAtCoords(x, y)
-        } else if (brush === B.BIG_DOT) {
+        } else if (brushType === B.BIG_DOT) {
             if (x-2 >= 0) this.placePixelAtCoords(x-2, y)
             if (x+2 < this._mapGrid.mapWidth) this.placePixelAtCoords(x+2, y)
                 this.placePixelAtCoords(x, y-2)
                 this.placePixelAtCoords(x, y+2)
                 this.fillArea([x-1,y-1], [x+1,y+1])
-        } else if (brush & Simulation.#BRUSH_GROUPS.X) {
-            const offset = (Simulation.#BRUSHES_X_VALUES[brush]/2)|0
+        } else if (brushType & Simulation.#BRUSH_GROUPS.X) {
+            const offset = (Simulation.#BRUSHES_X_VALUES[brushType]/2)|0
             this.fillArea([x-offset,y-offset], [x+offset,y+offset])
         }
     }
 
     /**
-     * Fills the map with air
+     * Fills the map with air.
      */
     clear() {
         this.fill(Simulation.MATERIALS.AIR)
     }
 
     /**
-     * Fills the entire map with a specific material
+     * Fills the entire map with a specific material.
      * @param {Simulation.MATERIALS} material The material used
      */
-    fill(material=Simulation.MATERIALS.AIR) {
+    fill(material=this._selectedMaterial) {
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.fill(material))
             return
@@ -732,7 +786,7 @@ class Simulation {
     }
 
     /**
-     * Fills the specified area of the map with a specific material
+     * Fills the specified area of the map with a specific material.
      * @param {[leftX, topY]} pos1 The top-left pos of the area
      * @param {[rightX, bottomY]} pos2 The bottom-right pos of the area
      * @param {Simulation.MATERIALS} material The material used
@@ -782,7 +836,7 @@ class Simulation {
     }
 
     /**
-     * Fills the map with saved data
+     * Fills the map with saved data.
      * @param {Uint16Array | String | Object} mapData The save data:
      * - Either a Uint16Array containing the material value for each index
      * - Or a string in the format created by the function exportAsText()

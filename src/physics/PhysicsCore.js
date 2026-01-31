@@ -36,7 +36,7 @@ class PhysicsCore {
         for (let i=0;i<invertedWater_ll;i++) invertedWaterCache[i] = PhysicsCore.#updateCachedInvertedWaterTable(D, i)
     }
 
-    // DOC TODO
+    // Calculates a physics step on all pixels
     step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
         const p_ll = pixels.length-1, width2 = mapWidth>>1, PX = 1, STATE = 2,
               AIR = M.AIR, STONE = M.STONE, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE,
@@ -250,7 +250,7 @@ class PhysicsCore {
             }
             // COPPER
             else if (mat === M.COPPER) {
-                // TODO SEVERE OPTIMIZATIONS PLZPLZPLPZLZ 
+                // TODO OPTIMIZE
 
                 //    FIRST LIT
                 //    0 -> ORIGIN (by electricity) OK
@@ -370,14 +370,14 @@ class PhysicsCore {
     }
 
 
-    // DOC TODO
+    // Updates the sand movements table cache
     static #updateCachedSandTable(D, stack) {
         const isLeftFirst = stack & PhysicsCore.#SAND_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
               b = stack & D.b,
               br = stack & D.br,
               bl = stack & D.bl
 
-        if (b) return MOVES.B// OPTIMIZE
+        if (b) return MOVES.B// TODO OPTIMIZE
         if (isLeftFirst) {
             if (bl) return MOVES.BL
             if (br) return MOVES.BR
@@ -388,7 +388,7 @@ class PhysicsCore {
         return MOVES.I
     }
 
-    // DOC TODO
+    // Updates the water movements table cache
     static #updateCachedWaterTable(D, stack) {
         const isLeftFirst = stack & PhysicsCore.#WATER_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
               b = stack & D.b,
@@ -412,7 +412,7 @@ class PhysicsCore {
         return MOVES.I
     }
 
-    // DOC TODO
+    // Updates the inverted water movements table cache
     static #updateCachedInvertedWaterTable(D, stack) {
         const isLeftFirst = stack & PhysicsCore.#INVERTED_WATER_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
               t = stack & D.t,
