@@ -5,7 +5,7 @@
 ![NPM License](https://img.shields.io/npm/l/lcbpowdersimTODO?label=License&color=cadetblue)
 
 # LCB Powder Simulator
-**<u>LCB Powder Simulator</u> is a efficient, fully native JS powder simulation that runs on the [Canvas 2d API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [CDEJS](https://github.com/Louis-CharlesBiron/canvasDotEffect).**
+**<u>LCB Powder Simulator</u> is an efficient, fully native JS powder simulation that runs on the [Canvas 2d API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [CDEJS](https://github.com/Louis-CharlesBiron/canvasDotEffect).**
 
 # Table of Contents
 - **[Web Interface](#web-interface) ([direct link here](https://louis-charlesbiron.github.io/LCB_Powder_Sim))**
