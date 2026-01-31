@@ -236,4 +236,4 @@ All brushes available are given in the `BRUSH_TYPES` enum:
 
 Made by [Louis-Charles Biron](https://github.com/Louis-CharlesBiron) !
 
-Every line of code in this repository was written by hand with passion!
+Every line of code and documentation in this repository was written by hand with passion!
