@@ -87,12 +87,12 @@ The `Simulation` class is the core of the simulation and manages all rendering a
 
 
 **UserSettings**:
-- dragAndZoomCanvasEnabled -> Whether the user can use left click to move around and wheel to zoom (Defaults to true)
-- warningsDisabled -> Hides warning messages from console (Defaults to false)
-- showBorder -> If true, displays the bounding box of the simulation (Defaults to true)
-- showGrid -> If true, displays a grid over the simulation to delimit pixels (Defaults to true)
-- smoothDrawingEnabled -> Whether to fill gaps between mouse event for smoother drawing (Defaults to true)
-- visualEffectsEnabled -> Whether to display some visual effect (Defaults to true) [MAYBE AFFECT PERFORMANCE]
+- `dragAndZoomCanvasEnabled` -> Whether the user can use left click to move around and wheel to zoom (Defaults to true)
+- `warningsDisabled` -> Hides warning messages from console (Defaults to false)
+- `showBorder` -> If true, displays the bounding box of the simulation (Defaults to true)
+- `showGrid` -> If true, displays a grid over the simulation to delimit pixels (Defaults to true)
+- `smoothDrawingEnabled` -> Whether to fill gaps between mouse event for smoother drawing (Defaults to true)
+- `visualEffectsEnabled` -> Whether to display some visual effect (Defaults to true) [MAYBE AFFECT PERFORMANCE]
 
 ## [MapGrid Class](#table-of-contents)
 The `MapGrid` class **is mostly used internally** to handle the simulation world space / dimensions.
@@ -121,6 +121,7 @@ Simulation Control
 User Control
 - updateSelectedMaterial
 - updateBrushType
+- updateColors
 - userSettings {...}
 
 World Interation

@@ -13,19 +13,6 @@ const SETTINGS = {
         COPPER:1<<8,
     },
 
-    MATERIAL_COLORS: {
-        AIR:[0,0,0,0],
-        SAND:[235,235,158,1],
-        WATER:[0,15,242,.7],
-        STONE:[100,100,100,1],
-        GRAVEL:[188,188,188,1], 
-        INVERTED_WATER:[55,75,180,.75],
-        CONTAMINANT:[30,95,65,.75],
-        LAVA:[255,132,0,.88],
-        ELECTRICITY:[255,235,0,0.9],
-        COPPER:[121,65,52,1]
-    },
-
     MATERIAL_GROUPS: {
         TRANSPIERCEABLE:null,
         LIQUIDS:null,
@@ -35,7 +22,6 @@ const SETTINGS = {
         REVERSE_LOOP_CONTAINED_SKIPABLE:null,
         FOWARD_LOOP_CONTAINED_SKIPABLE:null,
     },
-    MATERIAL_COLORS_INDEXED: [],
     MATERIAL_NAMES: [],
 
     MATERIAL_STATES: {
@@ -88,7 +74,6 @@ const SETTINGS = {
     BRUSHES_X_VALUES: [],
     
     WORKER_RELATIVE_PATH: "./src/physics/RemotePhysicsUnit.js",
-    FILE_SERVED_WARN:`Web workers are disabled when serving with file:// protocol.\n  Serve this page over http(s):// to enable them.`,
     WORKER_MESSAGE_TYPES: {
         INIT:0,
         STEP:1<<0,
@@ -114,13 +99,15 @@ const SETTINGS = {
         INITIALIZED:2,
     },
 
+    FILE_SERVED_WARN:`Web workers are disabled when serving with file:// protocol.\n  Serve this page over http(s):// to enable them.`,
+
+    STANDALONE_KEYBIND_WARN:`The keybind pressed is not linked to any function.`,
+
     NOT_INITIALIZED_LOAD_WARN:`Tried loading with 'load()' while simulation is not yet initialized.\n Use the 'readyCB' callback to load a save on launch.`,
     NOT_INITIALIZED_MAP_SIZE_WARN:`Tried updating map size with 'updateMapSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update map size on launch.`,
     NOT_INITIALIZED_PIXEL_SIZE_WARN:`Tried updating pixel size with 'updateMapPixelSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update pixel size on launch.`,
     NOT_INITIALIZED_PHYSICS_TYPE_WARN:`Tried updating physics unit type with 'updatePhysicsUnitType()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update physics unit type on launch.`,
     
-    STANDALONE_KEYBIND_WARN:`The keybind pressed is not linked to any function.`,
-
     DEFAULT_USER_SETTINGS: {
         dragAndZoomCanvasEnabled: true,
         warningsDisabled: false,
@@ -129,6 +116,22 @@ const SETTINGS = {
         smoothDrawingEnabled: true,
         visualEffectsEnabled: true,
     },
+
+    DEFAULT_COLOR_SETTINGS: {
+        grid: [240,248,255,.2],
+        border: [240,248,255,1],
+
+        AIR:[0,0,0,0],
+        SAND:[235,235,158,1],
+        WATER:[0,15,242,.7],
+        STONE:[100,100,100,1],
+        GRAVEL:[188,188,188,1], 
+        INVERTED_WATER:[55,75,180,.75],
+        CONTAMINANT:[30,95,65,.75],
+        LAVA:[255,132,0,.88],
+        ELECTRICITY:[255,235,0,0.9],
+        COPPER:[121,65,52,1],
+    }
 }
 
 // SET MATERIAL GROUPS
@@ -164,18 +167,13 @@ SETTINGS.BRUSH_GROUPS = {
     X:SETTINGS.BRUSH_TYPES.X3|SETTINGS.BRUSH_TYPES.X5|SETTINGS.BRUSH_TYPES.X15|SETTINGS.BRUSH_TYPES.X25|SETTINGS.BRUSH_TYPES.X55|SETTINGS.BRUSH_TYPES.X99,
 }
 
-// SET MATERIAL NAMES + MATERIAL COLORS INDEXED
+// SET MATERIAL NAMES
 const M = SETTINGS.MATERIALS, materials = Object.keys(M), m_ll = materials.length
-for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) {
-    SETTINGS.MATERIAL_NAMES[i] = materials[ii]
-    SETTINGS.MATERIAL_COLORS_INDEXED[i] = SETTINGS.MATERIAL_COLORS[materials[ii]]
-}
+for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) SETTINGS.MATERIAL_NAMES[i] = materials[ii]
 
 // SET BRUSH TYPE NAMES
 const B = SETTINGS.BRUSH_TYPES, brushTypes = Object.keys(B), bt_ll = brushTypes.length
-for (let i=1,ii=0;ii<bt_ll;i=!i?1:i*2,ii++) {
-    SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
-}
+for (let i=1,ii=0;ii<bt_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
 
 // SET SIDE PRIORITY NAMES
 SETTINGS.SIDE_PRIORITY_NAMES = Object.keys(SETTINGS.SIDE_PRIORITIES)

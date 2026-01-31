@@ -1,8 +1,6 @@
 class Simulation {
     static MATERIALS = SETTINGS.MATERIALS
-    static MATERIAL_COLORS = SETTINGS.MATERIAL_COLORS
     static MATERIAL_GROUPS = SETTINGS.MATERIAL_GROUPS
-    static MATERIAL_COLORS_INDEXED = SETTINGS.MATERIAL_COLORS_INDEXED
     static MATERIAL_NAMES = SETTINGS.MATERIAL_NAMES
     static MATERIAL_STATES = SETTINGS.MATERIAL_STATES
     static MATERIAL_STATES_GROUPS = SETTINGS.MATERIAL_STATES_GROUPS
@@ -30,6 +28,7 @@ class Simulation {
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
     static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
+    static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
     static DEFAULT_AUTO_START_VALUE = true
     static MIN_ZOOM_THRESHOLD = .1
     static MAX_ZOOM_THRESHOLD = Infinity
@@ -40,7 +39,7 @@ class Simulation {
     #simulationHasPixelsBuffer = true
     #lastPlacedPos = null
     // DOC TODO
-    constructor(CVS, readyCB, autoStart, usesWebWorkers, userSettings) {// TODO GET/SET
+    constructor(CVS, readyCB, autoStart, usesWebWorkers, userSettings, colorSettings) {// TODO GET/SET
         autoStart??=Simulation.DEFAULT_AUTO_START_VALUE
         usesWebWorkers??=Simulation.DEFAULT_PHYSICS_UNIT_TYPE
 
@@ -61,19 +60,20 @@ class Simulation {
         this._lastStepTime = null
         this._queuedBufferOperations = []
         this.updatePhysicsUnitType(usesWebWorkers)
-        this.#updateCachedMapPixelsRows()
 
         // DISPLAY
+        this._userSettings = this.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
+        this._colorSettings = this.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
-        this._userSettings = this.#getAdjustedUserSettings(userSettings)
-        this._mapGridRenderStyles = CVS.render.profile1.update(MapGrid.GRID_DISPLAY_COLOR, null, null, null, 1)
-        this._mapBorderRenderStyles = CVS.render.profile2.update(MapGrid.BORDER_DISPLAY_COLOR, null, null, null, 2)
+        this._mapGridRenderStyles = CVS.render.profile1.update(this._colorSettings.grid, null, null, null, 1)
+        this._mapBorderRenderStyles = CVS.render.profile2.update(this._colorSettings.border, null, null, null, 2)
         this._imgMap = CVS.ctx.createImageData(...this._mapGrid.realDimensions)
         this._offscreenCanvas = new OffscreenCanvas(...this._mapGrid.realDimensions)
         this._offscreenCtx = this._offscreenCanvas.getContext("2d")
         this._loopExtra = null
         this._stepExtra = null
         this.#updateCachedGridDisplays()
+        this.#updateCachedMapPixelsRows()
         this.#setCanvasZoomAndDrag()
         this.setKeyBinds()
         
@@ -160,14 +160,15 @@ class Simulation {
 
     /**
      * Updates the display image map according to the pixels array (renders a frame)
+     * @param {Boolean} force If true, disables optimization and forces every pixel to get redrawn
      */
-    updateImgMapFromPixels() {
+    updateImgMapFromPixels(force) {
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.updateImgMapFromPixels())
+            this._queuedBufferOperations.push(()=>this.updateImgMapFromPixels(force))
             return
         }
 
-        const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = lastPixels.length===p_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
+        const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = force ? false : lastPixels.length===p_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
         for (let i=0;i<p_ll;i++) {
             const mat = pixels[i]
             if (enableOptimization && mat===lastPixels[i]) continue
@@ -345,7 +346,7 @@ class Simulation {
         }
 
         const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight
-            if (width && width !== oldWidth && height && height !== oldHeight) {
+            if ((width && width !== oldWidth) || (height && height !== oldHeight)) {
             const oldPixels = this.#getPixelsCopy()
             height = map.mapHeight = height||map.mapHeight
             width = map.mapWidth = width||map.mapWidth
@@ -387,6 +388,13 @@ class Simulation {
         return this._brushType
     }
 
+    // DOC TODO
+    updateColors(colorSettings) {
+        this._colorSettings = this.getAdjustedSettings(colorSettings, this._colorSettings)
+        this.#updateCachedMapPixelsRows()
+        this.updateImgMapFromPixels(true)
+    }
+
     /**
      * Offsets the pixel array to match the updated size 
      * @param {Number} oldWidth The previous/current width of the map
@@ -409,10 +417,10 @@ class Simulation {
     }
 
     // DOC TODO
-    #getAdjustedUserSettings(userSettings) {
-        const newUserSettings = {...Simulation.DEFAULT_USER_SETTINGS}
-        if (userSettings) Object.entries(userSettings).forEach(([key, value])=>newUserSettings[key] = value)
-        return newUserSettings
+    getAdjustedSettings(inputSettings, defaultSettings) {
+        const newSettings = {...defaultSettings}
+        if (inputSettings) Object.entries(inputSettings).forEach(([key, value])=>newSettings[key] = value)
+        return newSettings
     }
 
     // DOC TODO
@@ -476,7 +484,7 @@ class Simulation {
     /* CACHE UPADTES */
     // Updates the cached pixels row used for drawing optimizations
     #updateCachedMapPixelsRows() {
-        const C = Simulation.MATERIAL_COLORS, colors = Object.values(C), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
+        const colors = Object.entries(this._colorSettings).filter(x=>x[0].toUpperCase()===x[0]).map(x=>x[1]), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
         for (let i=0,ii=0;ii<c_ll;i=!i?1:i*2,ii++) {
             const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
             for (let x=0;x<size;x++) {
