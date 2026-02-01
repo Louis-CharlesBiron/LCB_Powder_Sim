@@ -1,5 +1,5 @@
 // SIMULATION CREATION
-const  simulation = new Simulation(simulationCanvas, readyCB, 
+const simulation = new Simulation(simulationCanvas, readyCB, 
     {
         usesWebWorkers: false,
         autoStart: true,
@@ -9,10 +9,8 @@ const  simulation = new Simulation(simulationCanvas, readyCB,
     {
         autoSimulationSizing: null,
         dragAndZoomCanvasEnabled: true,
-        warningsDisabled: false,
         showBorder: true,
         showGrid: true,
-        smoothDrawingEnabled: true,
         visualEffectsEnabled: true,
     }
 )

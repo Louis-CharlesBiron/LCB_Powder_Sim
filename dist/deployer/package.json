@@ -1,0 +1,12 @@
+{
+  "name": "deployer",
+  "version": "1.0.0",
+  "main": "wrapper.js",
+  "type": "module",
+  "scripts": {
+    "build": "node wrapper.js"
+  },
+  "devDependencies": {
+    "terser": "^5.37.0"
+  }
+}

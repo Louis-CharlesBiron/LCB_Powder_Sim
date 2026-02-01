@@ -309,7 +309,7 @@ class Simulation {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = usesWebWorkers&&!this.isFileServed
-        this._physicsUnit = isWebWorker ? new Worker(Simulation.#WORKER_RELATIVE_PATH) : new LocalPhysicsUnit()
+        this._physicsUnit = isWebWorker ? new Worker(Simulation.#WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit()
 
         if (isWebWorker) {
             this.#simulationHasPixelsBuffer = true

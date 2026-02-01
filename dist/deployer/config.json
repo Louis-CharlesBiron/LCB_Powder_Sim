@@ -1,0 +1,21 @@
+{
+    "projectName": "LCB_POWDER_SIM",
+    "version": "1.0.0",
+    "projectRoot": "../../",
+    "srcRoot": "src",
+    "distRoot": "dist",
+    "mergeOrder": [
+        "canvasDotEffect.js",
+        "defaultKeybinds.js",
+        "settings.js",
+        "LocalPhysicsUnit.js",
+        "PhysicsCore.js",
+        "MapGrid.js",
+        "Simulation.js"
+    ],
+    "workers":[
+        "RemotePhysicsUnit.js"
+    ],
+    "verisonedFiles": [],
+    "srcExtensions": [".js"]
+}
