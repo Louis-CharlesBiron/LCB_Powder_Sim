@@ -1,7 +1,21 @@
-// CVS + SIMULATION CREATION
-const MAX_FPS = 60,
-      CVS = new Canvas(document.getElementById("simulationCanvas"), null, MAX_FPS),
-      simulation = new Simulation(CVS, readyCB, true, 1)
+// SIMULATION CREATION
+const  simulation = new Simulation(simulationCanvas, readyCB, 
+    {
+        usesWebWorkers: false,
+        autoStart: true,
+        aimedFPS: 60,
+        zoom: 1,
+    },
+    {
+        autoSimulationSizing: null,
+        dragAndZoomCanvasEnabled: true,
+        warningsDisabled: false,
+        showBorder: true,
+        showGrid: true,
+        smoothDrawingEnabled: true,
+        visualEffectsEnabled: true,
+    }
+)
       
 // FPS / SPS DISPLAY
 const fpsDisplay = document.getElementById("fpsDisplay"), fpsStepDisplay = document.getElementById("fpsStepDisplay"),
@@ -32,8 +46,8 @@ const mousePosStatus = document.getElementById("mousePosStatus"),
 let STATUS_REFRESH_RATE = 1000/10
 function statusLoopCore() {
     // MOUSE MAP POS | MOUSE MAP INDEX | MOUSE ABSOLUTE POS 
-    const mapPos = simulation.mapGrid.getLocalMapPixel(CVS.mouse.pos)
-    mousePosStatus.textContent = (mapPos||"")+" | "+(mapPos?simulation.mapGrid.mapPosToIndex(mapPos):"")+" | "+CVS.mouse.pos
+    const mapPos = simulation.mapGrid.getLocalMapPixel(simulation.CVS.mouse.pos)
+    mousePosStatus.textContent = (mapPos||"")+" | "+(mapPos?simulation.mapGrid.mapPosToIndex(mapPos):"")+" | "+simulation.CVS.mouse.pos
 
     // MOUSE MATERIAL
     if (simulation.isMouseWithinSimulation && mapPos) {

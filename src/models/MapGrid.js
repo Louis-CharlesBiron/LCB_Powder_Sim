@@ -1,7 +1,7 @@
 class MapGrid {
-    static DEFAULT_PIXEL_SIZE = 25
-    static DEFAULT_MAP_WIDTH = 30
-    static DEFAULT_MAP_HEIGHT = 25
+    static DEFAULT_PIXEL_SIZE = 18
+    static DEFAULT_MAP_WIDTH = 50
+    static DEFAULT_MAP_HEIGHT = 35
 
     #lastPixelSize = null
     constructor(pixelSize, mapWidth, mapHeight) {
@@ -16,7 +16,7 @@ class MapGrid {
      * @returns A local map pixel position [x,y]
      */
     getLocalMapPixel(pos) {
-        const size = this._pixelSize, [w,h] = this.realDimensions, [posX,posY] = pos
+        const size = this._pixelSize, [w,h] = this.globalDimensions, [posX,posY] = pos
         for (let y=0;y<h;y+=size) {
             for (let x=0;x<w;x+=size) {
                 if ((posX>=x && posX<(x+size)) && (posY>=y && posY<y+size)) return [x/size, y/size]
@@ -48,7 +48,7 @@ class MapGrid {
      * @returns An array of path2d representing the grid lines
      */
     getDrawableGridLines() {
-        const size = this._pixelSize, [w,h] = this.realDimensions, lines = []
+        const size = this._pixelSize, [w,h] = this.globalDimensions, lines = []
         for (let x=0;x<w;x+=size) lines.push(Render.getLine([x,0],[x,h]))
         for (let y=0;y<h;y+=size) lines.push(Render.getLine([0,y],[w,y]))
         return lines
@@ -81,11 +81,20 @@ class MapGrid {
      */
     mapPosToIndexCoords(x, y) {
         return y*this._mapWidth+x
-    } 
+    }
 
-    get realWidth() {return this._mapWidth*this._pixelSize}
-    get realHeight() {return this._mapHeight*this._pixelSize}
-    get realDimensions() {return [this.realWidth, this.realHeight]}
+    /**
+     * Returns the center pos of the map
+     * @param {Boolean?} useGlobalPixels Whether the center pos is in global pixels 
+     */
+    getCenter(useGlobalPixels) {
+        const cx = this._mapWidth>>1, cy = this._mapHeight>>1
+        return useGlobalPixels ? [cx*this._pixelSize, cy*this._pixelSize] : [cx, cy]
+    }
+
+    get globalWidth() {return this._mapWidth*this._pixelSize}
+    get globalHeight() {return this._mapHeight*this._pixelSize}
+    get globalDimensions() {return [this.globalWidth, this.globalHeight]}
     get arraySize() {return this._mapWidth*this._mapHeight}
     get displayDimensions() {return this._mapWidth+"x"+this._mapHeight}
     get lastPixelSize() {return this.#lastPixelSize}

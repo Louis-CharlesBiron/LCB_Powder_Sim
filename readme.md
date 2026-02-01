@@ -67,25 +67,36 @@ This section explains what are the available functions and types to control cert
 ## [Simulation Class](#table-of-contents)
 The `Simulation` class is the core of the simulation and manages all rendering and world manipulation (except for physics).
 #### **The Simulation constructor takes the following parameters:**
-###### - `new Simulation(CVS, readyCB?, autoStart?, usesWebWorkers?, userSettings?, colorSettings?)`
+###### - `new Simulation(CVS, readyCB?, worldStartSettings?, userSettings?, colorSettings?)`
 - **CVS** -> A [CDEJS `Canvas`](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#canvas) instance.
 - **readyCB**? -> A callback ran once the simulation is started. `(simulation)=>{}`
-- **autoStart**? -> Whether the simulation automatically starts once instanciated. (Defaults to true)
-- **usesWebWorkers**? -> Whether the physics calculations are offloaded to a worker thread. (RECOMMENDED) (Defaults to true)
+- **worldStartSettings**? -> An object defining the simulation start settings. (Defaults to `DEFAULT_WORLD_START_SETTINGS`)
 - **userSettings**? -> An object defining the user settings. (Defaults to `DEFAULT_USER_SETTINGS`)
 - **colorSettings**? -> An object defining the color settings. (Defaults to `DEFAULT_COLOR_SETTINGS`)
 
 #### **Noteworthy attributes**
 - `pixels` -> The array containing all materials (might not be directly available when using workers)
-- `backStepSavingMaxCount` -> The amount of back step saved (defaults to `DEFAULT_BACK_STEP_SAVING_COUNT`)
+- `backStepSavingMaxCount` -> The amount of back step saved (Defaults to `DEFAULT_BACK_STEP_SAVING_COUNT`)
 - `isMouseWithinSimulation` -> Whether the mouse is inside the simulation bounding box
 - `isRunning` -> Whether the simulation is currently running
-- `selectedMaterial` -> The material used by default for world manipulation (defaults to `MATERIALS.SAND`)
-- `brushType` -> The shape used to draw materials on the simulation with mouse (defaults to `BRUSH_TYPES.PIXEL`)
-- `sidePriority` -> The side prioritised first by the physics (defaults to `SIDE_PRIORITIES.RANDOM`)
-- `loopExtra` -> A callback called on each rendered frame (defaults to `null`)
-- `stepExtra` -> A callback called on each physics step (defaults to `null`)
+- `selectedMaterial` -> The material used by default for world manipulation (Defaults to `MATERIALS.SAND`)
+- `brushType` -> The shape used to draw materials on the simulation with mouse (Defaults to `BRUSH_TYPES.PIXEL`)
+- `sidePriority` -> The side prioritised first by the physics (Defaults to `SIDE_PRIORITIES.RANDOM`)
+- `loopExtra` -> A callback called on each rendered frame (Defaults to `null`)
+- `stepExtra` -> A callback called on each physics step (Defaults to `null`)
 
+ 
+**WorldStartSettings**:
+- `autoStart` -> Whether the simulation automatically starts once instanciated. (Defaults to true)
+- `usesWebWorkers` -> Whether the physics calculations are offloaded to a worker thread. (RECOMMENDED) (Defaults to true)
+- `aimedFPS` -> The desired frame per seconds. (Defaults to `60`) (Put `null` for V-Sync)
+- `zoom` -> The base zoom value. (Defaults to `1`)
+
+***Note***: The following world start settings are only work when `autoSimulationSizing` is not set.
+- `cameraCenterPos` -> The camera center position. (Defaults to the center of the map)
+- `mapWidth` -> The base width of the map. (Defaults to `MapGrid.DEFAULT_MAP_WIDTH`)
+- `mapHeight` -> The base height of the map. (Defaults to `MapGrid.DEFAULT_MAP_HEIGHT`)
+- `mapPixelSize` -> The base size of the map pixels. (Defaults to `MapGrid.DEFAULT_MAP_PIXEL_SIZE`)
 
 **UserSettings**:
 - `autoSimulationSizing` -> If a number, automatically resizes the simulation based the provided number, as pixel size. Disabled otherwise.
@@ -93,6 +104,8 @@ The `Simulation` class is the core of the simulation and manages all rendering a
 - `warningsDisabled` -> Hides warning messages from console (Defaults to false)
 - `showBorder` -> If true, displays the bounding box of the simulation (Defaults to true)
 - `showGrid` -> If true, displays a grid over the simulation to delimit pixels (Defaults to true)
+- `zoomInIncrement` / `zoomOutIncrement` -> Defines the **increment** value for zooming in/out (Defaults to `0.25` / **`-0.2`**)
+- `minZoomThreshold` / `maxZoomThreshold` -> Defines the min/max zoom threshold values (Defaults to `0.1` / `Infinity`)
 - `smoothDrawingEnabled` -> Whether to fill gaps between mouse event for smoother drawing (Defaults to true)
 - `visualEffectsEnabled` -> Whether to display some visual effect (Defaults to true) [MAYBE AFFECT PERFORMANCE]
 

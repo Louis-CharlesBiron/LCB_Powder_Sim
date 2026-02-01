@@ -108,9 +108,25 @@ const SETTINGS = {
     NOT_INITIALIZED_PIXEL_SIZE_WARN:`Tried updating pixel size with 'updateMapPixelSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update pixel size on launch.`,
     NOT_INITIALIZED_PHYSICS_TYPE_WARN:`Tried updating physics unit type with 'updatePhysicsUnitType()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update physics unit type on launch.`,
     
+    DEFAULT_WORLD_START_SETTINGS: {
+        autoStart: true,
+        usesWebWorkers: true,
+        aimedFPS: 60,
+        zoom: null,
+
+        cameraCenterPos: undefined,
+        mapWidth: null,
+        mapHeight: null,
+        mapPixelSize: null,
+    },
+
     DEFAULT_USER_SETTINGS: {
-        autoSimulationSizing: 10,
+        autoSimulationSizing: null,
         dragAndZoomCanvasEnabled: true,
+        minZoomThreshold: .1,
+        maxZoomThreshold: Infinity,
+        zoomInIncrement: .25,
+        zoomOutIncrement: -.2,
         warningsDisabled: false,
         showBorder: true,
         showGrid: true,
@@ -143,7 +159,7 @@ const SETTINGS = {
 }
 
 // SET DEFAULT USER SETTINGS autoSimulationSizing
-SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
+if (SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing === null) SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
 
 // SET MATERIAL GROUPS
 SETTINGS.MATERIAL_GROUPS = {

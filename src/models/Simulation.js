@@ -23,40 +23,33 @@ class Simulation {
     static #CACHED_GRID_LINES = null
     static #CACHED_GRID_BORDER = null
     // DEFAULTS
-    static DEFAULT_PHYSICS_UNIT_TYPE = Simulation.PHYSICS_UNIT_TYPE.WORKER
+    static DEFAULT_WORLD_START_SETTINGS = SETTINGS.DEFAULT_WORLD_START_SETTINGS
+    static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
+    static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
-    static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
-    static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
     static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
-    static DEFAULT_AUTO_START_VALUE = true
-    static MIN_ZOOM_THRESHOLD = .1
-    static MAX_ZOOM_THRESHOLD = Infinity
-    static ZOOM_IN_INCREMENT = .25
-    static ZOOM_OUT_INCREMENT = -.2
     static DEFAULT_KEYBINDS = DEFAULT_KEYBINDS
 
-    #simulationHasPixelsBuffer = true
+    #simulationHasPixelsBuffer = true // Whether the main thread has the pixel buffer when using webworkers
     #lastPlacedPos = null
 
     /**
      * The core of the simulation and manages all rendering and world manipulation. (except for physics)
-     * @param {Canvas} CVS A CDEJS Canvas instance
+     * @param {HTMLCanvasElement | Canvas} canvas A HTML canvas reference or a CDEJS Canvas instance to display the simulation on
      * @param {Function?} readyCB A callback ran once the simulation is started. (simulation)=>{}
-     * @param {Boolean?} autoStart Whether the simulation automatically starts once instanciated. (Defaults to true)
-     * @param {Boolean?} usesWebWorkers Whether the physics calculations are offloaded to a worker thread. (Defaults to true)
+     * @param {Object?} worldStartSettings An object defining the simulation settings
      * @param {Object?} userSettings An object defining the user settings
      * @param {Object?} colorSettings An object defining the color settings
      */
-    constructor(CVS, readyCB, autoStart, usesWebWorkers, userSettings, colorSettings) {// TODO GET/SET
-        autoStart??=Simulation.DEFAULT_AUTO_START_VALUE
-        usesWebWorkers??=Simulation.DEFAULT_PHYSICS_UNIT_TYPE
-
+    constructor(canvas, readyCB, worldStartSettings, userSettings, colorSettings) {
         // SIMULATION
-        this._initialized = autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
-        this._CVS = CVS
-        this._mapGrid = new MapGrid()
+        this._CVS = canvas instanceof Canvas ? canvas : new Canvas(canvas)
+        this._worldStartSettings = this.getAdjustedSettings(worldStartSettings, Simulation.DEFAULT_WORLD_START_SETTINGS)
+        this._CVS.fpsLimit = this._worldStartSettings.aimedFPS
+        this._initialized = this._worldStartSettings.autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
+        this._mapGrid = new MapGrid(this._worldStartSettings.mapPixelSize, this._worldStartSettings.mapWidth, this._worldStartSettings.mapHeight)
         this._pixels = new Uint16Array(this._mapGrid.arraySize)
         this._lastPixels = new Uint16Array(this._mapGrid.arraySize)
         this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
@@ -69,16 +62,16 @@ class Simulation {
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
         this._lastStepTime = null
         this._queuedBufferOperations = []
-        this.updatePhysicsUnitType(usesWebWorkers)
+        this.updatePhysicsUnitType(this._worldStartSettings.usesWebWorkers)
 
         // DISPLAY
         this._userSettings = this.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
         this._colorSettings = this.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
-        this._mapGridRenderStyles = CVS.render.profile1.update(this._colorSettings.grid, null, null, null, 1)
-        this._mapBorderRenderStyles = CVS.render.profile2.update(this._colorSettings.border, null, null, null, 2)
-        this._imgMap = CVS.ctx.createImageData(...this._mapGrid.realDimensions)
-        this._offscreenCanvas = new OffscreenCanvas(...this._mapGrid.realDimensions)
+        this._mapGridRenderStyles = this._CVS.render.profile1.update(this._colorSettings.grid, null, null, null, 1)
+        this._mapBorderRenderStyles = this._CVS.render.profile2.update(this._colorSettings.border, null, null, null, 2)
+        this._imgMap = this._CVS.ctx.createImageData(...this._mapGrid.globalDimensions)
+        this._offscreenCanvas = new OffscreenCanvas(...this._mapGrid.globalDimensions)
         this._offscreenCtx = this._offscreenCanvas.getContext("2d")
         this._loopExtra = null
         this._stepExtra = null
@@ -86,24 +79,27 @@ class Simulation {
         this.#updateCachedMapPixelsRows()
         this.#setCanvasZoomAndDrag()
         this.setKeyBinds()
+        const cameraCenterPos = this._worldStartSettings.cameraCenterPos
+        if (cameraCenterPos !== undefined) this._CVS.centerViewAt(cameraCenterPos||this._mapGrid.getCenter(true))
+        if (this._worldStartSettings.zoom) this._CVS.zoomAtPos(this._CVS.getCenter(), this._worldStartSettings.zoom)
         
         // CANVAS
-        CVS.loopingCB = this.#main.bind(this)
-        CVS.setMouseMove()
-        CVS.setMouseLeave()
-        CVS.setMouseDown(this.#mouseDown.bind(this))
-        CVS.setMouseUp(this.#mouseUp.bind(this))
-        CVS.setKeyUp(null, true)
-        CVS.setKeyDown(null, true)
-        CVS.onResizeCB=()=>{
+        this._CVS.loopingCB = this.#main.bind(this)
+        this._CVS.setMouseMove()
+        this._CVS.setMouseLeave()
+        this._CVS.setMouseDown(this.#mouseDown.bind(this))
+        this._CVS.setMouseUp(this.#mouseUp.bind(this))
+        this._CVS.setKeyUp(null, true)
+        this._CVS.setKeyDown(null, true)
+        this._CVS.onResizeCB=()=>{
             const pixelSize = this.autoSimulationSizing
             if (pixelSize) this.autoFitSize(pixelSize)
         }
-        CVS.start()
+        this._CVS.start()
         this._mouseListenerIds = [
-            CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
-            CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
-            CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
 
 
@@ -115,7 +111,7 @@ class Simulation {
 
         this._initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
 
-        if (autoStart) this.start()
+        if (this._worldStartSettings.autoStart) this.start()
     }
 
     /* RENDERING */
@@ -337,6 +333,7 @@ class Simulation {
      * @returns The calculated width/height in local pixels
      */
     autoFitSize(pixelSize=Simulation.DEFAULT_MAP_RESOLUTIONS.DEFAULT, globalWidth=this._CVS.width, globalHeight=this._CVS.height) {
+        if (pixelSize === true || pixelSize === null) pixelSize = Simulation.DEFAULT_MAP_RESOLUTIONS.DEFAULT
         const width = (globalWidth/pixelSize)|0, height = (globalHeight/pixelSize)|0
         this.updateMapPixelSize(pixelSize)
         this.updateMapSize(width, height)
@@ -358,9 +355,9 @@ class Simulation {
         const map = this._mapGrid
         if (pixelSize !== map.pixelSize) {
             map.pixelSize = pixelSize
-            this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
-            this._offscreenCanvas.width = map.realDimensions[0]
-            this._offscreenCanvas.height = map.realDimensions[1]
+            this._imgMap = this.ctx.createImageData(...map.globalDimensions)
+            this._offscreenCanvas.width = map.globalDimensions[0]
+            this._offscreenCanvas.height = map.globalDimensions[1]
             this.#updateCachedMapPixelsRows()
             this.#updateCachedGridDisplays()
             this.updateImgMapFromPixels()
@@ -390,9 +387,9 @@ class Simulation {
             this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldPixels)
             this.#updateCachedGridDisplays()
 
-            this._imgMap = CVS.ctx.createImageData(...map.realDimensions)
-            this._offscreenCanvas.width = map.realDimensions[0]
-            this._offscreenCanvas.height = map.realDimensions[1]
+            this._imgMap = this.ctx.createImageData(...map.globalDimensions)
+            this._offscreenCanvas.width = map.globalDimensions[0]
+            this._offscreenCanvas.height = map.globalDimensions[1]
             this.updateImgMapFromPixels()
 
             this.#updateMouseListeners()
@@ -574,12 +571,12 @@ class Simulation {
     // Updates cached lines / borders paths
     #updateCachedGridDisplays() {
         Simulation.#CACHED_GRID_LINES = this._mapGrid.getDrawableGridLines()
-        Simulation.#CACHED_GRID_BORDER = Render.getRect([0,0], ...this._mapGrid.realDimensions)
+        Simulation.#CACHED_GRID_BORDER = Render.getRect([0,0], ...this._mapGrid.globalDimensions)
     }
 
     // Updates current mouse listeners area
     #updateMouseListeners() {
-        const mouse = this.mouse, dimensions = this._mapGrid.realDimensions
+        const mouse = this.mouse, dimensions = this._mapGrid.globalDimensions
         mouse.updateListener(Mouse.LISTENER_TYPES.ENTER, this._mouseListenerIds[0], [[0,0], dimensions])
         mouse.updateListener(Mouse.LISTENER_TYPES.MOVE,  this._mouseListenerIds[1], [[0,0], dimensions])
         mouse.updateListener(Mouse.LISTENER_TYPES.LEAVE, this._mouseListenerIds[2], [[0,0], dimensions])
@@ -646,7 +643,7 @@ class Simulation {
                 const prog = ((i+1)/dMax)
                 this.placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
             } 
-            else this.placePixelsWithBrush(x, y-isRunning)
+            else this.placePixelsWithBrush(x, y)
 
             this.#lastPlacedPos = mapPos
             if (!isRunning) this.updateImgMapFromPixels()
@@ -654,8 +651,8 @@ class Simulation {
     }
 
     #zoomTowardsPos(pos,  zoomDirection) {
-        const newZoom = this._CVS.zoom + (zoomDirection<0 ? Simulation.ZOOM_IN_INCREMENT : Simulation.ZOOM_OUT_INCREMENT)
-        if (newZoom > Simulation.MIN_ZOOM_THRESHOLD && newZoom < Simulation.MAX_ZOOM_THRESHOLD) {
+        const newZoom = this._CVS.zoom + (zoomDirection<0 ? this.zoomInIncrement : this.zoomOutIncrement)
+        if (newZoom > this.minZoomThreshold && newZoom < this.maxZoomThreshold) {
             this._CVS.zoomAtPos(pos, newZoom)
             return pos
         }  else return false
@@ -963,9 +960,14 @@ class Simulation {
 	get mapGrid() {return this._mapGrid}
 	get loopExtra() {return this._loopExtra}
 	get stepExtra() {return this._stepExtra}
+	get pxStepUpdated() {return this._pxStepUpdated}
+	get pxStates() {return this._pxStates}
 	get lastPixels() {return this._lastPixels}
+	get lastStepTime() {return this._lastStepTime}
 	get pixels() {return this._pixels}
 	get mapGridRenderStyles() {return this._mapGridRenderStyles}
+	get mapBorderRenderStyles() {return this._mapBorderRenderStyles}
+	get offscreenCanvas() {return this._offscreenCanvas}
 	get imgMap() {return this._imgMap}
     get isMouseWithinSimulation() {return this._isMouseWithinSimulation}
 	get selectedMaterial() {return this._selectedMaterial}
@@ -974,8 +976,13 @@ class Simulation {
 	get backStepSavingMaxCount() {return this._backStepSavingMaxCount}
 	get backStepSaves() {return this._backStepSaves}
     get brushType() {return this._brushType}
+	get worldStartSettings() {return this._worldStartSettings}
 	get userSettings() {return this._userSettings}
+	get colorSettings() {return this._colorSettings}
+    get initialized() {return this._initialized}
+	get queuedBufferOperations() {return this._queuedBufferOperations}
 
+    get aimedFPS() {return this._CVS.fpsLimit}
     get backStepSavingEnabled() {return Boolean(this._backStepSavingMaxCount)}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
     get usesWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
@@ -987,6 +994,10 @@ class Simulation {
 	get warningsDisabled() {return this._userSettings.warningsDisabled}
 	get dragAndZoomCanvasEnabled() {return this._userSettings.dragAndZoomCanvasEnabled}
 	get autoSimulationSizing() {return this._userSettings.autoSimulationSizing}
+	get zoomInIncrement() {return this._userSettings.zoomInIncrement}
+	get zoomOutIncrement() {return this._userSettings.zoomOutIncrement}
+	get minZoomThreshold() {return this._userSettings.minZoomThreshold}
+	get maxZoomThreshold() {return this._userSettings.maxZoomThreshold}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
@@ -996,11 +1007,13 @@ class Simulation {
 	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
 	set backStepSavingMaxCount(_backStepSavingMaxCount) {this._backStepSavingMaxCount = _backStepSavingMaxCount}
 	set mapGridRenderStyles(_mapGridRenderStyles) {this._mapGridRenderStyles = _mapGridRenderStyles}
+	set mapBorderRenderStyles(_mapBorderRenderStyles) {return this._mapBorderRenderStyles = _mapBorderRenderStyles}
     set showGrid(showGrid) {this._userSettings.showGrid = showGrid}
     set showBorder(showBorder) {this._userSettings.showBorder = showBorder}
     set smoothDrawingEnabled(smoothDrawingEnabled) {this._userSettings.smoothDrawingEnabled = smoothDrawingEnabled}
     set visualEffectsEnabled(visualEffectsEnabled) {this._userSettings.visualEffectsEnabled = visualEffectsEnabled}
     set warningsDisabled(warningsDisabled) {this._userSettings.warningsDisabled = warningsDisabled}
+    set aimedFPS(aimedFPS) {this._CVS.fpsLimit = aimedFPS}
     set autoSimulationSizing(autoSimulationSizing) {
         this._userSettings.autoSimulationSizing = autoSimulationSizing
         if (autoSimulationSizing) this.autoFitSize(autoSimulationSizing)
@@ -1009,4 +1022,8 @@ class Simulation {
         this._userSettings.dragAndZoomCanvasEnabled = dragAndZoomCanvasEnabled
         if (!dragAndZoomCanvasEnabled) CVS.resetTransformations(true)
     }
+    set minZoomThreshold(minZoomThreshold) {this._userSettings.minZoomThreshold = minZoomThreshold}
+    set maxZoomThreshold(maxZoomThreshold) {this._userSettings.maxZoomThreshold = maxZoomThreshold}
+    set zoomInIncrement(zoomInIncrement) {this._userSettings.zoomInIncrement = zoomInIncrement}
+    set zoomOutIncrement(zoomOutIncrement) {this._userSettings.zoomOutIncrement = zoomOutIncrement}
 }

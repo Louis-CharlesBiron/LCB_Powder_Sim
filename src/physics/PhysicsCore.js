@@ -1,6 +1,6 @@
 class PhysicsCore {
     static D = {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7}
-    static #TEMP_DEBUG_CLS = 0
+    static #DEBUG_CLS_THRESHOLD = 0
 
     static #RANDOM_CACHE = null
     static #RANDOM_TABLE_SIZE = 1<<16
@@ -55,12 +55,12 @@ class PhysicsCore {
             return (i%mapWidth) < width2
         }
 
-        // TODO TEMP
-        const timer = 0
-        if (timer) {
-            if (PhysicsCore.#TEMP_DEBUG_CLS++ > 18) {
+        // TODO PERFORMANCES TESTING
+        const timerEnabled = 0
+        if (timerEnabled) {
+            if (PhysicsCore.#DEBUG_CLS_THRESHOLD++ > 18) {
                 console.clear()
-                PhysicsCore.#TEMP_DEBUG_CLS = 0
+                PhysicsCore.#DEBUG_CLS_THRESHOLD = 0
             }
             console.time(".")
         }
@@ -364,7 +364,7 @@ class PhysicsCore {
                 pixels[i] = replaceMaterial
             }
         }
-        if (timer) console.timeEnd(".")
+        if (timerEnabled) console.timeEnd(".")
 
         return [pixels, pxStates]
     }
