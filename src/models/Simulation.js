@@ -29,6 +29,7 @@ class Simulation {
     static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
     static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
     static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
+    static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
     static DEFAULT_AUTO_START_VALUE = true
     static MIN_ZOOM_THRESHOLD = .1
     static MAX_ZOOM_THRESHOLD = Infinity
@@ -94,6 +95,10 @@ class Simulation {
         CVS.setMouseUp(this.#mouseUp.bind(this))
         CVS.setKeyUp(null, true)
         CVS.setKeyDown(null, true)
+        CVS.onResizeCB=()=>{
+            const pixelSize = this.autoSimulationSizing
+            if (pixelSize) this.autoFitSize(pixelSize)
+        }
         CVS.start()
         this._mouseListenerIds = [
             CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
@@ -101,11 +106,15 @@ class Simulation {
             CVS.mouse.addListener([[0,0], this._mapGrid.realDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
 
-        if (typeof readyCB === "function") {
-            this._initialized = Simulation.#INIT_STATES.READY
-            readyCB(this)
-            this._initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
-        }
+
+        // INTERNAL LOAD CALLS
+        this._initialized = Simulation.#INIT_STATES.READY
+
+        if (this.autoSimulationSizing) this.autoFitSize(this.autoSimulationSizing)
+        if (CDEUtils.isFunction(readyCB)) readyCB(this)
+
+        this._initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
+
         if (autoStart) this.start()
     }
 
@@ -318,6 +327,20 @@ class Simulation {
             if (this._isRunning) this.start(true)
         }
         else if (usesWebWorkers && this.isFileServed) this.#warn(SETTINGS.FILE_SERVED_WARN)
+    }
+
+    /**
+     * Updates map size automatically based on the optimal fit for the provided sizes
+     * @param {Number?} pixelSize The desired pixel size
+     * @param {Number?} globalWidth The width to cover in px
+     * @param {Number?} globalHeight The height to cover in px
+     * @returns The calculated width/height in local pixels
+     */
+    autoFitSize(pixelSize=Simulation.DEFAULT_MAP_RESOLUTIONS.DEFAULT, globalWidth=this._CVS.width, globalHeight=this._CVS.height) {
+        const width = (globalWidth/pixelSize)|0, height = (globalHeight/pixelSize)|0
+        this.updateMapPixelSize(pixelSize)
+        this.updateMapSize(width, height)
+        return [width, height]
     }
 
     /**
@@ -617,16 +640,16 @@ class Simulation {
     #placePixelFromMouse(mouse) {
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
         if (this._isMouseWithinSimulation && mapPos) {
-            const [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
+            const isRunning = this._isRunning, [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
 
             if (this.smoothDrawingEnabled && dMax) for (let i=0;i<dMax;i++) {
                 const prog = ((i+1)/dMax)
                 this.placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
             } 
-            else this.placePixelsWithBrush(x, y)
+            else this.placePixelsWithBrush(x, y-isRunning)
 
             this.#lastPlacedPos = mapPos
-            if (!this._isRunning) this.updateImgMapFromPixels()
+            if (!isRunning) this.updateImgMapFromPixels()
         }
     }
 
@@ -963,6 +986,7 @@ class Simulation {
 	get visualEffectsEnabled() {return this._userSettings.visualEffectsEnabled}
 	get warningsDisabled() {return this._userSettings.warningsDisabled}
 	get dragAndZoomCanvasEnabled() {return this._userSettings.dragAndZoomCanvasEnabled}
+	get autoSimulationSizing() {return this._userSettings.autoSimulationSizing}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
@@ -977,6 +1001,10 @@ class Simulation {
     set smoothDrawingEnabled(smoothDrawingEnabled) {this._userSettings.smoothDrawingEnabled = smoothDrawingEnabled}
     set visualEffectsEnabled(visualEffectsEnabled) {this._userSettings.visualEffectsEnabled = visualEffectsEnabled}
     set warningsDisabled(warningsDisabled) {this._userSettings.warningsDisabled = warningsDisabled}
+    set autoSimulationSizing(autoSimulationSizing) {
+        this._userSettings.autoSimulationSizing = autoSimulationSizing
+        if (autoSimulationSizing) this.autoFitSize(autoSimulationSizing)
+    }
     set dragAndZoomCanvasEnabled(dragAndZoomCanvasEnabled) {
         this._userSettings.dragAndZoomCanvasEnabled = dragAndZoomCanvasEnabled
         if (!dragAndZoomCanvasEnabled) CVS.resetTransformations(true)

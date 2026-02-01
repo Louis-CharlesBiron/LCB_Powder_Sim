@@ -109,6 +109,7 @@ const SETTINGS = {
     NOT_INITIALIZED_PHYSICS_TYPE_WARN:`Tried updating physics unit type with 'updatePhysicsUnitType()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update physics unit type on launch.`,
     
     DEFAULT_USER_SETTINGS: {
+        autoSimulationSizing: 10,
         dragAndZoomCanvasEnabled: true,
         warningsDisabled: false,
         showBorder: true,
@@ -131,8 +132,18 @@ const SETTINGS = {
         LAVA:[255,132,0,.88],
         ELECTRICITY:[255,235,0,0.9],
         COPPER:[121,65,52,1],
-    }
+    },
+
+    DEFAULT_MAP_RESOLUTIONS: {
+        HIGH: 2,
+        MEDIUM: 10,
+        SMALL: 18,
+        DEFAULT: 10
+    },
 }
+
+// SET DEFAULT USER SETTINGS autoSimulationSizing
+SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
 
 // SET MATERIAL GROUPS
 SETTINGS.MATERIAL_GROUPS = {

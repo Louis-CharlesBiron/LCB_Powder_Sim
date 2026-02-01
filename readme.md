@@ -88,6 +88,7 @@ The `Simulation` class is the core of the simulation and manages all rendering a
 
 
 **UserSettings**:
+- `autoSimulationSizing` -> If a number, automatically resizes the simulation based the provided number, as pixel size. Disabled otherwise.
 - `dragAndZoomCanvasEnabled` -> Whether the user can use left click to move around and wheel to zoom (Defaults to true)
 - `warningsDisabled` -> Hides warning messages from console (Defaults to false)
 - `showBorder` -> If true, displays the bounding box of the simulation (Defaults to true)
@@ -118,10 +119,14 @@ This can be used to update map properties / import a world as soon as the simula
 
 ## - Simulation configurations
 #### - `updateMapSize(width?, height?)` -> Updates the map dimensions.
-- `width` The new width of the map (local px)
-- `height` The new height of the map (local px)
+- `width` The new width of the map (*local px*)
+- `height` The new height of the map (*local px*)
 #### - `updateMapPixelSize(pixelSize?)` -> Updates the map pixel size. (Defaults to `MapGrid.DEFAULT_PIXEL_SIZE`)
-- `pixelSize` The new map pixel size (global px)
+- `pixelSize` The new map pixel size (*global px*)
+#### - `autoFitSize(pixelSize?, globalWidth?, globalHeight?)` ->Updates map size and pixel size automatically based on the optimal fit for the provided sizes. 
+- `pixelSize` The desired map pixel size (*global px*) (Defaults to `DEFAULT_MAP_RESOLUTIONS.DEFAULT`)
+- `globalWidth` The width to cover (*global px*) (Defaults to the canvas width)
+- `globalHeight` The height to cover (*global px*) (Defaults to the canvas height)
 
 #### - `updateSidePriority(sidePriority)` -> Updates the side prioritised first by the physics.
 - `sidePriority` The new side priority. One of `SIDE_PRIORITIES`. (Defaults to `SIDE_PRIORITIES.RANDOM`)
