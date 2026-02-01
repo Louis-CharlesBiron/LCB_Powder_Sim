@@ -7,7 +7,7 @@ const  simulation = new Simulation(simulationCanvas, readyCB,
         zoom: 1,
     },
     {
-        autoSimulationSizing: null,
+        autoSimulationSizing: true,
         dragAndZoomCanvasEnabled: true,
         warningsDisabled: false,
         showBorder: true,
