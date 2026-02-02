@@ -1,7 +1,7 @@
 // SIMULATION CREATION
 const simulation = new Simulation(simulationCanvas, readyCB, 
     {
-        usesWebWorkers: false,
+        usesWebWorkers: true,
         autoStart: true,
         aimedFPS: 60,
         zoom: 1,

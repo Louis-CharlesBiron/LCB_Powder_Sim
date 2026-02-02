@@ -1,3 +1,4 @@
+//[[@export]]
 const SETTINGS = {
 
     MATERIALS: {// 0-15
@@ -74,6 +75,7 @@ const SETTINGS = {
     BRUSHES_X_VALUES: [],
     
     WORKER_RELATIVE_PATH: "./src/physics/RemotePhysicsUnit.js",
+    WORKER_RELATIVE_PATH: "RemotePhysicsUnit.js",
     WORKER_MESSAGE_TYPES: {
         INIT:0,
         STEP:1<<0,

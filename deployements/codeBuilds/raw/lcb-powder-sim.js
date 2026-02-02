@@ -1,3 +1,5 @@
+//lcb-powder-sim RAW - v1.0.0
+"use strict";
 // CanvasDotEffect UMD - v1.3.2
 'use strict';
 // JS
@@ -8795,4 +8797,2044 @@ class Dot extends _Obj {
     set limit(limit) {this._parent.limit = limit}
     set connections(c) {return this._connections = c}
     set cachedPath(path) {this._cachedPath = path}
+}
+///[[@[%]:1]]
+//[[@export]]
+const SETTINGS = {
+
+    MATERIALS: {// 0-15
+        AIR:0,
+        SAND:1<<0,
+        WATER:1<<1,
+        STONE:1<<2,
+        GRAVEL:1<<3,
+        INVERTED_WATER:1<<4,
+        CONTAMINANT:1<<5,
+        LAVA:1<<6,
+        ELECTRICITY:1<<7,
+        COPPER:1<<8,
+    },
+
+    MATERIAL_GROUPS: {
+        TRANSPIERCEABLE:null,
+        LIQUIDS:null,
+        CONTAMINABLE:null,
+        MELTABLE:null,
+        HAS_VISUAL_EFFECTS:null,
+        REVERSE_LOOP_CONTAINED_SKIPABLE:null,
+        FOWARD_LOOP_CONTAINED_SKIPABLE:null,
+    },
+    MATERIAL_NAMES: [],
+
+    MATERIAL_STATES: {
+        EMPTY:0,
+        COPPER: {
+            LIT:1<<0,
+            ORIGIN:1<<1,
+            DISABLED:1<<2,
+        }
+    },
+
+    MATERIAL_STATES_GROUPS: {
+        COPPER: {
+            ACTIVATED: null,
+            SOURCEABLE: null,
+        }
+    },
+
+    D: {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7},
+
+    SIDE_PRIORITIES: {
+        RANDOM:0,
+        LEFT:1,
+        RIGHT:2,
+        MAP_DEPENDANT:3
+    },
+    SIDE_PRIORITY_NAMES: [],
+
+    DEFAULT_BACK_STEP_SAVING_COUNT: 500,
+
+    EXPORT_STATES: {RAW:0, COMPACTED:1},
+    EXPORT_SEPARATOR: "x",
+
+    BRUSH_TYPES: {
+        PIXEL:1<<0,
+        VERTICAL_CROSS:1<<1,
+        LINE3:1<<2, 
+        ROW3:1<<3,
+        BIG_DOT:1<<4, 
+        X3:1<<5,
+        X5:1<<6,
+        X15:1<<7,
+        X25:1<<8,
+        X55:1<<9,
+        X99:1<<10,
+    },
+
+    BRUSH_TYPE_NAMES: [],
+    BRUSH_GROUPS: {},
+    BRUSHES_X_VALUES: [],
+    
+    //WORKER_RELATIVE_PATH: "./src/physics/RemotePhysicsUnit.js",
+    WORKER_RELATIVE_PATH: "./deployements/codeBuilds/raw/RemotePhysicsUnit.js",
+    WORKER_MESSAGE_TYPES: {
+        INIT:0,
+        STEP:1<<0,
+        START_LOOP:1<<2,
+        STOP_LOOP:1<<3,
+        SIDE_PRIORITY:1<<4,
+        MAP_SIZE:1<<5,
+        PIXELS:1<<6,
+    },
+    WORKER_MESSAGE_GROUPS: {
+        GIVES_PIXELS_TO_MAIN: null,
+        GIVES_PIXELS_TO_WORKER: null,
+    },
+
+    PHYSICS_UNIT_TYPE: {
+        LOCAL:0,
+        WORKER:1,
+    },
+
+    INITIALIZED_STATES: {
+        NOT_INITIALIZED:0,
+        READY:1,
+        INITIALIZED:2,
+    },
+
+    FILE_SERVED_WARN:`Web workers are disabled when serving with file:// protocol.\n  Serve this page over http(s):// to enable them.`,
+
+    STANDALONE_KEYBIND_WARN:`The keybind pressed is not linked to any function.`,
+
+    NOT_INITIALIZED_LOAD_WARN:`Tried loading with 'load()' while simulation is not yet initialized.\n Use the 'readyCB' callback to load a save on launch.`,
+    NOT_INITIALIZED_MAP_SIZE_WARN:`Tried updating map size with 'updateMapSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update map size on launch.`,
+    NOT_INITIALIZED_PIXEL_SIZE_WARN:`Tried updating pixel size with 'updateMapPixelSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update pixel size on launch.`,
+    NOT_INITIALIZED_PHYSICS_TYPE_WARN:`Tried updating physics unit type with 'updatePhysicsUnitType()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update physics unit type on launch.`,
+    
+    DEFAULT_WORLD_START_SETTINGS: {
+        autoStart: true,
+        usesWebWorkers: true,
+        aimedFPS: 60,
+        zoom: null,
+
+        cameraCenterPos: undefined,
+        mapWidth: null,
+        mapHeight: null,
+        mapPixelSize: null,
+    },
+
+    DEFAULT_USER_SETTINGS: {
+        autoSimulationSizing: null,
+        dragAndZoomCanvasEnabled: true,
+        minZoomThreshold: .1,
+        maxZoomThreshold: Infinity,
+        zoomInIncrement: .25,
+        zoomOutIncrement: -.2,
+        warningsDisabled: false,
+        showBorder: true,
+        showGrid: true,
+        smoothDrawingEnabled: true,
+        visualEffectsEnabled: true,
+    },
+
+    DEFAULT_COLOR_SETTINGS: {
+        grid: [240,248,255,.2],
+        border: [240,248,255,1],
+
+        AIR:[0,0,0,0],
+        SAND:[235,235,158,1],
+        WATER:[0,15,242,.7],
+        STONE:[100,100,100,1],
+        GRAVEL:[188,188,188,1], 
+        INVERTED_WATER:[55,75,180,.75],
+        CONTAMINANT:[30,95,65,.75],
+        LAVA:[255,132,0,.88],
+        ELECTRICITY:[255,235,0,0.9],
+        COPPER:[121,65,52,1],
+    },
+
+    DEFAULT_MAP_RESOLUTIONS: {
+        HIGH: 2,
+        MEDIUM: 10,
+        SMALL: 18,
+        DEFAULT: 10
+    },
+}
+
+// SET DEFAULT USER SETTINGS autoSimulationSizing
+if (SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing === null) SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
+
+// SET MATERIAL GROUPS
+SETTINGS.MATERIAL_GROUPS = {
+    TRANSPIERCEABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.CONTAMINANT,
+    LIQUIDS:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.CONTAMINANT,
+    CONTAMINABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER,
+    MELTABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.GRAVEL,
+
+    HAS_VISUAL_EFFECTS:SETTINGS.MATERIALS.ELECTRICITY|SETTINGS.MATERIALS.COPPER,
+
+    REVERSE_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.GRAVEL|SETTINGS.MATERIALS.CONTAMINANT|SETTINGS.MATERIALS.LAVA|SETTINGS.MATERIALS.ELECTRICITY,
+    FORWARDS_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.INVERTED_WATER,
+}
+
+// SET MATERIAL STATES GROUPS
+SETTINGS.MATERIAL_STATES_GROUPS = {
+    COPPER: {
+        ACTIVATED: SETTINGS.MATERIAL_STATES.COPPER.LIT|SETTINGS.MATERIAL_STATES.COPPER.ORIGIN,
+        SOURCEABLE: SETTINGS.MATERIAL_STATES.COPPER.LIT|SETTINGS.MATERIAL_STATES.COPPER.DISABLED
+    }
+}
+
+// SET WORKER MESSAGE GROUPS
+SETTINGS.WORKER_MESSAGE_GROUPS = {
+    GIVES_PIXELS_TO_MAIN: SETTINGS.WORKER_MESSAGE_TYPES.STEP|SETTINGS.WORKER_MESSAGE_TYPES.PIXELS,
+    GIVES_PIXELS_TO_WORKER: SETTINGS.WORKER_MESSAGE_TYPES.STEP|SETTINGS.WORKER_MESSAGE_TYPES.PIXELS|SETTINGS.WORKER_MESSAGE_TYPES.START_LOOP,
+}
+
+// SET BRUSH GROUPS
+SETTINGS.BRUSH_GROUPS = {
+    SMALL_OPTIMIZED:SETTINGS.BRUSH_TYPES.PIXEL|SETTINGS.BRUSH_TYPES.VERTICAL_CROSS|SETTINGS.BRUSH_TYPES.LINE3|SETTINGS.BRUSH_TYPES.ROW3,
+    X:SETTINGS.BRUSH_TYPES.X3|SETTINGS.BRUSH_TYPES.X5|SETTINGS.BRUSH_TYPES.X15|SETTINGS.BRUSH_TYPES.X25|SETTINGS.BRUSH_TYPES.X55|SETTINGS.BRUSH_TYPES.X99,
+}
+
+// SET MATERIAL NAMES
+const M = SETTINGS.MATERIALS, materials = Object.keys(M), m_ll = materials.length
+for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) SETTINGS.MATERIAL_NAMES[i] = materials[ii]
+
+// SET BRUSH TYPE NAMES
+const B = SETTINGS.BRUSH_TYPES, brushTypes = Object.keys(B), bt_ll = brushTypes.length
+for (let i=1,ii=0;ii<bt_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
+
+// SET SIDE PRIORITY NAMES
+SETTINGS.SIDE_PRIORITY_NAMES = Object.keys(SETTINGS.SIDE_PRIORITIES)
+
+// SET BRUSHES X VALUES
+const brushesX = Object.keys(SETTINGS.BRUSH_TYPES).filter(b=>b.startsWith("X")), b_ll = brushesX.length
+for (let i=SETTINGS.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
+
+//[[@export]]
+const DEFAULT_KEYBINDS = {
+    /**
+        KEYBIND_NAME: {
+            defaultFunction?: {string?} The simulation function to call
+            defaultParams?: {Array?} The parameters to pass to the defaultFunction call
+            cancelKeys?: {[TypingDevice.KEYS]?} The keys that prevent the execution of the keybind
+            requiredKeys?: {[TypingDevice.KEYS]?} The required modifier keys to execute the keybind
+            keys: {[TypingDevice.KEYS]} The base key bind
+            triggerType?: {TypingDevice.TRIGGER_TYPES?} The trigger type
+            preventDefault?: {Boolean} Whether to e.preventDefault()
+        }
+    */
+
+    MY_CUSTOM_SIZE_KEYBIND: {
+        requiredKeys: [TypingDevice.KEYS.CONTROL, TypingDevice.KEYS.SHIFT],
+        keys:[TypingDevice.KEYS.G],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+
+    STEP: {
+        defaultFunction: "step",
+        keys:[TypingDevice.KEYS.ARROW_RIGHT],
+        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
+    },
+    BACK_STEP: {
+        defaultFunction: "backStep",
+        keys:[TypingDevice.KEYS.ARROW_LEFT],
+        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
+    },
+    STEP_FAST: {
+        defaultFunction: "step",
+        keys:[TypingDevice.KEYS.ARROW_UP],
+        triggerType: TypingDevice.TRIGGER_TYPES.FAST_REPEATING
+    },
+    BACK_STEP_FAST: {
+        defaultFunction: "backStep",
+        keys:[TypingDevice.KEYS.ARROW_DOWN],
+        triggerType: TypingDevice.TRIGGER_TYPES.FAST_REPEATING
+    },
+
+    START: {
+        defaultFunction: "start",
+        keys:[TypingDevice.KEYS.SPACE],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE
+    },
+    STOP: {
+        defaultFunction: "stop",
+        defaultParams: ["test"],
+        keys:[TypingDevice.KEYS.ESCAPE],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE
+    },
+    CLEAR: {
+        defaultFunction: "clear",
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.BACKSPACE],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+
+    SELECT_SAND: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.SAND],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_1, TypingDevice.KEYS.NUMPAD_1],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_WATER: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.WATER],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_2, TypingDevice.KEYS.NUMPAD_2],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_STONE: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.STONE],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_3, TypingDevice.KEYS.NUMPAD_3],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_GRAVEL: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.GRAVEL],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_4, TypingDevice.KEYS.NUMPAD_4],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_INVERTED_WATER: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.INVERTED_WATER],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_5, TypingDevice.KEYS.NUMPAD_5],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_CONTAMINANT: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.CONTAMINANT],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_6, TypingDevice.KEYS.NUMPAD_6],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_LAVA: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.LAVA],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_7, TypingDevice.KEYS.NUMPAD_7],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_ELECTRICITY: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.ELECTRICITY],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_8, TypingDevice.KEYS.NUMPAD_8],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_COPPER: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.COPPER],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_9, TypingDevice.KEYS.NUMPAD_9],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    SELECT_AIR: {
+        defaultFunction: "updateSelectedMaterial",
+        defaultParams: [SETTINGS.MATERIALS.AIR],
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_0, TypingDevice.KEYS.NUMPAD_0],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    
+
+    BRUSH_PIXEL: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.PIXEL],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_1, TypingDevice.KEYS.NUMPAD_1],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    BRUSH_VERTICAL_CROSS: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.VERTICAL_CROSS],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_2, TypingDevice.KEYS.NUMPAD_2],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    BRUSH_X3: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.X3],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_3, TypingDevice.KEYS.NUMPAD_3],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    BRUSH_BIG_DOT: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.BIG_DOT],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_4, TypingDevice.KEYS.NUMPAD_4],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    BRUSH_X5: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.X5],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_5, TypingDevice.KEYS.NUMPAD_5],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    BRUSH_X15: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.X15],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_6, TypingDevice.KEYS.NUMPAD_6],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    BRUSH_X25: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.X25],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_7, TypingDevice.KEYS.NUMPAD_7],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    BRUSH_X55: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.X55],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_8, TypingDevice.KEYS.NUMPAD_9],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    BRUSH_X99: {
+        defaultFunction: "updateBrushType",
+        defaultParams: [SETTINGS.BRUSH_TYPES.X99],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.DIGIT_0, TypingDevice.KEYS.NUMPAD_0],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+}
+
+class LocalPhysicsUnit {
+
+    constructor() {
+        this._physicsCore = new PhysicsCore()
+    }
+
+    step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight) {
+       const [px, states]  = this._physicsCore.step(
+            pixels,
+            pxStepUpdated,
+            pxStates,
+            sidePriority,
+            mapWidth,
+            mapHeight,
+            Simulation.MATERIALS,
+            Simulation.MATERIAL_GROUPS, 
+            Simulation.D,
+            Simulation.MATERIAL_STATES,
+            Simulation.MATERIAL_STATES_GROUPS,
+            Simulation.SIDE_PRIORITIES
+        )
+
+        pixels = px
+        pxStates = states
+    }
+
+}
+
+class PhysicsCore {
+    static D = {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7}
+    static #DEBUG_CLS_THRESHOLD = 0
+
+    static #RANDOM_CACHE = null
+    static #RANDOM_TABLE_SIZE = 1<<16
+    static #RANDOM_INDEX = 0
+
+    static #REGULAR_MOVES = {I:0, B:1, R:2, L:3, BR:4, BL:5, T:6, TR:7, TL:8}
+
+    static #SAND_SP_BIT = PhysicsCore.D.bl<<1
+    static #SAND_CACHE = new Uint8Array(PhysicsCore.#SAND_SP_BIT<<1)
+
+    static #WATER_SP_BIT = PhysicsCore.D.bl<<1
+    static #WATER_CACHE = new Uint8Array(PhysicsCore.#WATER_SP_BIT<<1)
+
+    static #INVERTED_WATER_SP_BIT = PhysicsCore.D.tl<<1
+    static #INVERTED_WATER_CACHE = new Uint8Array(PhysicsCore.#INVERTED_WATER_SP_BIT<<1)
+
+    static {
+        const D = PhysicsCore.D
+        // FILL CACHED RANDOM TABLE 
+        const rt_ll = PhysicsCore.#RANDOM_TABLE_SIZE, table = PhysicsCore.#RANDOM_CACHE = new Float32Array(rt_ll)
+        for (let i=0;i<rt_ll;i++) table[i] = Math.random()
+
+        // FILL CACHED SAND TABLE
+        const sandCache = PhysicsCore.#SAND_CACHE, sand_ll = sandCache.length 
+        for (let i=0;i<sand_ll;i++) sandCache[i] = PhysicsCore.#updateCachedSandTable(D, i)
+
+        // FILL CACHED WATER TABLE
+        const waterCache = PhysicsCore.#WATER_CACHE, water_ll = waterCache.length
+        for (let i=0;i<water_ll;i++) waterCache[i] = PhysicsCore.#updateCachedWaterTable(D, i)
+
+        // FILL CACHED INVERTED WATER TABLE
+        const invertedWaterCache = PhysicsCore.#INVERTED_WATER_CACHE, invertedWater_ll = invertedWaterCache.length 
+        for (let i=0;i<invertedWater_ll;i++) invertedWaterCache[i] = PhysicsCore.#updateCachedInvertedWaterTable(D, i)
+    }
+
+    // Calculates a physics step on all pixels
+    step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
+        const p_ll = pixels.length-1, width2 = mapWidth>>1, PX = 1, STATE = 2,
+              AIR = M.AIR, STONE = M.STONE, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE,
+              RT = PhysicsCore.#RANDOM_CACHE, RS = PhysicsCore.#RANDOM_TABLE_SIZE-1, SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGH,
+              {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES,
+              SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT,
+              WATER_CACHE = PhysicsCore.#WATER_CACHE, WATER_SP_BIT = PhysicsCore.#WATER_SP_BIT,
+              INVERTED_WATER_CACHE = PhysicsCore.#INVERTED_WATER_CACHE, INVERTED_WATER_SP_BIT = PhysicsCore.#INVERTED_WATER_SP_BIT
+        
+        pxStepUpdated.fill(0)
+
+        function getSideSelectionPriority(i) {
+            if (SP_LEFT) return true
+            if (SP_RIGHT) return false
+            if (SP_RANDOM) return RT[PhysicsCore.#RANDOM_INDEX++&RS] < 0.5
+            return (i%mapWidth) < width2
+        }
+
+        // TODO PERFORMANCES TESTING
+        const timerEnabled = 0
+        if (timerEnabled) {
+            if (PhysicsCore.#DEBUG_CLS_THRESHOLD++ > 18) {
+                console.clear()
+                PhysicsCore.#DEBUG_CLS_THRESHOLD = 0
+            }
+            console.time(".")
+        }
+
+        for (let i=p_ll;i>=0;i--) {
+            const mat = pixels[i]
+            if (mat === AIR || pxStepUpdated[i] || mat === STONE) continue
+            const x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>0, hasR = x<mapWidth-1, hasT = y>0, hasB = y<mapHeight-1,
+                  i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i,
+                  p_B = pixels[i_B], p_R = pixels[i_R], p_L = pixels[i_L], p_T = pixels[i_T]
+
+            if (mat & CONTAINED_SKIPABLE && (p_B^mat|p_R^mat|p_L^mat|p_T^mat) === 0) continue
+
+            const i_BL = (hasB&&hasL) ? i+mapWidth-1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i, i_TL = (hasT&&hasL) ? i-mapWidth-1:i, i_TR = (hasT&&hasR) ? i-mapWidth+1:i
+
+            let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
+
+            // SAND
+            if (mat === M.SAND) {
+                const m_B = p_B&G.TRANSPIERCEABLE, 
+                      stack = (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0)*D.b | // B  - GO THROUGH TRANSPIERCEABLE
+                              (pixels[i_BR] === AIR)*D.br |                        // BR - GO THROUGH AIR
+                              (pixels[i_BL] === AIR)*D.bl |                        // BL - GO THROUGH AIR
+                              getSideSelectionPriority(i)*SAND_SP_BIT
+
+                const move = SAND_CACHE[stack]
+                if      (move === B)  newIndex = i_B
+                else if (move === BR) newIndex = i_BR
+                else if (move === BL) newIndex = i_BL
+
+                if (newIndex !== -1 && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
+            }
+
+            // WATER
+            else if (mat === M.WATER) {
+                const stack = (p_B === AIR)*D.b |         // B  - GO THROUGH AIR
+                            (pixels[i_BR] === AIR)*D.br | // BR - GO THROUGH AIR
+                            (pixels[i_BL] === AIR)*D.bl | // BL - GO THROUGH AIR
+                            (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
+                            (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                            getSideSelectionPriority(i)*WATER_SP_BIT
+
+                const move = WATER_CACHE[stack]
+                if      (move === B)  newIndex = i_B
+                else if (move === BR) newIndex = i_BR
+                else if (move === BL) newIndex = i_BL
+                else if (move === R)  newIndex = i_R
+                else if (move === L)  newIndex = i_L
+            }
+
+            // GRAVEL
+            else if (mat === M.GRAVEL) {
+                const m_B = p_B&LIQUIDS 
+                if (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0) newIndex = i_B // GO THROUGH TRANSPIERCEABLE
+
+                // check what to replace prev pos with
+                if (m_B && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
+            }
+
+            // INVERTED WATER
+            else if (mat === M.INVERTED_WATER) {
+                const stack = (p_T === AIR)*D.t |   // T  - GO THROUGH AIR
+                              (pixels[i_TR] === AIR)*D.tr | // TR - GO THROUGH AIR
+                              (pixels[i_TL] === AIR)*D.tl | // TL - GO THROUGH AIR
+                              (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
+                              (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                              getSideSelectionPriority(i)*INVERTED_WATER_SP_BIT
+
+                const move = INVERTED_WATER_CACHE[stack]
+                if      (move === T)  newIndex = i_T
+                else if (move === TR) newIndex = i_TR
+                else if (move === TL) newIndex = i_TL
+                else if (move === R)  newIndex = i_R
+                else if (move === L)  newIndex = i_L
+            }
+
+            // CONTAMINANT
+            else if (mat === M.CONTAMINANT) {
+                let move = WATER_CACHE[
+                        (p_B === AIR)*D.b // B  - GO THROUGH AIR
+                ]
+
+                const contaminationThreshold = 0.5
+                if (move === B)  newIndex = i_B
+                else {
+                    move = WATER_CACHE[
+                        (pixels[i_BR] === AIR)*D.br | // BR - GO THROUGH AIR
+                        (pixels[i_BL] === AIR)*D.bl | // BL - GO THROUGH AIR
+                        (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
+                        (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                        getSideSelectionPriority(i)*WATER_SP_BIT
+                    ]
+
+                    if (move === BR) newIndex = i_BR
+                    else if (move === BL) newIndex = i_BL
+                    else if (move === R)  newIndex = i_R
+                    else if (move === L)  newIndex = i_L
+
+                    if (p_L&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                        pixels[i_L] = mat
+                        pxStepUpdated[i_L] = PX
+                    }
+                    if (p_R&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                        pixels[i_R] = mat
+                        pxStepUpdated[i_R] = PX
+                    }
+                    if (p_B&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                        pixels[i_B] = mat
+                        pxStepUpdated[i_B] = PX
+                    }
+                    if (p_T&G.CONTAMINABLE && RT[PhysicsCore.#RANDOM_INDEX++&RS]>contaminationThreshold) {
+                        pixels[i_T] = mat
+                        pxStepUpdated[i_T] = PX
+                    }
+                }
+            }
+
+            // LAVA
+            else if (mat === M.LAVA) {
+                if (p_L&LIQUIDS || p_R&LIQUIDS || p_T&LIQUIDS || p_B&LIQUIDS) {// CREATE STONE
+                    pixels[i] = M.STONE
+                    pxStepUpdated[i] = PX
+                }
+                else {// FALL DOWN
+                    let move = WATER_CACHE[
+                        (p_B === AIR)*D.b // B  - GO THROUGH AIR
+                    ]
+
+                    const movementThreshold = 0.935, meltThreshold = 0.9992
+                    if (move === B)  newIndex = i_B
+                    else if (RT[PhysicsCore.#RANDOM_INDEX++&RS]>movementThreshold) {// MOVE SOMETIMES
+                        move = WATER_CACHE[
+                            (pixels[i_BR] === AIR)*D.br | // BR - GO THROUGH AIR
+                            (pixels[i_BL] === AIR)*D.bl | // BL - GO THROUGH AIR
+                            (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
+                            (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                            getSideSelectionPriority(i)*WATER_SP_BIT
+                        ]
+
+                        if (move === BR) newIndex = i_BR
+                        else if (move === BL) newIndex = i_BL
+                        else if (move === R)  newIndex = i_R
+                        else if (move === L)  newIndex = i_L
+                    }
+                    else if ((p_L&MELTABLE || p_R&MELTABLE || p_T&MELTABLE || p_B&MELTABLE) && RT[PhysicsCore.#RANDOM_INDEX++&RS]>meltThreshold) {// MELT SOMETIMES
+                        if (p_L&MELTABLE) {
+                            pixels[i_L] = mat
+                            pxStepUpdated[i_L] = PX
+                        } else if (p_R&MELTABLE) {
+                            pixels[i_R] = mat
+                            pxStepUpdated[i_R] = PX
+                        } else if (p_B&MELTABLE) {
+                            pixels[i_B] = mat
+                            pxStepUpdated[i_B] = PX
+                        } else if (p_T&MELTABLE) {
+                            pixels[i_T] = mat
+                            pxStepUpdated[i_T] = PX
+                        }
+                    }
+                }
+            }
+            // ELECTRICITY
+            else if (mat === M.ELECTRICITY) {
+                const ORIGIN = S.COPPER.ORIGIN
+
+                // check if can go down
+                if (p_B === AIR) newIndex = i_B
+                else {
+                    let COPPER = M.COPPER, SOURCEABLE = SG.COPPER.SOURCEABLE, s_B, s_T, s_R, s_L
+                    if (p_B === COPPER && ((s_B=pxStates[i_B]) === 0 || s_B&SOURCEABLE)) {
+                        pxStates[i_B] = ORIGIN
+                        pxStepUpdated[i_B] = STATE
+                    }
+                    if (p_T === COPPER && ((s_T=pxStates[i_T]) === 0 || s_T&SOURCEABLE)) {
+                        pxStates[i_T] = ORIGIN
+                        pxStepUpdated[i_T] = STATE
+                    }
+                    if (p_R === COPPER&& ((s_R=pxStates[i_R]) === 0 || s_R&SOURCEABLE)) {
+                        pxStates[i_R] = ORIGIN
+                        pxStepUpdated[i_R] = STATE
+                    }
+                    if (p_L === COPPER && ((s_L=pxStates[i_L]) === 0 || s_L&SOURCEABLE)) {
+                        pxStates[i_L] = ORIGIN
+                        pxStepUpdated[i_L] = STATE
+                    }
+                }
+            }
+            // COPPER
+            else if (mat === M.COPPER) {
+                // TODO OPTIMIZE
+
+                //    FIRST LIT
+                //    0 -> ORIGIN (by electricity) OK
+                //    0 -> LIT (by origin) OK ---1
+                //    0 -> LIT (by lit) [propagation] OK ---2
+
+                //    FIRST DISABLE
+                //    ORIGIN -> DISABLED (by !electricity) OK ---3
+                //    LIT -> DISABLED (by disabled) [propagation] OK ---4
+
+                //    SECOND LIT
+                //    DISABLED -> ORIGIN (by electricity) OK
+                //    DISABLED -> 0 (by origin) ---5
+                //    DISABLED -> 0 (by 0) [propagation] OK ---6
+
+                const state = pxStates[i],
+
+                      ACTIVATED = SG.COPPER.ACTIVATED,
+                      ORIGIN = S.COPPER.ORIGIN,
+                      ELECTRICITY = M.ELECTRICITY
+
+
+                // IF ORIGIN AND NOT CONNETED TO ELECTRICITY -> DISABLED
+                if (state === ORIGIN) {// ---3
+                    if (p_B !== ELECTRICITY && p_T !== ELECTRICITY && p_R !== ELECTRICITY && p_L !== ELECTRICITY) {
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                    }
+                }
+                // IF EMPTY AND CONNECTED TO LIT/ORIGIN -> LIT
+                else if (!state) {// ---1 + ---2
+                    if (p_B === mat && pxStates[i_B]&ACTIVATED) {
+                        pxStates[i] = S.COPPER.LIT
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (p_T === mat && pxStates[i_T]&ACTIVATED) {
+                        pxStates[i] = S.COPPER.LIT
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (p_R === mat && pxStates[i_R]&ACTIVATED) {
+                        pxStates[i] = S.COPPER.LIT
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (p_L === mat && pxStates[i_L]&ACTIVATED) {
+                        pxStates[i] = S.COPPER.LIT
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                    }
+                } else if (state === S.COPPER.LIT) {// ---4
+                    // IF NOT CONNECTED TO ELECTRICITY ANYMORE -> DISABLE
+                    if (p_B === mat && pxStates[i_B] === S.COPPER.DISABLED) {
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE//
+                        pxStepUpdated[i_B] = STATE//
+                        pxStepUpdated[i_R] = STATE//
+                        pxStepUpdated[i_L] = STATE//
+                    }
+                    if (p_T === mat && pxStates[i_T] === S.COPPER.DISABLED) {
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (p_R === mat && pxStates[i_R] === S.COPPER.DISABLED) {
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                    if (p_L === mat && pxStates[i_L] === S.COPPER.DISABLED) {
+                        pxStates[i] = S.COPPER.DISABLED
+                        pxStepUpdated[i] = STATE
+                        pxStepUpdated[i_T] = STATE
+                        pxStepUpdated[i_B] = STATE
+                        pxStepUpdated[i_R] = STATE
+                        pxStepUpdated[i_L] = STATE
+                    }
+                } 
+                else if (state === S.COPPER.DISABLED) {// ---5 + ---6
+                    // START RESET
+                    if (
+                        (p_B === mat && (pxStates[i_B] === ORIGIN || !pxStates[i_B])) ||
+                        (p_T === mat && (pxStates[i_T] === ORIGIN || !pxStates[i_T])) ||
+                        (p_R === mat && (pxStates[i_R] === ORIGIN || !pxStates[i_R])) ||
+                        (p_L === mat && (pxStates[i_L] === ORIGIN || !pxStates[i_L]))
+                    ) pxStates[i] = 0
+                }
+            }
+
+
+            // UPDATE
+            if (newIndex !== -1) {
+                pxStepUpdated[newIndex] = PX
+                pixels[newIndex] = newMaterial
+                pixels[i] = replaceMaterial
+            }
+        }
+        if (timerEnabled) console.timeEnd(".")
+
+        return [pixels, pxStates]
+    }
+
+
+    // Updates the sand movements table cache
+    static #updateCachedSandTable(D, stack) {
+        const isLeftFirst = stack & PhysicsCore.#SAND_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
+              b = stack & D.b,
+              br = stack & D.br,
+              bl = stack & D.bl
+
+        if (b) return MOVES.B// TODO OPTIMIZE
+        if (isLeftFirst) {
+            if (bl) return MOVES.BL
+            if (br) return MOVES.BR
+        } else {
+            if (br) return MOVES.BR
+            if (bl) return MOVES.BL
+        }
+        return MOVES.I
+    }
+
+    // Updates the water movements table cache
+    static #updateCachedWaterTable(D, stack) {
+        const isLeftFirst = stack & PhysicsCore.#WATER_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
+              b = stack & D.b,
+              r = stack & D.r,
+              l = stack & D.l,
+              br = stack & D.br,
+              bl = stack & D.bl
+
+        if (b) return MOVES.B// OPTIMIZE
+        if (isLeftFirst) {
+            if (bl) return MOVES.BL
+            if (br) return MOVES.BR
+            if (l) return MOVES.L
+            if (r) return MOVES.R
+        } else {
+            if (br) return MOVES.BR
+            if (bl) return MOVES.BL
+            if (r) return MOVES.R
+            if (l) return MOVES.L
+        }
+        return MOVES.I
+    }
+
+    // Updates the inverted water movements table cache
+    static #updateCachedInvertedWaterTable(D, stack) {
+        const isLeftFirst = stack & PhysicsCore.#INVERTED_WATER_SP_BIT, MOVES = PhysicsCore.#REGULAR_MOVES,
+              t = stack & D.t,
+              r = stack & D.r,
+              l = stack & D.l,
+              tr = stack & D.tr,
+              tl = stack & D.tl
+
+        if (t) return MOVES.T
+        if (isLeftFirst) {
+            if (tl) return MOVES.TL// OPTIMIZE
+            if (tr) return MOVES.TR
+            if (l) return MOVES.L
+            if (r) return MOVES.R
+        } else {
+            if (tr) return MOVES.TR
+            if (tl) return MOVES.TL
+            if (r) return MOVES.R
+            if (l) return MOVES.L
+        }
+        return MOVES.I
+    }
+}
+
+class MapGrid {
+    static DEFAULT_PIXEL_SIZE = 18
+    static DEFAULT_MAP_WIDTH = 50
+    static DEFAULT_MAP_HEIGHT = 35
+
+    #lastPixelSize = null
+    constructor(pixelSize, mapWidth, mapHeight) {
+        this._pixelSize = this.#lastPixelSize = pixelSize||MapGrid.DEFAULT_PIXEL_SIZE
+        this._mapWidth = mapWidth||MapGrid.DEFAULT_MAP_WIDTH
+        this._mapHeight = mapHeight||MapGrid.DEFAULT_MAP_HEIGHT
+    }
+
+    /**
+     * Converts a global pixel position to a local map pixel position
+     * @param {[x,y]} pos A global pixel position (e.g: a mouse pos)
+     * @returns A local map pixel position [x,y]
+     */
+    getLocalMapPixel(pos) {
+        const size = this._pixelSize, [w,h] = this.globalDimensions, [posX,posY] = pos
+        for (let y=0;y<h;y+=size) {
+            for (let x=0;x<w;x+=size) {
+                if ((posX>=x && posX<(x+size)) && (posY>=y && posY<y+size)) return [x/size, y/size]
+            }
+        }
+    }
+
+    /**
+    * Calculates the adjacent index based on the provided index, direction and distance
+    * @param {Number} i The index of a pixel in the pixels array
+    * @param {Simulation.D} direction A direction specified by one of Simulation.D
+    * @param {Number?} distance The distance to go by in the provided direction (defaults to 1)
+    * @returns The calculated adjacent index
+    */
+    getAdjacency(i, direction, distance=1) {
+        const D = Simulation.D, mapWidth = this._mapWidth, mapHeight = this._mapHeight, dWidth = mapWidth*distance,
+              x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>=distance, hasR = x+distance<mapWidth, hasT = y>=distance, hasB = y+distance<mapHeight
+        if (direction === D.b)       return hasB ? i+dWidth:i
+        else if (direction === D.t)  return hasT ? i-dWidth:i
+        else if (direction === D.l)  return hasL ? i-distance:i
+        else if (direction === D.r)  return hasR ? i+distance:i
+        else if (direction === D.bl) return (hasB&&hasL) ? i+dWidth-distance:i
+        else if (direction === D.br) return (hasB&&hasR) ? i+dWidth+distance:i
+        else if (direction === D.tl) return (hasT&&hasL) ? i-dWidth-distance:i
+        else if (direction === D.tr) return (hasT&&hasR) ? i-dWidth+distance:i
+    }
+
+    /**
+     * @returns An array of path2d representing the grid lines
+     */
+    getDrawableGridLines() {
+        const size = this._pixelSize, [w,h] = this.globalDimensions, lines = []
+        for (let x=0;x<w;x+=size) lines.push(Render.getLine([x,0],[x,h]))
+        for (let y=0;y<h;y+=size) lines.push(Render.getLine([0,y],[w,y]))
+        return lines
+    }
+
+    /**
+     * Converts an index to a local map position
+     * @param {Number} i The index of a pixel in the pixels array
+     * @returns A local map position
+     */
+    indexToMapPos(i) {
+        const w = this._mapWidth
+        return [i%w, (i/w)|0]
+    }
+
+    /**
+     * Converts a local map position to an index
+     * @param {[x,y]} mapPos The local map position
+     * @returns The index of a pixel in the pixels array
+     */
+    mapPosToIndex(mapPos) {
+        return mapPos[1]*this._mapWidth+mapPos[0]
+    } 
+
+    /**
+     * Converts a local map position to an index
+     * @param {Number} x The X value of the pixel on the map
+     * @param {Number} y The Y value of the pixel on the map
+     * @returns The index of a pixel in the pixels array
+     */
+    mapPosToIndexCoords(x, y) {
+        return y*this._mapWidth+x
+    }
+
+    /**
+     * Returns the center pos of the map
+     * @param {Boolean?} useGlobalPixels Whether the center pos is in global pixels 
+     */
+    getCenter(useGlobalPixels) {
+        const cx = this._mapWidth>>1, cy = this._mapHeight>>1
+        return useGlobalPixels ? [cx*this._pixelSize, cy*this._pixelSize] : [cx, cy]
+    }
+
+    get globalWidth() {return this._mapWidth*this._pixelSize}
+    get globalHeight() {return this._mapHeight*this._pixelSize}
+    get globalDimensions() {return [this.globalWidth, this.globalHeight]}
+    get arraySize() {return this._mapWidth*this._mapHeight}
+    get displayDimensions() {return this._mapWidth+"x"+this._mapHeight}
+    get lastPixelSize() {return this.#lastPixelSize}
+
+    get pixelSize() {return this._pixelSize}
+	get mapWidth() {return this._mapWidth}
+	get mapHeight() {return this._mapHeight}
+	get dimensions() {return [this._mapWidth, this._mapHeight]}
+
+	set pixelSize(_pixelSize) {return this._pixelSize = _pixelSize}
+	set mapWidth(_mapWidth) {return this._mapWidth = _mapWidth}
+	set mapHeight(_mapHeight) {return this._mapHeight = _mapHeight}
+	set lastPixelSize(lps) {return this.#lastPixelSize = lps}
+}
+
+class Simulation {
+    static MATERIALS = SETTINGS.MATERIALS
+    static MATERIAL_GROUPS = SETTINGS.MATERIAL_GROUPS
+    static MATERIAL_NAMES = SETTINGS.MATERIAL_NAMES
+    static MATERIAL_STATES = SETTINGS.MATERIAL_STATES
+    static MATERIAL_STATES_GROUPS = SETTINGS.MATERIAL_STATES_GROUPS
+    static D = SETTINGS.D
+    static SIDE_PRIORITIES = SETTINGS.SIDE_PRIORITIES
+    static SIDE_PRIORITY_NAMES = SETTINGS.SIDE_PRIORITY_NAMES
+    static EXPORT_STATES = SETTINGS.EXPORT_STATES
+    static EXPORT_SEPARATOR = SETTINGS.EXPORT_SEPARATOR
+    static BRUSH_TYPES = SETTINGS.BRUSH_TYPES
+    static BRUSH_TYPE_NAMES = SETTINGS.BRUSH_TYPE_NAMES
+    static #BRUSHES_X_VALUES = SETTINGS.BRUSHES_X_VALUES
+    static #BRUSH_GROUPS = SETTINGS.BRUSH_GROUPS
+    static #WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
+    static #WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES
+    static #WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS
+    static PHYSICS_UNIT_TYPE = SETTINGS.PHYSICS_UNIT_TYPE
+    static #INIT_STATES = SETTINGS.INITIALIZED_STATES
+    // CACHES
+    static #CACHED_MATERIALS_ROWS = []
+    static #CACHED_GRID_LINES = null
+    static #CACHED_GRID_BORDER = null
+    // DEFAULTS
+    static DEFAULT_WORLD_START_SETTINGS = SETTINGS.DEFAULT_WORLD_START_SETTINGS
+    static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
+    static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
+    static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
+    static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
+    static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
+    static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
+    static DEFAULT_KEYBINDS = DEFAULT_KEYBINDS
+
+    #simulationHasPixelsBuffer = true // Whether the main thread has the pixel buffer when using webworkers
+    #lastPlacedPos = null
+
+    /**
+     * The core of the simulation and manages all rendering and world manipulation. (except for physics)
+     * @param {HTMLCanvasElement | Canvas} canvas A HTML canvas reference or a CDEJS Canvas instance to display the simulation on
+     * @param {Function?} readyCB A callback ran once the simulation is started. (simulation)=>{}
+     * @param {Object?} worldStartSettings An object defining the simulation settings
+     * @param {Object?} userSettings An object defining the user settings
+     * @param {Object?} colorSettings An object defining the color settings
+     */
+    constructor(canvas, readyCB, worldStartSettings, userSettings, colorSettings) {
+        // SIMULATION
+        this._CVS = canvas instanceof Canvas ? canvas : new Canvas(canvas)
+        this._worldStartSettings = this.getAdjustedSettings(worldStartSettings, Simulation.DEFAULT_WORLD_START_SETTINGS)
+        this._CVS.fpsLimit = this._worldStartSettings.aimedFPS
+        this._initialized = this._worldStartSettings.autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
+        this._mapGrid = new MapGrid(this._worldStartSettings.mapPixelSize, this._worldStartSettings.mapWidth, this._worldStartSettings.mapHeight)
+        this._pixels = new Uint16Array(this._mapGrid.arraySize)
+        this._lastPixels = new Uint16Array(this._mapGrid.arraySize)
+        this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
+        this._pxStates = new Uint8Array(this._mapGrid.arraySize)
+        this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
+        this._backStepSaves = []
+        this._isMouseWithinSimulation = true
+        this._isRunning = false
+        this._selectedMaterial = Simulation.MATERIALS.SAND
+        this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
+        this._lastStepTime = null
+        this._queuedBufferOperations = []
+        this.updatePhysicsUnitType(this._worldStartSettings.usesWebWorkers)
+
+        // DISPLAY
+        this._userSettings = this.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
+        this._colorSettings = this.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
+        this._brushType = Simulation.BRUSH_TYPES.PIXEL
+        this._mapGridRenderStyles = this._CVS.render.profile1.update(this._colorSettings.grid, null, null, null, 1)
+        this._mapBorderRenderStyles = this._CVS.render.profile2.update(this._colorSettings.border, null, null, null, 2)
+        this._imgMap = this._CVS.ctx.createImageData(...this._mapGrid.globalDimensions)
+        this._offscreenCanvas = new OffscreenCanvas(...this._mapGrid.globalDimensions)
+        this._offscreenCtx = this._offscreenCanvas.getContext("2d")
+        this._loopExtra = null
+        this._stepExtra = null
+        this.#updateCachedGridDisplays()
+        this.#updateCachedMapPixelsRows()
+        this.#setCanvasZoomAndDrag()
+        this.setKeyBinds()
+        const cameraCenterPos = this._worldStartSettings.cameraCenterPos
+        if (cameraCenterPos !== undefined) this._CVS.centerViewAt(cameraCenterPos||this._mapGrid.getCenter(true))
+        if (this._worldStartSettings.zoom) this._CVS.zoomAtPos(this._CVS.getCenter(), this._worldStartSettings.zoom)
+        
+        // CANVAS
+        this._CVS.loopingCB = this.#main.bind(this)
+        this._CVS.setMouseMove()
+        this._CVS.setMouseLeave()
+        this._CVS.setMouseDown(this.#mouseDown.bind(this))
+        this._CVS.setMouseUp(this.#mouseUp.bind(this))
+        this._CVS.setKeyUp(null, true)
+        this._CVS.setKeyDown(null, true)
+        this._CVS.onResizeCB=()=>{
+            const pixelSize = this.autoSimulationSizing
+            if (pixelSize) this.autoFitSize(pixelSize)
+        }
+        this._CVS.start()
+        this._mouseListenerIds = [
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
+        ]
+
+
+        // INTERNAL LOAD CALLS
+        this._initialized = Simulation.#INIT_STATES.READY
+
+        if (this.autoSimulationSizing) this.autoFitSize(this.autoSimulationSizing)
+        if (CDEUtils.isFunction(readyCB)) readyCB(this)
+
+        this._initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
+
+        if (this._worldStartSettings.autoStart) this.start()
+    }
+
+    /* RENDERING */
+    /**
+     * The main display and physics loop
+     * @param {Number} deltaTime The deltaTime
+     */
+    #main(deltaTime) {
+        const mouse = this.mouse, settings = this._userSettings, loopExtra = this._loopExtra
+
+        if (loopExtra) loopExtra(deltaTime)
+
+        if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.SHIFT)) this.#placePixelFromMouse(mouse)
+        
+        if (settings.showGrid) this.#drawMapGrid()
+        if (settings.showBorder) this.#drawBorder()
+
+        if (this._isRunning && this.useLocalPhysics) this.step()
+
+        this._offscreenCtx.putImageData(this._imgMap, 0, 0)
+        this.ctx.drawImage(this._offscreenCanvas, 0, 0)
+        if (settings.visualEffectsEnabled) this.#drawVisualEffects()
+    }
+
+    /**
+     * Draws visual effects on certain materials if visualEffects are enabled 
+     */
+    #drawVisualEffects() {// OPTIMIZE / TODO
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.#drawVisualEffects())
+            return
+        }
+
+        const pixels = this._pixels, p_ll = pixels.length, pxStates = this._pxStates, map = this._mapGrid, M = Simulation.MATERIALS, G = Simulation.MATERIAL_GROUPS, SG = Simulation.MATERIAL_STATES_GROUPS, D = Simulation.D,
+              w = map.mapWidth, pxSize = map.pixelSize, pxSize2 = pxSize/4, random = Math.random(), batchStroke = this.render.batchStroke.bind(this.render), batchFill = this.render.batchFill.bind(this.render)
+
+        for (let i=0;i<p_ll;i++) {
+            const mat = pixels[i]
+            if ((mat&G.HAS_VISUAL_EFFECTS) === 0) continue
+
+            const py = (i/w)|0, x = (i-py*w)*pxSize, y = py*pxSize, state = pxStates[i]
+
+            // ELECTRICITY
+            if (mat === M.ELECTRICITY) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,0,0.45*random])
+            // COPPER
+            else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.LIT) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,0,0.35*random])
+            else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.ORIGIN) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,220,0.4])
+            else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.DISABLED) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [0,0,220,0.3])
+        }  
+    }
+
+    // Draws lines to show the map grid on the canvas
+    #drawMapGrid() {
+        const lines = Simulation.#CACHED_GRID_LINES, l_ll = lines.length, batchStroke = this.render.batchStroke.bind(this.render), styles = this._mapGridRenderStyles
+        for (let i=0;i<l_ll;i++) batchStroke(lines[i], styles)
+    }
+
+    // Draws a border to show the map bounding box on the canvas
+    #drawBorder() {
+        this.render.batchStroke(Simulation.#CACHED_GRID_BORDER, this._mapBorderRenderStyles)
+    }
+
+    /**
+     * Updates the display image map according to the pixels array (renders a frame)
+     * @param {Boolean?} force If true, disables optimization and forces every pixel to get redrawn
+     */
+    updateImgMapFromPixels(force) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateImgMapFromPixels(force))
+            return
+        }
+
+        const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = force ? false : lastPixels.length===p_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
+        for (let i=0;i<p_ll;i++) {
+            const mat = pixels[i]
+            if (enableOptimization && mat===lastPixels[i]) continue
+            const y = (i/w)|0
+            this.#updateMapPixel(i-y*w, y, mat) 
+        } 
+        if (!enableOptimization) map.lastPixelSize = map.pixelSize
+
+        this._lastPixels = this.#getPixelsCopy()
+    }
+    
+    /**
+     * Updates a singular map pixels on the image map
+     * @param {Number} rawX The X value of the pixel on the map
+     * @param {Number} rawY The Y value of the pixel on the map
+     * @param {Simulation.MATERIALS} material One of Simulation.MATERIALS
+     */
+    #updateMapPixel(rawX, rawY, material) {
+        const data = this._imgMap.data, size = this._mapGrid.pixelSize, width = this._imgMap.width, x = rawX*size, y = rawY*size, matRow = Simulation.#CACHED_MATERIALS_ROWS[material]
+        for (let i=0;i<size;i++) data.set(matRow, ((y+i)*width+x)*4)
+    }
+    /* RENDERING -end */
+
+    /* SIMULATION CONTROL */
+    /**
+     * Runs and displays one physics step
+     */
+    step() {
+        const T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit
+        if (this.useLocalPhysics && this.#simulationHasPixelsBuffer) {
+            const stepExtra = this._stepExtra
+            this.saveStep()
+            if (stepExtra) stepExtra()
+            unit.step(this._pixels, this._pxStepUpdated, this._pxStates, this._sidePriority, this._mapGrid.mapWidth, this._mapGrid.mapHeight)
+            this.updateImgMapFromPixels()
+        }
+        else if (this.#simulationHasPixelsBuffer) this.#sendPixelsToWorker(T.STEP)
+    }
+
+    /**
+     * Displays the previous physics step saved
+     */
+    backStep() {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.backStep())
+            return
+        }
+
+        const saves = this._backStepSaves, b_ll = saves.length
+        if (b_ll) {
+            let lastSave = saves[b_ll-1]
+            const lastSaveArray = lastSave[0], l_ll = lastSaveArray.length, currentSave = this.#getPixelsCopy()
+            
+            let hasChanges = l_ll !== currentSave.length
+            for (let i=0;i<l_ll;i++) {
+                if (lastSaveArray[i] !== currentSave[i]) {
+                    hasChanges = true
+                    break
+                }
+            }
+
+            if (!hasChanges) lastSave = saves[b_ll-2]
+
+            if (lastSave) this.load(lastSave[0], lastSave[1])
+            saves.pop()
+        }
+    }
+
+    /**
+     * Saves a physics step
+     */
+    saveStep() {
+        if (this.backStepSavingEnabled) {
+            const saves = this._backStepSaves, b_ll = saves.length, lastSave = saves[b_ll-1]?.[0], l_ll = lastSave?.length, currentSave = this.#getPixelsCopy()
+
+            if (lastSave) {
+                let hasChanges = l_ll !== currentSave.length
+                for (let i=0;i<l_ll;i++) {
+                    if (lastSave[i] !== currentSave[i]) {
+                        hasChanges = true
+                        break
+                    }
+                }
+                if (!hasChanges) return
+            }
+            
+            saves.push([currentSave, this._mapGrid.dimensions])
+            if ((b_ll+1) > this._backStepSavingMaxCount) saves.shift()
+        }
+    }
+    
+    /**
+     * Sets the state of the simulation to be running
+     * @param {Boolean} force If true, forces the start even if simulation is already running
+     */
+    start(force) {
+        if (this._initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this._initialized = Simulation.#INIT_STATES.INITIALIZED)
+        if (!this._isRunning || force) {
+            this._isRunning = true
+            if (this.usesWebWorkers) this.#sendPixelsToWorker(Simulation.#WORKER_MESSAGE_TYPES.START_LOOP)
+        }
+    }
+
+    /**
+     * Sets the state of the simulation to be stopped
+     */
+    stop() {
+        if (this._isRunning) {
+            this._isRunning = false
+            if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.STOP_LOOP})
+        }
+    }
+    /* SIMULATION CONTROL -end */
+    
+
+    /* SIMULATION API */
+    /**
+     * Updates whether the physics calculations are offloaded to a worker thread 
+     * @param {Boolean} usesWebWorkers Whether an other thread is used. (Defaults to true)
+     */
+    updatePhysicsUnitType(usesWebWorkers=true) {
+        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
+
+        const isWebWorker = usesWebWorkers&&!this.isFileServed
+        console.log(Simulation.#WORKER_RELATIVE_PATH)
+        this._physicsUnit = isWebWorker ? new Worker(Simulation.#WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit()
+
+        if (isWebWorker) {
+            this.#simulationHasPixelsBuffer = true
+            this._physicsUnit.onmessage=this.#physicsUnitMessage.bind(this)
+            this._physicsUnit.postMessage({
+                type:Simulation.#WORKER_MESSAGE_TYPES.INIT,
+                pixels:this._pixels, pxStepUpdated:this._pxStepUpdated, pxStates:this._pxStates, sidePriority:this._sidePriority, 
+                mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight,
+                aimedFps:this._CVS.fpsLimit
+            })
+            if (this._isRunning) this.start(true)
+        }
+        else if (usesWebWorkers && this.isFileServed) this.#warn(SETTINGS.FILE_SERVED_WARN)
+    }
+
+    /**
+     * Updates map size automatically based on the optimal fit for the provided sizes
+     * @param {Number?} pixelSize The desired pixel size
+     * @param {Number?} globalWidth The width to cover in px
+     * @param {Number?} globalHeight The height to cover in px
+     * @returns The calculated width/height in local pixels
+     */
+    autoFitSize(pixelSize=Simulation.DEFAULT_MAP_RESOLUTIONS.DEFAULT, globalWidth=this._CVS.width, globalHeight=this._CVS.height) {
+        if (pixelSize === true || pixelSize === null) pixelSize = Simulation.DEFAULT_MAP_RESOLUTIONS.DEFAULT
+        const width = (globalWidth/pixelSize)|0, height = (globalHeight/pixelSize)|0
+        this.updateMapPixelSize(pixelSize)
+        this.updateMapSize(width, height)
+        return [width, height]
+    }
+
+    /**
+     * Updates the map pixel size
+     * @param {Number?} pixelSize The new map pixel size
+     */
+    updateMapPixelSize(pixelSize=MapGrid.DEFAULT_PIXEL_SIZE) {
+        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
+
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateMapPixelSize(pixelSize))
+            return
+        }
+
+        const map = this._mapGrid
+        if (pixelSize !== map.pixelSize) {
+            map.pixelSize = pixelSize
+            this._imgMap = this.ctx.createImageData(...map.globalDimensions)
+            this._offscreenCanvas.width = map.globalDimensions[0]
+            this._offscreenCanvas.height = map.globalDimensions[1]
+            this.#updateCachedMapPixelsRows()
+            this.#updateCachedGridDisplays()
+            this.updateImgMapFromPixels()
+
+            this.#updateMouseListeners()
+        }
+    }
+
+    /**
+     * Updates the map dimensions
+     * @param {Number?} width The new width of the map, in local pixels
+     * @param {Number?} height The new height of the map, in local pixels
+     */
+    updateMapSize(width, height) {
+        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
+
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.updateMapSize(width, height))
+            return
+        }
+
+        const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight
+            if ((width && width !== oldWidth) || (height && height !== oldHeight)) {
+            const oldPixels = this.#getPixelsCopy()
+            height = map.mapHeight = height||map.mapHeight
+            width = map.mapWidth = width||map.mapWidth
+            this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldPixels)
+            this.#updateCachedGridDisplays()
+
+            this._imgMap = this.ctx.createImageData(...map.globalDimensions)
+            this._offscreenCanvas.width = map.globalDimensions[0]
+            this._offscreenCanvas.height = map.globalDimensions[1]
+            this.updateImgMapFromPixels()
+
+            this.#updateMouseListeners()
+        }
+    }
+
+    /**
+     * Updates the side prioritised first by the physics.
+     * @param {Simulation.SIDE_PRIORITIES} sidePriority The side priority value
+     * @returns The new priority
+     */
+    updateSidePriority(sidePriority) {
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
+        return this._sidePriority = sidePriority
+    }
+
+    /**
+     * Returns the material at the provided local pos
+     * @param {[x,y]} mapPos The map pos
+     * @returns The material location at the map pos
+     */
+    getPixelAtMapPos(mapPos) {
+        const i = this._mapGrid.mapPosToIndex(mapPos)
+        return this.usesWebWorkers ? this._lastPixels[i] : this._pixels[i]
+    }
+
+    /**
+     * Updates the material used by default for world manipulations.
+     * @param {Simulation.MATERIALS} material The materials to select
+     */
+    updateSelectedMaterial(material) {
+        material = +material
+        if (Simulation.MATERIAL_NAMES[material]) return this._selectedMaterial = material
+        return this._selectedMaterial
+    }
+
+    /**
+     * Updates the shape used to draw materials on the simulation with mouse.
+     * @param {Simulation.BRUSH_TYPES} brushType The brush type to use 
+     */
+    updateBrushType(brushType) {
+        brushType = +brushType
+        if (Object.values(Simulation.BRUSH_TYPES).includes(brushType)) return this._brushType = brushType
+        return this._brushType
+    }
+
+    /**
+     * Updates the colors used for the grid and/or the materials.
+     * @param {Object} colorSettings The colors to update. (Materials keys need to be in UPPERCASE)
+     */
+    updateColors(colorSettings) {
+        this._colorSettings = this.getAdjustedSettings(colorSettings, this._colorSettings)
+
+        if (colorSettings.grid) this._mapGridRenderStyles.update(this._colorSettings.grid)
+        if (colorSettings.border) this._mapBorderRenderStyles.update(this._colorSettings.border)
+
+        this.#updateCachedMapPixelsRows()
+        this.updateImgMapFromPixels(true)
+    }
+
+    /**
+     * Offsets the pixel array to match the updated size 
+     * @param {Number} oldWidth The previous/current width of the map
+     * @param {Number} oldHeight The previous/current height of the map
+     * @param {Number} newWidth The new/updated width of the map
+     * @param {Number} newHeight The new/updated height of the map
+     * @param {Uint16Array} oldPixels The previous/current pixel array
+     */
+    #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
+        const arraySize = this._mapGrid.arraySize, pixels = this._pixels = new Uint16Array(arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
+        this._pxStepUpdated = new Uint8Array(arraySize)
+        this._pxStates = new Uint8Array(arraySize)
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
+        
+        for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
+            pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)
+            oi += oldWidth
+            i += oldWidth+skipOffset
+        }
+    }
+
+    /**
+     * Merges a modification object and a base object
+     * @param {Object} inputSettings The object with modifications
+     * @param {Object} defaultSettings The object to update
+     * @returns The merged object
+     */
+    getAdjustedSettings(inputSettings, defaultSettings) {
+        const newSettings = {...defaultSettings}
+        if (inputSettings) Object.entries(inputSettings).forEach(([key, value])=>newSettings[key] = value)
+        return newSettings
+    }
+
+    /**
+     * Check whether the simulation is initialized
+     * @param {String} warningMessage Warning message to log if no initialized
+     * @returns True if the simulation is NOT initialized
+     */
+    #checkInitializationState(warningMessage) {
+        if (this._userSettings && this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
+            this.#warn(warningMessage)
+            return true
+        }
+    }
+
+    /**
+     * Logs a warning messages if warnings are enabled
+     * @param {String} warningMessage Warning message to log
+     */
+    #warn(warningMessage) {
+        if (!this.warningsDisabled) console.warn(warningMessage)
+    }
+    /* SIMULATION API -end */
+
+    /* WEB WORKER CONTROL */
+    // Listener for web worker messages
+    #physicsUnitMessage(e) {
+        const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES, stepExtra = this._stepExtra
+
+        if (type & Simulation.#WORKER_MESSAGE_GROUPS.GIVES_PIXELS_TO_MAIN) {
+            this._pixels = new Uint16Array(data.pixels)
+            this._pxStates = new Uint16Array(data.pxStates)
+            this.#simulationHasPixelsBuffer = true
+        }
+
+        if (type === T.STEP) {// RECEIVE STEP RESULTS (is step/sec bound)
+            // DO BUFFER OPERATION
+            this.updateImgMapFromPixels()
+            this.#executeQueuedOperations()
+
+            if (stepExtra) stepExtra()
+
+            // PASS BACK PIXELS IF LOOP RUNNING
+            if (this._isRunning) {
+                this.#simulationHasPixelsBuffer = false
+                this.#sendPixelsToWorker(T.PIXELS)
+            }
+        }
+    }
+
+    /**
+     * Sends a command of a certain type to the worker, needing pixels 
+     * @param {Simulation.#WORKER_MESSAGE_TYPES} type The worker message type
+     */
+    #sendPixelsToWorker(type) {
+        const pixels = this._pixels, pxStates = this._pxStates
+        this.saveStep()
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
+        else this.#simulationHasPixelsBuffer = true
+    }
+
+    // Executes queued operations
+    #executeQueuedOperations() {
+        const queued = this._queuedBufferOperations, q_ll = queued.length
+        for (let i=0;i<q_ll;i++) {
+            queued[0]()
+            queued.shift()
+        }
+    }
+    /* WEB WORKER CONTROL -end*/
+
+    /* CACHE UPADTES */
+    // Updates the cached pixels row used for drawing optimizations
+    #updateCachedMapPixelsRows() {
+        const colors = Object.entries(this._colorSettings).filter(x=>x[0].toUpperCase()===x[0]).map(x=>x[1]), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
+        for (let i=0,ii=0;ii<c_ll;i=!i?1:i*2,ii++) {
+            const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
+            for (let x=0;x<size;x++) {
+                const xx = x*4
+                pxRow[xx]   = r
+                pxRow[xx+1] = g
+                pxRow[xx+2] = b
+                pxRow[xx+3] = adjustedA
+            }
+            R[i] = pxRow
+        }
+    }
+
+    // Updates cached lines / borders paths
+    #updateCachedGridDisplays() {
+        Simulation.#CACHED_GRID_LINES = this._mapGrid.getDrawableGridLines()
+        Simulation.#CACHED_GRID_BORDER = Render.getRect([0,0], ...this._mapGrid.globalDimensions)
+    }
+
+    // Updates current mouse listeners area
+    #updateMouseListeners() {
+        const mouse = this.mouse, dimensions = this._mapGrid.globalDimensions
+        mouse.updateListener(Mouse.LISTENER_TYPES.ENTER, this._mouseListenerIds[0], [[0,0], dimensions])
+        mouse.updateListener(Mouse.LISTENER_TYPES.MOVE,  this._mouseListenerIds[1], [[0,0], dimensions])
+        mouse.updateListener(Mouse.LISTENER_TYPES.LEAVE, this._mouseListenerIds[2], [[0,0], dimensions])
+    }
+    /* CACHE UPADTES -end */
+
+    /* USER INPUT */
+    /**
+     * Creates functional keybinds
+     * @param {Object} keybinds The keybinds to set (Defaults to Simulation.DEFAULT_KEYBINDS)
+     */
+    setKeyBinds(keybinds=Simulation.DEFAULT_KEYBINDS) {
+        const keyboard = this._CVS.typingDevice, DOWN = TypingDevice.LISTENER_TYPES.DOWN
+
+        // SET DEFAULTS
+        Object.entries(keybinds).filter(bind=>bind[1].defaultFunction).forEach(([bindName, bindValue])=>{
+            const {defaultFunction, defaultParams, keys, triggerType} = bindValue
+            keyboard.addListener(DOWN, keys, (keyboard, e)=>this.#keybindTryAction(keyboard, e, ()=>this[defaultFunction](...(defaultParams||[])), bindValue), triggerType)
+        })
+
+        if (keybinds.MY_CUSTOM_SIZE_KEYBIND) keyboard.addListener(DOWN, keybinds.MY_CUSTOM_SIZE_KEYBIND.keys, (keyboard, e)=>this.#keybindTryAction(keyboard, e, ()=>{
+            this.updateMapSize(48, 38)
+            this.updateMapPixelSize(18)
+        }, keybinds.MY_CUSTOM_SIZE_KEYBIND), keybinds.MY_CUSTOM_SIZE_KEYBIND.triggerType)
+    }
+
+    // Utils function to check if keybind's conditions are met before executing the action
+    #keybindTryAction(typingDevice, e, actionCB, bindValue) {
+        const hasAction = CDEUtils.isFunction(actionCB), {requiredKeys, cancelKeys, preventDefault} = bindValue
+        if (preventDefault && e.target.value === undefined) e.preventDefault()
+        if (!hasAction) {
+            this.#warn(SETTINGS.STANDALONE_KEYBIND_WARN)
+            return
+        }
+        if ((!requiredKeys || typingDevice.isDown(requiredKeys)) && (!cancelKeys || !typingDevice.isDown(cancelKeys))) actionCB.bind(this)()
+    }
+
+    // mouseDown listener, allows the mouse to place pixels
+    #mouseDown(mouse) {
+        if (!mouse.rightClicked) this.#placePixelFromMouse(mouse)
+    }
+
+    // mouseUp listener, disables smooth drawing when mouse is unpressed
+    #mouseUp() {
+        this.#lastPlacedPos = null
+    }
+
+    // Runs when the mouse leaves the simulation's bounding box
+    #mouseLeaveSimulation() {
+        this.#lastPlacedPos = null
+        this._isMouseWithinSimulation = false
+    }
+
+    /**
+     * Places the selected material at the mouse position on the map, based on the selected brushType
+     * @param {Mouse} mouse A CVS Mouse object
+     */
+    #placePixelFromMouse(mouse) {
+        const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
+        if (this._isMouseWithinSimulation && mapPos) {
+            const isRunning = this._isRunning, [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
+
+            if (this.smoothDrawingEnabled && dMax) for (let i=0;i<dMax;i++) {
+                const prog = ((i+1)/dMax)
+                this.placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
+            } 
+            else this.placePixelsWithBrush(x, y)
+
+            this.#lastPlacedPos = mapPos
+            if (!isRunning) this.updateImgMapFromPixels()
+        }
+    }
+
+    #zoomTowardsPos(pos,  zoomDirection) {
+        const newZoom = this._CVS.zoom + (zoomDirection<0 ? this.zoomInIncrement : this.zoomOutIncrement)
+        if (newZoom > this.minZoomThreshold && newZoom < this.maxZoomThreshold) {
+            this._CVS.zoomAtPos(pos, newZoom)
+            return pos
+        }  else return false
+    }
+
+    // Adds the ability do zoom/move around the canvas (if dragAndZoomCanvasEnabled)
+    #setCanvasZoomAndDrag() {
+        const CVS = this._CVS
+
+        Canvas.preventNativeZoom((dir, isMouse)=>{
+            if (this.dragAndZoomCanvasEnabled && !isMouse) this.#zoomTowardsPos(CVS.getCenter(), dir)
+        })
+
+        if (this.dragAndZoomCanvasEnabled) {
+            const frame = CVS.frame, mouse = CVS.mouse
+            let isCameraMoving = false, lastDragPos = [0,0]
+
+            frame.addEventListener("wheel", e=>{
+                if (this.dragAndZoomCanvasEnabled) {
+                    if (this.#zoomTowardsPos(mouse.rawPos, e.deltaY)) lastDragPos = [...mouse.rawPos]
+                }
+            })
+
+            frame.addEventListener("mousedown", e=>{
+                if (this.dragAndZoomCanvasEnabled) {
+                    if (e.button === Mouse.BUTTON_TYPES.RIGHT) {
+                        isCameraMoving = true
+                        lastDragPos = [e.clientX, e.clientY]
+                    }
+                    else if (e.button === Mouse.BUTTON_TYPES.MIDDLE) CVS.resetTransformations(true)
+                }
+            })
+
+            frame.addEventListener("mousemove", e=>{
+                if (this.dragAndZoomCanvasEnabled && isCameraMoving) {
+                    const {clientX, clientY} = e, [vx, vy] = CVS.viewPos, dx = clientX-lastDragPos[0], dy = clientY-lastDragPos[1]
+                    CVS.moveViewAt([vx+dx, vy+dy])
+                    lastDragPos = [clientX, clientY]
+                }
+            })
+
+            frame.addEventListener("mouseup", e=>{
+                if (isCameraMoving && e.button === Mouse.BUTTON_TYPES.RIGHT) isCameraMoving = false
+            })
+
+            frame.addEventListener("contextmenu", e=>e.preventDefault())
+
+            return true
+        }
+        else return false
+    }
+    /* USER INPUT -end */
+
+    /* PIXEL EDIT */
+    /**
+     * Places a pixel of a specified material at the specified position on the pixel map.
+     * @param {[x,y]} mapPos The map position of the pixel
+     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     */
+    placePixel(mapPos, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.placePixel(mapPos, material))
+            return
+        }
+
+        const i = this._mapGrid.mapPosToIndex(mapPos)
+        this._pixels[i] = material
+        this._pxStates[i] = 0
+    }
+
+    /**
+     * Places a pixel of a specified material at the specified position on the pixel map.
+     * @param {Number} x The X value of the pixel on the map
+     * @param {Number} y The Y value of the pixel on the map
+     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     */
+    placePixelAtCoords(x, y, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.placePixelAtCoords(x, y, material))
+            return
+        }
+
+        const i = this._mapGrid.mapPosToIndexCoords(x, y)
+        this._pixels[i] = material
+        this._pxStates[i] = 0
+    }
+
+    /**
+     * Places a pixel of a specified material at the specified index on the pixel map.
+     * @param {Number} i The index value of the pixel on the map
+     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     */
+    placePixelAtIndex(i, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material))
+            return
+        }
+
+        this._pixels[i] = material
+        this._pxStates[i] = 0
+    }
+
+    /**
+     * Places pixels at the specified coordinates, according to the provided brush pattern
+     * @param {Number} x The X value of the center positions
+     * @param {Number} y The Y value of the center positions
+     * @param {Simulation.BRUSH_TYPES?} brushType The brush type used (Defaults to the current brush type)
+     */
+    placePixelsWithBrush(x, y, brushType=this._brushType) {
+        const B = Simulation.BRUSH_TYPES
+        if (brushType & Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
+            if (brushType === B.LINE3 || brushType === B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
+            if (brushType === B.ROW3 || brushType === B.VERTICAL_CROSS) {
+                if (x) this.placePixelAtCoords(x-1, y)
+                if (x !== this._mapGrid.mapWidth-1) this.placePixelAtCoords(x+1, y)
+            }
+            this.placePixelAtCoords(x, y)
+        } else if (brushType === B.BIG_DOT) {
+            if (x-2 >= 0) this.placePixelAtCoords(x-2, y)
+            if (x+2 < this._mapGrid.mapWidth) this.placePixelAtCoords(x+2, y)
+                this.placePixelAtCoords(x, y-2)
+                this.placePixelAtCoords(x, y+2)
+                this.fillArea([x-1,y-1], [x+1,y+1])
+        } else if (brushType & Simulation.#BRUSH_GROUPS.X) {
+            const offset = (Simulation.#BRUSHES_X_VALUES[brushType]/2)|0
+            this.fillArea([x-offset,y-offset], [x+offset,y+offset])
+        }
+    }
+
+    /**
+     * Fills the map with air.
+     */
+    clear() {
+        this.fill(Simulation.MATERIALS.AIR)
+    }
+
+    /**
+     * Fills the entire map with a specific material.
+     * @param {Simulation.MATERIALS} material The material used
+     */
+    fill(material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.fill(material))
+            return
+        }
+
+        const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length
+        lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
+        pixels.set(new Uint16Array(p_ll).fill(material))
+        if (!this._isRunning) this.updateImgMapFromPixels()
+    }
+
+    /**
+     * Fills the specified area of the map with a specific material.
+     * @param {[leftX, topY]} pos1 The top-left pos of the area
+     * @param {[rightX, bottomY]} pos2 The bottom-right pos of the area
+     * @param {Simulation.MATERIALS} material The material used
+     */
+    fillArea(pos1, pos2, material=this._selectedMaterial) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.fillArea(pos1, pos2, material))
+            return
+        }
+
+        const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, x1 = pos1[0]<0?0:pos1[0], y1 = pos1[1]<0?0:pos1[1], x2 = pos2[0]<0?0:pos2[0], y2 = pos2[1]<0?0:pos2[1]
+        for (let i=map.mapPosToIndex([x1, y1]);i<p_ll;i++) {
+            let y = (i/w)|0, x = i-y*w, isXPassed = x>x2, isYPassed = y>y2, isXLooping = x<x1, isYLooping = y<y1
+            if (isXPassed && !isYPassed) {
+                i += w-(x2-x1+2)+1
+                y = (i/w)|0
+                x = i-y*w
+                isXPassed = x>x2
+                isYPassed = y>y2
+                isXLooping = x<x1
+                isYLooping = y<y1
+            }
+            if (isXLooping) {
+                i += x1
+                x = i-y*w
+                isXPassed = x>x2
+                isXLooping = x<x1
+            }
+            if (isYPassed) break
+            this.placePixelAtIndex(i, material)
+        }
+
+        if (!this._isRunning) this.updateImgMapFromPixels()
+    }
+    /* PIXEL EDIT -end */
+
+    
+    /* SAVE / IMPORT / EXPORT */
+    /**
+     * Returns a copy of the current pixels array 
+     * @returns A Uint16Array
+     */
+    #getPixelsCopy() {
+        const arraySize = this._mapGrid.arraySize, pixelsCopy = new Uint16Array(arraySize)
+        pixelsCopy.set(this._pixels.subarray(0, arraySize))
+        return pixelsCopy
+    }
+
+    /**
+     * Fills the map with saved data.
+     * @param {Uint16Array | String | Object} mapData The save data:
+     * - Either a Uint16Array containing the material value for each index
+     * - Or a string in the format created by the function exportAsText()
+     * - Or an Object containing the material value for each index {"index": material}
+     * @param {Boolean? | [width, height]?} useSaveSizes Whether to resize the map size and pixel size to the save's values (Also used internally to specify the save data dimensions when mapData is of Uint16Array type)
+     */
+    load(mapData, useSaveSizes=null) {
+        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_LOAD_WARN)) return
+
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>this.load(mapData, useSaveSizes))
+            return
+        }
+
+        if (mapData) {
+            if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(useSaveSizes[0], useSaveSizes[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
+            else if (typeof mapData === "string") {
+                const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x)
+                let savePixels = null
+
+                if (useSaveSizes) {
+                    this.updateMapSize(saveWidth, saveHeight)
+                    this.updateMapPixelSize(pixelSize)
+                }
+
+                if (exportType==Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data)
+                else if (exportType==Simulation.EXPORT_STATES.COMPACTED) {
+                    let m_ll = data.length, offset = 0 
+                    savePixels = new Uint16Array(saveWidth*saveHeight)
+                    for (let i=0;i<m_ll;i+=2) {
+                        const count = data[i+1]
+                        savePixels.set(new Uint16Array(count).fill(data[i]), offset)
+                        offset += +count
+                    }
+                }
+                this.#updatePixelsFromSize(saveWidth, saveHeight, this._mapGrid.mapWidth, this._mapGrid.mapHeight, savePixels)
+            } else this._pixels = new Uint16Array(Object.values(mapData))
+            this.updateImgMapFromPixels()
+        }
+    }
+
+    /**
+     * Exports/saves the current pixels array as text
+     * @param {Boolean} disableCompacting Whether to disable the text compacting (not recommended for large maps)
+     * @param {Function?} callback If using web workers, use this callback to retrieve the return value (stringValue)=>{...}
+     * @returns A string representing the current map
+     */
+    exportAsText(disableCompacting, callback) {
+        if (!this.#simulationHasPixelsBuffer) {
+            this._queuedBufferOperations.push(()=>callback&&callback(this.exportAsText(disableCompacting)))
+            return
+        }
+
+        let pixels = this._pixels, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
+        if (disableCompacting) {
+            state = Simulation.EXPORT_STATES.RAW
+            textResult += pixels.toString()
+        } else {
+            let lastMaterial, atI = -1
+            textResult = []
+            for (let i=0;i<p_ll;i++) {
+                const mat = pixels[i]
+                if (lastMaterial === mat) textResult[atI][1]++
+                else textResult[++atI] = [mat, 1]
+                lastMaterial = mat
+            }
+            textResult = textResult.toString()
+        }
+
+        return state+Simulation.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+Simulation.EXPORT_SEPARATOR+textResult
+    }
+    /* SAVE / IMPORT / EXPORT -end */
+
+    /* TEMP PERFORMANCE BENCHES */
+    PERF_TEST_FUN() {
+        this.updateMapPixelSize(2)
+        this.updateMapSize(400, 300)
+        this.fill(Simulation.MATERIALS.AIR)
+    }
+
+    PERF_TEST_FULL_WATER_REG() {
+        this._userSettings.showGrid = false
+        this.updateMapPixelSize(1)
+        this.updateMapSize(700, 600)
+        this.fill(Simulation.MATERIALS.WATER)
+    }
+
+    PERF_TEST_FULL_WATER_HIGH() {
+        this._userSettings.showGrid = false
+        this.updateMapPixelSize(1)
+        this.updateMapSize(1000, 1000)
+        this.fill(Simulation.MATERIALS.WATER)
+    }
+    /* TEMP PERFORMANCE BENCHES -end */
+
+    get CVS() {return this._CVS}
+    get render() {return this._CVS._render}
+    get ctx() {return this._CVS._ctx}
+    get mouse() {return this._CVS.mouse}
+    get keyboard() {return this._CVS.keyboard}
+	get mapGrid() {return this._mapGrid}
+	get loopExtra() {return this._loopExtra}
+	get stepExtra() {return this._stepExtra}
+	get pxStepUpdated() {return this._pxStepUpdated}
+	get pxStates() {return this._pxStates}
+	get lastPixels() {return this._lastPixels}
+	get lastStepTime() {return this._lastStepTime}
+	get pixels() {return this._pixels}
+	get mapGridRenderStyles() {return this._mapGridRenderStyles}
+	get mapBorderRenderStyles() {return this._mapBorderRenderStyles}
+	get offscreenCanvas() {return this._offscreenCanvas}
+	get imgMap() {return this._imgMap}
+    get isMouseWithinSimulation() {return this._isMouseWithinSimulation}
+	get selectedMaterial() {return this._selectedMaterial}
+    get sidePriority() {return this._sidePriority}
+    get isRunning() {return this._isRunning}
+	get backStepSavingMaxCount() {return this._backStepSavingMaxCount}
+	get backStepSaves() {return this._backStepSaves}
+    get brushType() {return this._brushType}
+	get worldStartSettings() {return this._worldStartSettings}
+	get userSettings() {return this._userSettings}
+	get colorSettings() {return this._colorSettings}
+    get initialized() {return this._initialized}
+	get queuedBufferOperations() {return this._queuedBufferOperations}
+
+    get aimedFPS() {return this._CVS.fpsLimit}
+    get backStepSavingEnabled() {return Boolean(this._backStepSavingMaxCount)}
+    get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
+    get usesWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
+    get isFileServed() {return location.href.startsWith("file")}
+	get showGrid() {return this._userSettings.showGrid}
+	get showBorder() {return this._userSettings.showBorder}
+	get smoothDrawingEnabled() {return this._userSettings.smoothDrawingEnabled}
+	get visualEffectsEnabled() {return this._userSettings.visualEffectsEnabled}
+	get warningsDisabled() {return this._userSettings.warningsDisabled}
+	get dragAndZoomCanvasEnabled() {return this._userSettings.dragAndZoomCanvasEnabled}
+	get autoSimulationSizing() {return this._userSettings.autoSimulationSizing}
+	get zoomInIncrement() {return this._userSettings.zoomInIncrement}
+	get zoomOutIncrement() {return this._userSettings.zoomOutIncrement}
+	get minZoomThreshold() {return this._userSettings.minZoomThreshold}
+	get maxZoomThreshold() {return this._userSettings.maxZoomThreshold}
+    
+	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
+	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
+	set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
+	set isRunning(isRunning) {this._isRunning = isRunning}
+	set brushType(brushType) {return this.updateBrushType(brushType)}
+	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
+	set backStepSavingMaxCount(_backStepSavingMaxCount) {this._backStepSavingMaxCount = _backStepSavingMaxCount}
+	set mapGridRenderStyles(_mapGridRenderStyles) {this._mapGridRenderStyles = _mapGridRenderStyles}
+	set mapBorderRenderStyles(_mapBorderRenderStyles) {return this._mapBorderRenderStyles = _mapBorderRenderStyles}
+    set showGrid(showGrid) {this._userSettings.showGrid = showGrid}
+    set showBorder(showBorder) {this._userSettings.showBorder = showBorder}
+    set smoothDrawingEnabled(smoothDrawingEnabled) {this._userSettings.smoothDrawingEnabled = smoothDrawingEnabled}
+    set visualEffectsEnabled(visualEffectsEnabled) {this._userSettings.visualEffectsEnabled = visualEffectsEnabled}
+    set warningsDisabled(warningsDisabled) {this._userSettings.warningsDisabled = warningsDisabled}
+    set aimedFPS(aimedFPS) {this._CVS.fpsLimit = aimedFPS}
+    set autoSimulationSizing(autoSimulationSizing) {
+        this._userSettings.autoSimulationSizing = autoSimulationSizing
+        if (autoSimulationSizing) this.autoFitSize(autoSimulationSizing)
+    }
+    set dragAndZoomCanvasEnabled(dragAndZoomCanvasEnabled) {
+        this._userSettings.dragAndZoomCanvasEnabled = dragAndZoomCanvasEnabled
+        if (!dragAndZoomCanvasEnabled) CVS.resetTransformations(true)
+    }
+    set minZoomThreshold(minZoomThreshold) {this._userSettings.minZoomThreshold = minZoomThreshold}
+    set maxZoomThreshold(maxZoomThreshold) {this._userSettings.maxZoomThreshold = maxZoomThreshold}
+    set zoomInIncrement(zoomInIncrement) {this._userSettings.zoomInIncrement = zoomInIncrement}
+    set zoomOutIncrement(zoomOutIncrement) {this._userSettings.zoomOutIncrement = zoomOutIncrement}
 }

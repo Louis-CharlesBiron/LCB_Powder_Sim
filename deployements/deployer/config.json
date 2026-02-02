@@ -1,0 +1,26 @@
+{
+    "projectName": "lcb-powder-sim",
+    "version": "1.0.0",
+    "projectRoot": "../../",
+    "srcRoot": "src",
+    "distRoot": "deployements/codeBuilds",
+    "distRaw": "raw",
+    "distModule": "module",
+    "buildNameUMD": "lcb-powder-sim",
+    "buildNameESM": "lcb-ps",
+    "mergeOrder": [
+        "[*]canvasDotEffect.js",
+        "[%]cde.min.js",
+        "settings.js",
+        "defaultKeybinds.js",
+        "LocalPhysicsUnit.js",
+        "PhysicsCore.js",
+        "MapGrid.js",
+        "Simulation.js"
+    ],
+    "workers":[
+        {"file": "RemotePhysicsUnit.js", "dependencyFile": "[-]"}
+    ],
+    "verisonedFiles": [],
+    "srcExtensions": [".js"]
+}

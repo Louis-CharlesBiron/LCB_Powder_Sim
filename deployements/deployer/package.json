@@ -4,9 +4,9 @@
   "main": "wrapper.js",
   "type": "module",
   "scripts": {
-    "build": "node wrapper.js"
+    "build": "cls && node wrapper.js"
   },
   "devDependencies": {
-    "terser": "^5.37.0"
+    "terser": "^5.46.0"
   }
 }
