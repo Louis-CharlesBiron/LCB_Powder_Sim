@@ -1,5 +1,16 @@
-//lcb-powder-sim RAW - v1.0.0
-"use strict";
+//lcb-powder-sim UMD - v1.0.0
+(function(factory) {
+    if (typeof window === "undefined") {
+        window = self
+        ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>window[x] = class{constructor(){}})
+    }
+    if (typeof define === "function" && define.amd) define([], factory)
+    else if (typeof module === "object" && module.exports) module.exports = factory()
+    else if (typeof window !== "undefined") window.lcbPS = factory()
+    else this.lcbPS = factory()
+})(function() {
+"use strict"
+
 // CanvasDotEffect UMD - v1.3.2
 'use strict';
 // JS
@@ -8875,8 +8886,7 @@ const SETTINGS = {
     BRUSH_GROUPS: {},
     BRUSHES_X_VALUES: [],
     
-    //WORKER_RELATIVE_PATH: "./src/physics/RemotePhysicsUnit.js",
-    WORKER_RELATIVE_PATH: "./deployements/codeBuilds/raw/RemotePhysicsUnit.js",
+    WORKER_RELATIVE_PATH: new URL("./RemotePhysicsUnit.js", (document?.currentScript?.src||"err://-1")).href,
     WORKER_MESSAGE_TYPES: {
         INIT:0,
         STEP:1<<0,
@@ -9823,7 +9833,7 @@ class Simulation {
     static BRUSH_TYPE_NAMES = SETTINGS.BRUSH_TYPE_NAMES
     static #BRUSHES_X_VALUES = SETTINGS.BRUSHES_X_VALUES
     static #BRUSH_GROUPS = SETTINGS.BRUSH_GROUPS
-    static #WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
+    static WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
     static #WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES
     static #WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS
     static PHYSICS_UNIT_TYPE = SETTINGS.PHYSICS_UNIT_TYPE
@@ -10119,8 +10129,7 @@ class Simulation {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = usesWebWorkers&&!this.isFileServed
-        console.log(Simulation.#WORKER_RELATIVE_PATH)
-        this._physicsUnit = isWebWorker ? new Worker(Simulation.#WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit()
+        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit()
 
         if (isWebWorker) {
             this.#simulationHasPixelsBuffer = true
@@ -10838,3 +10847,5 @@ class Simulation {
     set zoomInIncrement(zoomInIncrement) {this._userSettings.zoomInIncrement = zoomInIncrement}
     set zoomOutIncrement(zoomOutIncrement) {this._userSettings.zoomOutIncrement = zoomOutIncrement}
 }
+return {SETTINGS,DEFAULT_KEYBINDS,PhysicsCore,MapGrid,Simulation,FPSCounter,CDEUtils}
+})

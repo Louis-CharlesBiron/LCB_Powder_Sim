@@ -74,8 +74,7 @@ const SETTINGS = {
     BRUSH_GROUPS: {},
     BRUSHES_X_VALUES: [],
     
-    WORKER_RELATIVE_PATH: "./src/physics/RemotePhysicsUnit.js",
-    WORKER_RELATIVE_PATH: "RemotePhysicsUnit.js",
+    WORKER_RELATIVE_PATH: /*/[[@workerPath]]/*/"./src/physics/RemotePhysicsUnit.js"/*/[[@end]]/*/,
     WORKER_MESSAGE_TYPES: {
         INIT:0,
         STEP:1<<0,

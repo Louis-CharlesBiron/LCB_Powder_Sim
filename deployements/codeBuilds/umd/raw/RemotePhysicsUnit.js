@@ -1,8 +1,12 @@
+//lcb-powder-sim UMD - v1.0.0
 "use strict"
-console.log('asdasd')
-importScripts("./lcb-powder-sim.js")
+importScripts("./lcbPS.js")
 
 
+if (self.lcbPS) {
+    self.SETTINGS = self.lcbPS.SETTINGS
+    self.PhysicsCore = self.lcbPS.PhysicsCore
+}
 
 // CONSTANTS
 const WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES,

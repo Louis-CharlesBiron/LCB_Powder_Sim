@@ -13,7 +13,7 @@ class Simulation {
     static BRUSH_TYPE_NAMES = SETTINGS.BRUSH_TYPE_NAMES
     static #BRUSHES_X_VALUES = SETTINGS.BRUSHES_X_VALUES
     static #BRUSH_GROUPS = SETTINGS.BRUSH_GROUPS
-    static #WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
+    static WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
     static #WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES
     static #WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS
     static PHYSICS_UNIT_TYPE = SETTINGS.PHYSICS_UNIT_TYPE
@@ -309,7 +309,7 @@ class Simulation {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = usesWebWorkers&&!this.isFileServed
-        this._physicsUnit = isWebWorker ? new Worker(Simulation.#WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit()
+        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit()
 
         if (isWebWorker) {
             this.#simulationHasPixelsBuffer = true

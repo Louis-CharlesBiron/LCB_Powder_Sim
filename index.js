@@ -1,3 +1,9 @@
+if (window.lcbPS) {
+    window.Simulation = window.lcbPS.Simulation
+    window.FPSCounter = window.lcbPS.FPSCounter
+    window.CDEUtils = window.lcbPS.CDEUtils
+}
+
 // SIMULATION CREATION
 const simulation = new Simulation(simulationCanvas, readyCB, 
     {
@@ -14,7 +20,7 @@ const simulation = new Simulation(simulationCanvas, readyCB,
         visualEffectsEnabled: true,
     }
 )
-      
+
 // FPS / SPS DISPLAY
 const fpsDisplay = document.getElementById("fpsDisplay"), fpsStepDisplay = document.getElementById("fpsStepDisplay"),
       fpsCounter = new FPSCounter(), stepFpsCounter = new FPSCounter()

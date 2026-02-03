@@ -4,9 +4,10 @@
     "projectRoot": "../../",
     "srcRoot": "src",
     "distRoot": "deployements/codeBuilds",
-    "distRaw": "raw",
-    "distModule": "module",
-    "buildNameUMD": "lcb-powder-sim",
+    "UMDFolderName": "umd",
+    "ESMFolderName": "esm",
+    "unminifiedFolderName": "raw",
+    "buildNameUMD": "lcbPS",
     "buildNameESM": "lcb-ps",
     "mergeOrder": [
         "[*]canvasDotEffect.js",
@@ -18,9 +19,20 @@
         "MapGrid.js",
         "Simulation.js"
     ],
+    "UMDExpose": [
+        "SETTINGS",
+        "DEFAULT_KEYBINDS",
+        "PhysicsCore",
+        "MapGrid",
+        "Simulation",
+        "FPSCounter",
+        "CDEUtils"
+    ],
+    "dependencies": [],
     "workers":[
         {"file": "RemotePhysicsUnit.js", "dependencyFile": "[-]"}
     ],
+    "workerMocks": ["DOMParser", "IntersectionObserver", "HTMLVideoElement", "HTMLAudioElement", "SVGImageElement", "HTMLImageElement", "HTMLCanvasElement", "document"],
     "verisonedFiles": [],
     "srcExtensions": [".js"]
 }

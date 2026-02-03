@@ -1,6 +1,11 @@
 importScripts("PhysicsCore.js")
 importScripts("../simulation/settings.js")
 
+if (self.lcbPS) {
+    self.SETTINGS = self.lcbPS.SETTINGS
+    self.PhysicsCore = self.lcbPS.PhysicsCore
+}
+
 // CONSTANTS
 const WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES,
       WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS,
