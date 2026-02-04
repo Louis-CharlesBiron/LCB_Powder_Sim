@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import {existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync} from "fs"
-import {basename, extname, join} from "path"
+import {basename, join} from "path"
 import {minify_sync} from "terser"
+import { BUILD_TIME_LOG_NAME, CONFIG, DIST_ESM, DIST_ESM_RAW, DIST_UMD, DIST_UMD_RAW, ESM_MERGE_PATH, ESM_MIN_MERGE_PATH, NAME_UMD, PRE_WRAP_MERGE_PATH, PROJECT_NAME, SRC, UMD_MERGE_PATH, UMD_MIN_MERGE_PATH, VERSION } from "./constants.js"
 
-const CONFIG = JSON.parse(readFileSync("config.json", "utf8")),
-    UMD_BANNER = "//"+CONFIG.projectName+" UMD - v"+CONFIG.version+"\n",
-    ESM_BANNER = UMD_BANNER.replace("UMD", "ESM"),
+
+const UMD_BANNER = "//"+PROJECT_NAME+" UMD - v"+VERSION+"\n", ESM_BANNER = UMD_BANNER.replace("UMD", "ESM"),
     TERSER_CONFIG = {
-        compress: { // TODO TOCHECK
+        compress: {
             dead_code: true, drop_console: false,
             unsafe: false, unsafe_math: false, unsafe_arrows: false,
             reduce_vars: true, reduce_funcs: true,
@@ -35,23 +35,10 @@ const CONFIG = JSON.parse(readFileSync("config.json", "utf8")),
         INSERT_ESM_ONLY: `${esc(MODS.ESM_ONLY)}:[0-9]+`,
     }
 
-const ROOT = CONFIG.projectRoot,
-      SRC = join(ROOT, CONFIG.srcRoot),
-      DIST = join(ROOT, CONFIG.distRoot),
-      DIST_UMD = join(DIST, CONFIG.UMDFolderName),
-      DIST_UMD_RAW = join(DIST_UMD, CONFIG.unminifiedFolderName),
-      DIST_ESM = join(DIST, CONFIG.ESMFolderName),
-      DIST_ESM_RAW = join(DIST_ESM, CONFIG.unminifiedFolderName),
-      NAME_UMD = CONFIG.buildNameUMD,
-      NAME_ESM = CONFIG.buildNameESM,
-      UMD_MERGE_PATH = join(DIST_UMD_RAW, NAME_UMD+".js"),
-      UMD_MIN_MERGE_PATH = join(DIST_UMD, NAME_UMD+".min.js"),
-      ESM_MERGE_PATH = join(DIST_ESM_RAW, NAME_ESM+".js"),
-      ESM_MIN_MERGE_PATH = join(DIST_ESM, NAME_ESM+".min.js")
+
 
 // STARTS LOGS
-const BUILD_TIME_LOG_NAME = "Build"
-console.log("BUILDING -", CONFIG.projectName)
+console.log("BUILDING -", PROJECT_NAME)
 console.time(BUILD_TIME_LOG_NAME)
 
 // CREATE DIST DIRS
@@ -75,9 +62,12 @@ let mergeValue = CONFIG.mergeOrder.reduce((mergeText, fileNameExt)=>{
 }, "").trim()
 
 // CREATE UMD MERGE + WRAPPER + ADJUST WORKER PATH
-const umdMergeValue = UMDWrap(executeCmd(mergeValue, CMD_TYPES.INSERT_UMD_ONLY, fileIndex=>`\n${getFileContent(fileIndex)}\n`), CONFIG.UMDExpose)
+const preWrapMergeValue = executeCmd(mergeValue, CMD_TYPES.INSERT_UMD_ONLY, fileIndex=>`\n${getFileContent(fileIndex)}\n`),
+      umdMergeValue = UMDWrap(preWrapMergeValue, CONFIG.UMDExpose)
 
 // CREATE UMD FILES
+writeFileSync(PRE_WRAP_MERGE_PATH, preWrapMergeValue)
+console.log("CREATED", UMD_MERGE_PATH)
 writeFileSync(UMD_MERGE_PATH, UMD_BANNER+executeCmd(umdMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match)))
 console.log("CREATED", UMD_MERGE_PATH)
 writeFileSync(UMD_MIN_MERGE_PATH, UMD_BANNER+getMinified(executeCmd(umdMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, true))))
@@ -154,8 +144,9 @@ CONFIG.dependencies.forEach(fileNameExt=>{
 if (CONFIG?.dependencies?.length) console.log("DEPENDENCIES TRANSFERED")
 
 // END LOGS
-console.log("BUILD COMPLETED -", CONFIG.projectName)
+console.log("BUILD MERGED -", PROJECT_NAME)
 console.timeEnd(BUILD_TIME_LOG_NAME)
+console.log("\nCREATING D.TS -", PROJECT_NAME)
 
 
 // UTILS FUNCTIONS

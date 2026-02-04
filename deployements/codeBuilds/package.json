@@ -1,0 +1,57 @@
+{
+    "name": "lcb-ps",
+    "version": "1.0.0",
+    "description": "LCB Powder Simulator is an efficient, customizable and fully native JS powder simulation.",
+    "author": {
+        "name": "Louis-Charles Biron",
+        "email": "louirlesbiron6@gmail.com",
+        "url": "https://github.com/Louis-CharlesBiron"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Louis-CharlesBiron/LCB_Powder_Sim"
+    },
+    "files": [
+        "umd/lcbPS.min.js",
+        "esm/lcb-ps.min.js",
+        "readme.md",
+        "LICENSE",
+
+        "dts/TODO.d.ts",
+        "dts/TODO.d.ts"
+    ],
+    "type": "module",
+    "main": "umd/lcbPS.min.js",
+    "browser": "umd/lcbPS.min.js",
+    "module": "esm/lcb-ps.min.js",
+    "types": "dts/TODO.d.ts",
+    "exports": {
+        ".": {
+            "require": "./umd/lcbPS.min.js",
+            "import": "./esm/lcb-ps.min.js",
+            "types": "./dts/TODO.d.ts"
+        },
+        "./lcbPS": {
+            "require": "./umd/lcbPS.min.js",
+            "types": "./dts/TODO.d.ts"
+        }
+    },
+    "bin": {},
+    "homepage":"https://github.com/Louis-CharlesBiron/LCB_Powder_Sim",
+    "keywords": [
+        "canvas",
+        "library",
+        "simulation",
+        "lcb",
+        "lcbps",
+        "lcb-ps",
+        "lcb-powder-simulator",
+        "dynamic",
+        "cool",
+        "powder",
+        "js",
+        "javascript",
+        "handmade"
+    ]
+}

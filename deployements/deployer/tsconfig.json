@@ -1,0 +1,9 @@
+{
+  "include": ["../codeBuilds/umd/raw/lcbPS.pre.js", "../codeBuilds/esm/raw/lcb-ps.js"],
+  "compilerOptions": {
+    "allowJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "../codeBuilds/dts"
+  }
+}

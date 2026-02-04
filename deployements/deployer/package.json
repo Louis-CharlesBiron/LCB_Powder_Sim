@@ -1,12 +1,19 @@
 {
   "name": "deployer",
   "version": "1.0.0",
-  "main": "wrapper.js",
+  "main": "codeBuild.js",
   "type": "module",
   "scripts": {
-    "build": "cls && node wrapper.js"
+    "code-build": "cls && node codeBuild.js && npx tsc && node dtsRenamer.js",
+
+    "npm-build-raw": "node npmBuild.js",
+    "npm-build": "npm run code-build && npm run npm-build-raw",
+
+    "app-build": "node NPMBuild.js",
+    "app-build-raw": "npm run code-build && npm run app-build-raw"
   },
   "devDependencies": {
-    "terser": "^5.46.0"
+    "terser": "^5.46.0",
+    "typescript": "^5.9.2"
   }
 }

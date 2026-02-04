@@ -1,16 +1,12 @@
-//lcb-powder-sim ESM - v1.0.0
-if (typeof window === "undefined") {
-    self["window"] = {}
-    ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>self[x] = class{constructor(){}})
-}
-///[[@[*]:0]]
-// CanvasDotEffect ESM - v1.3.2
+
+// CanvasDotEffect UMD - v1.3.2
+'use strict';
 // JS
 // Canvas Dot Effect by Louis-Charles Biron
 // Please don't use or credit this code as your own.
 //
 
-export class CDEUtils {
+class CDEUtils {
     static DEFAULT_ACCEPTABLE_DIFFERENCE = 0.0000001
     static CIRC = 2*Math.PI
     static TO_DEGREES = Math.PI/180
@@ -512,7 +508,7 @@ export class CDEUtils {
         } catch(e) {console.log(e, ...logs)}
     }
 }
-export class FPSCounter {
+class FPSCounter {
     static COMMON_REFRESH_RATES = [30, 60, 75, 90, 120, 144, 165, 240, 360, 480, 500]
     static ABNORMAL_FLUCTUATION_THRESHOLD = 20
 
@@ -622,7 +618,7 @@ export class FPSCounter {
 //
 
 // Provides generic canvas functions
-export class CanvasUtils {
+class CanvasUtils {
     static SHOW_CENTERS_DOT_ID = {}
 
     // DEBUG // Can be used to display a dot at the specified shape pos (which is normally not visible)
@@ -1132,7 +1128,7 @@ export class CanvasUtils {
 // Please don't use or credit this code as your own.
 //
 
-export class Color {
+class Color {
     static DEFAULT_COLOR = "aliceblue"
     static DEFAULT_RGBA = [240, 248, 255, 1]
     static DEFAULT_COLOR_VALUE = "rgba(240, 248, 255, 1)"
@@ -1540,7 +1536,7 @@ for (let i=0;i<c_ll;i++) {
 // Please don't use or credit this code as your own.
 //
 
-export class _HasColor {
+class _HasColor {
 
     /**
      * Abstract class, provides color attributes to other classes
@@ -1600,7 +1596,7 @@ export class _HasColor {
 // Please don't use or credit this code as your own.
 //
 
-export class GridAssets {
+class GridAssets {
     static D = ["t","r","b","l","tr","br","bl","tl","i"].reduce((a,b,i)=>(a.places.push([a[b]=1<<i,(ar)=>{if(i==0){return -ar}else if(i==1){return 1}else if(i==2){return ar}else if(i==3){return -1}else if(i==4){return 1-ar}else if(i==5){return ar+1}else if(i==6){return ar-1}else if(i==7){return -ar-1}else if(i==8){return 0}}]),a),{places:[]})
     static DEFAULT_SOURCE = GridAssets.fontSource5x5
 
@@ -2140,7 +2136,7 @@ export class GridAssets {
 // Please don't use or credit this code as your own.
 //
 
-export class TypingDevice {
+class TypingDevice {
     static #LISTENER_ID_GIVER = 0
     static #ID_INDEX = 3
     static KEYS = {A:"A", B:"B", C:"C", D:"D", E:"E", F:"F", G:"G", H:"H", I:"I", J:"J", K:"K", L:"L", M:"M", N:"N", O:"O", P:"P", Q:"Q", R:"R", S:"S", T:"T", U:"U", V:"V", W:"W", X:"X", Y:"Y", Z:"Z", DIGIT_0:"0", DIGIT_1:"1", DIGIT_2:"2", DIGIT_3:"3", DIGIT_4:"4", DIGIT_5:"5", DIGIT_6:"6", DIGIT_7:"7", DIGIT_8:"8", DIGIT_9:"9", SPACE:" ", ENTER:"ENTER", TAB:"TAB", BACKSPACE:"BACKSPACE", ESCAPE:"ESCAPE", SHIFT:"SHIFT", CONTROL:"CONTROL", ALT:"ALT", ALT_GRAPH:"ALTGRAPH", META:"META", CAPS_LOCK:"CAPSLOCK", CONTEXT_MENU:"CONTEXTMENU", ARROW_UP:"ARROWUP", ARROW_DOWN:"ARROWDOWN", ARROW_LEFT:"ARROWLEFT", ARROW_RIGHT:"ARROWRIGHT", HOME:"HOME", END:"END", PAGE_UP:"PAGEUP", PAGE_DOWN:"PAGEDOWN", INSERT:"INSERT", DELETE:"DELETE", F1:"F1", F2:"F2", F3:"F3", F4:"F4", F5:"F5", F6:"F6", F7:"F7", F8:"F8", F9:"F9", F10:"F10", F11:"F11", F12:"F12", F13:"F13", F14:"F14", F15:"F15", F16:"F16", F17:"F17", F18:"F18", F19:"F19", F20:"F20", F21:"F21", F22:"F22", F23:"F23", F24:"F24", NUMPAD_0:"NUMPAD0", NUMPAD_1:"NUMPAD1", NUMPAD_2:"NUMPAD2", NUMPAD_3:"NUMPAD3", NUMPAD_4:"NUMPAD4", NUMPAD_5:"NUMPAD5", NUMPAD_6:"NUMPAD6", NUMPAD_7:"NUMPAD7", NUMPAD_8:"NUMPAD8", NUMPAD_9:"NUMPAD9", NUMPAD_ADD:"NUMPADADD", NUMPAD_SUBTRACT:"NUMPADSUBTRACT", NUMPAD_MULTIPLY:"NUMPADMULTIPLY", NUMPAD_DIVIDE:"NUMPADDIVIDE", NUMPAD_DECIMAL:"NUMPADDECIMAL", NUMPAD_ENTER:"NUMPADENTER", PAUSE:"PAUSE", PRINT_SCREEN:"PRINTSCREEN", SCROLL_LOCK:"SCROLLLOCK", NUM_LOCK:"NUMLOCK", LAUNCH_APPLICATION_1:"LAUNCHAPPLICATION1", LAUNCH_APPLICATION_2:"LAUNCHAPPLICATION2", BRACKET_LEFT:"BRACKETLEFT", BRACKET_RIGHT:"BRACKETRIGHT", SEMICOLON:"SEMICOLON", QUOTE:"QUOTE", COMMA:"COMMA", PERIOD:"PERIOD", SLASH:"SLASH", BACKSLASH:"BACKSLASH", EQUAL:"EQUAL", MINUS:"MINUS", BACKQUOTE:"BACKQUOTE", AUDIO_VOLUME_UP:"AUDIOVOLUMEUP", AUDIO_VOLUME_DOWN:"AUDIOVOLUMEDOWN", AUDIO_VOLUME_MUTE:"AUDIOVOLUMEMUTE", MEDIA_PLAY_PAUSE:"MEDIAPLAYPAUSE", MEDIA_NEXT_TRACK:"MEDIANEXTTRACK", MEDIA_PREVIOUS_TRACK:"MEDIAPREVIOUSTRACK", MEDIA_STOP:"MEDIASTOP", BROWSER_BACK:"BROWSERBACK", BROWSER_FORWARD:"BROWSERFORWARD", BROWSER_REFRESH:"BROWSERREFRESH", BROWSER_STOP:"BROWSERSTOP", BROWSER_SEARCH:"BROWSERSEARCH", BROWSER_FAVORITES:"BROWSERFAVORITES", BROWSER_HOME:"BROWSERHOME"}
@@ -2335,7 +2331,7 @@ export class TypingDevice {
 // Please don't use or credit this code as your own.
 //
 
-export class Mouse {
+class Mouse {
     static #LISTENER_ID_GIVER = 0
     static #ID_INDEX = 3
     static DEFAULT_MOUSE_DECELERATION = 0.8
@@ -2610,7 +2606,7 @@ export class Mouse {
 // Please don't use or credit this code as your own.
 //
 
-export class Render {
+class Render {
     static PROFILE_ID_GIVER = -1
     static TEXT_PROFILE_ID_GIVER = -1
     static COMPOSITE_OPERATIONS = {UNDER:"destionation-over", OVER:"source-over", SOURCE_OVER: "source-over", SOURCE_IN: "source-in", SOURCE_OUT: "source-out", SOURCE_ATOP: "source-atop", DESTINATION_OVER: "destination-over", DESTINATION_IN: "destination-in", DESTINATION_OUT: "destination-out", DESTINATION_ATOP: "destination-atop", LIGHTER: "lighter", COPY: "copy", XOR: "xor", MULTIPLY: "multiply", SCREEN: "screen", OVERLAY: "overlay", DARKEN: "darken", LIGHTEN: "lighten", COLOR_DODGE: "color-dodge", COLOR_BURN: "color-burn", HARD_LIGHT: "hard-light", SOFT_LIGHT: "soft-light", DIFFERENCE: "difference", EXCLUSION: "exclusion", HUE: "hue", SATURATION: "saturation", COLOR: "color", LUMINOSITY: "luminosity"}
@@ -3338,7 +3334,7 @@ export class Render {
 // Please don't use or credit this code as your own.
 //
 
-export class TextStyles {
+class TextStyles {
     static CAPS_VARIANTS = {NORMAL:"normal", SMALL_CAPS:"small-caps", ALL_SMALL_CAPS:"all-small-caps", PETITE_CAPS:"petite-caps", ALL_PETITE_CAPS:"all-petite-caps", UNICASE:"unicase", TILTING_CAPS:"tilting-caps"}
     static DIRECTIONS = {LEFT_TO_RIGHT:"ltr", RIGHT_TO_LEFT:"rtl", INHERIT:"inherit"}
     static STRETCHES = {ULTRA_CONDENSED:"ultra-condensed", EXTRA_CONDENSED:"extra-condensed", CONDENSED:"condensed", SEMI_CONDENSED:"semi-condensed", NORMAL:"normal", SEMI_EXPANDED:"semi-expanded", EXPANDED:"expanded", EXTRA_EXPANDED:"extra-expanded", ULTRA_EXPANDED:"ultra-expanded"}
@@ -3585,7 +3581,7 @@ export class TextStyles {
 // Please don't use or credit this code as your own.
 //
 
-export class RenderStyles extends _HasColor {
+class RenderStyles extends _HasColor {
     static JOIN_TYPES = {MITER:"miter", BEVEL:"bevel", ROUND:"round"} // spiky, flat, round
     static CAP_TYPES = {BUTT:"butt", SQUARE:"square", ROUND:"round"}  // short, long, round
     static DEFAULT_WIDTH = 2
@@ -3784,9 +3780,9 @@ export class RenderStyles extends _HasColor {
 // Please don't use or credit this code as your own.
 //
 
-const CDE_CANVAS_TIMEOUT_FUNCTION = window.requestAnimationFrame||window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame||window.msRequestAnimationFrame||function(fn){window.setTimeout(()=>fn(performance.now()),1000/60)}
+const CDE_CANVAS_TIMEOUT_FUNCTION = window?.requestAnimationFrame||window?.webkitRequestAnimationFrame||window?.mozRequestAnimationFrame||window?.msRequestAnimationFrame||function(fn){window?.setTimeout(()=>fn(performance.now()),1000/60)}
 
-export class Canvas {
+class Canvas {
     static DOMParser = new DOMParser()
     static CANVAS_ID_GIVER = 0
     static ELEMENT_ID_GIVER = 0
@@ -4880,7 +4876,7 @@ export class Canvas {
 // Please don't use or credit this code as your own.
 //
 
-export class Anim {
+class Anim {
     static #ANIM_ID_GIVER = 0
     static DEFAULT_DURATION = 1000
 
@@ -5027,7 +5023,7 @@ export class Anim {
 // Please don't use or credit this code as your own.
 //
 
-export class _BaseObj extends _HasColor {
+class _BaseObj extends _HasColor {
     static DEFAULT_POS = [0,0]
     static DEFAULT_ACTIVATION_MARGIN = Canvas.DEFAULT_CANVAS_ACTIVE_AREA_PADDING
     static ACTIVATION_MARGIN_DISABLED = Canvas.ACTIVATION_MARGIN_DISABLED
@@ -5531,7 +5527,7 @@ export class _BaseObj extends _HasColor {
 // Please don't use or credit this code as your own.
 //
 
-export class AudioDisplay extends _BaseObj {
+class AudioDisplay extends _BaseObj {
     static LOADED_IR_BUFFERS = []
     static SUPPORTED_AUDIO_FORMATS = ["mp3", "wav", "ogg", "aac", "m4a", "opus", "flac"]
     static SOURCE_TYPES = {FILE_PATH:"string", DYNAMIC:"[object Object]", MICROPHONE:"MICROPHONE", SCREEN_AUDIO:"SCREEN_AUDIO", VIDEO:HTMLVideoElement, AUDIO:HTMLAudioElement}
@@ -6256,7 +6252,7 @@ export class AudioDisplay extends _BaseObj {
 // Please don't use or credit this code as your own.
 //
 
-export class ImageDisplay extends _BaseObj {
+class ImageDisplay extends _BaseObj {
     static SUPPORTED_IMAGE_FORMATS = ["jpg","jpeg","png","gif","svg","webp","bmp","tiff","ico","heif","heic"]
     static SUPPORTED_VIDEO_FORMATS = ["mp4","webm","ogv","mov","avi","mkv","flv","wmv","3gp","m4v"]
     static DEFAULT_WIDTH = 128
@@ -6761,7 +6757,7 @@ export class ImageDisplay extends _BaseObj {
 // Please don't use or credit this code as your own.
 //
 
-export class TextDisplay extends _BaseObj {
+class TextDisplay extends _BaseObj {
     static MEASUREMENT_CTX = new OffscreenCanvas(1,1).getContext("2d")
     static DEFAULT_LINE_HEIGHT_PADDING = 10
 
@@ -7051,7 +7047,7 @@ export class TextDisplay extends _BaseObj {
 // Please don't use or credit this code as your own.
 //
 
-export class _DynamicColor {
+class _DynamicColor {
     static PLACEHOLDER = "PLACEHOLDER" // can be used to instantiate a dynamic color without positions, and apply that of the object, on assignement
     static PLACEHOLDER_COLOR = "transparent"
 
@@ -7094,7 +7090,7 @@ export class _DynamicColor {
 // Please don't use or credit this code as your own.
 //
 
-export class Pattern extends _DynamicColor {
+class Pattern extends _DynamicColor {
     static #ID_GIVER = 0
     static #CROPPING_CTX = new OffscreenCanvas(1,1).getContext("2d")
     static #MATRIX = new DOMMatrixReadOnly()
@@ -7409,7 +7405,7 @@ export class Pattern extends _DynamicColor {
 // Please don't use or credit this code as your own.
 //
 
-export class _Obj extends _BaseObj {
+class _Obj extends _BaseObj {
     static DEFAULT_RADIUS = 5
     static RADIUS_PRECISION = 4
 
@@ -7486,7 +7482,7 @@ export class _Obj extends _BaseObj {
 // Please don't use or credit this code as your own.
 //
 
-export class Shape extends _Obj {
+class Shape extends _Obj {
     static DEFAULT_LIMIT = 100
     static DEFAULT_RATIO_POS = [Infinity, Infinity]
 
@@ -7988,7 +7984,7 @@ export class Shape extends _Obj {
 // Please don't use or credit this code as your own.
 //
 
-export class Gradient extends _DynamicColor {
+class Gradient extends _DynamicColor {
     static TYPES = {LINEAR:"Linear", RADIAL:"Radial", CONIC:"Conic"}
     static DEFAULT_TYPE = Gradient.TYPES.LINEAR
     static SERIALIZATION_SEPARATOR = "*"
@@ -8166,7 +8162,7 @@ export class Gradient extends _DynamicColor {
 // Please don't use or credit this code as your own.
 //
 
-export class FilledShape extends Shape {
+class FilledShape extends Shape {
     #lastDotsPos = null
 
     /**
@@ -8295,7 +8291,7 @@ export class FilledShape extends Shape {
 // Please don't use or credit this code as your own.
 //
 
-export class Grid extends Shape {
+class Grid extends Shape {
     static DEFAULT_KEYS = ""
     static DEFAULT_GAPS = [10, 10]
     static DEFAULT_SOURCE = GridAssets.DEFAULT_SOURCE
@@ -8511,7 +8507,7 @@ export class Grid extends Shape {
 // Please don't use or credit this code as your own.
 //
 
-export class Dot extends _Obj {
+class Dot extends _Obj {
 
     /**
      * Important object component to create effects, can be used on it's own, but designed to be contained by a Shape instance
@@ -8801,7 +8797,9 @@ export class Dot extends _Obj {
     set connections(c) {return this._connections = c}
     set cachedPath(path) {this._cachedPath = path}
 }
-export const SETTINGS = {
+///[[@[%]:1]]
+///[[@export]]
+const SETTINGS = {
 
     MATERIALS: {// 0-15
         AIR:0,
@@ -8876,7 +8874,7 @@ export const SETTINGS = {
     BRUSH_GROUPS: {},
     BRUSHES_X_VALUES: [],
     
-    WORKER_RELATIVE_PATH: new URL("./RemotePhysicsUnit.js", import.meta.url).href,
+    WORKER_RELATIVE_PATH: /*/[[@workerPath]]/*/"./src/physics/RemotePhysicsUnit.js"/*/[[@end]]/*/,
     WORKER_MESSAGE_TYPES: {
         INIT:0,
         STEP:1<<0,
@@ -9011,7 +9009,9 @@ SETTINGS.SIDE_PRIORITY_NAMES = Object.keys(SETTINGS.SIDE_PRIORITIES)
 // SET BRUSHES X VALUES
 const brushesX = Object.keys(SETTINGS.BRUSH_TYPES).filter(b=>b.startsWith("X")), b_ll = brushesX.length
 for (let i=SETTINGS.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
- export const DEFAULT_KEYBINDS = {
+
+///[[@export]]
+const DEFAULT_KEYBINDS = {
     /**
         KEYBIND_NAME: {
             defaultFunction?: {string?} The simulation function to call
@@ -9244,7 +9244,7 @@ for (let i=SETTINGS.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) SETTI
     },
 }
 
-export class LocalPhysicsUnit {
+class LocalPhysicsUnit {
 
     constructor() {
         this._physicsCore = new PhysicsCore()
@@ -9272,7 +9272,7 @@ export class LocalPhysicsUnit {
 
 }
 
-export class PhysicsCore {
+class PhysicsCore {
     static D = {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7}
     static #DEBUG_CLS_THRESHOLD = 0
 
@@ -9711,7 +9711,7 @@ export class PhysicsCore {
     }
 }
 
-export class MapGrid {
+class MapGrid {
     static DEFAULT_PIXEL_SIZE = 18
     static DEFAULT_MAP_WIDTH = 50
     static DEFAULT_MAP_HEIGHT = 35
@@ -9823,7 +9823,7 @@ export class MapGrid {
 	set lastPixelSize(lps) {return this.#lastPixelSize = lps}
 }
 
-export class Simulation {
+class Simulation {
     static MATERIALS = SETTINGS.MATERIALS
     static MATERIAL_GROUPS = SETTINGS.MATERIAL_GROUPS
     static MATERIAL_NAMES = SETTINGS.MATERIAL_NAMES
@@ -10136,7 +10136,7 @@ export class Simulation {
         const isWebWorker = usesWebWorkers&&!this.isFileServed
         if ((isWebWorker && this.usesWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
 
-        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"module"}) : new LocalPhysicsUnit() // TODO, dont reinstanciate every time
+        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit() // TODO, dont reinstanciate every time
 
         if (isWebWorker) {
             this.#simulationHasPixelsBuffer = true

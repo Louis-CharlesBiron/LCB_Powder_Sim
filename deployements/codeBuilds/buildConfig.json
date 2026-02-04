@@ -1,9 +1,10 @@
 {
+    "packageJsonPath": "../codeBuilds/package.json",
     "projectName": "lcb-powder-sim",
-    "version": "1.0.0",
     "projectRoot": "../../",
     "srcRoot": "src",
     "distRoot": "deployements/codeBuilds",
+    "dtsFolderName": "dts",
     "UMDFolderName": "umd",
     "ESMFolderName": "esm",
     "unminifiedFolderName": "raw",
@@ -11,7 +12,7 @@
     "buildNameESM": "lcb-ps",
     "mergeOrder": [
         "[*]canvasDotEffect.js",
-        "[%]cde.min.js",
+        "[%]cde.js",
         "settings.js",
         "defaultKeybinds.js",
         "LocalPhysicsUnit.js",
