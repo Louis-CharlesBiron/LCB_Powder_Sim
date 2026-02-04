@@ -1,4 +1,4 @@
-//[[@export]]
+///[[@export]]
 const DEFAULT_KEYBINDS = {
     /**
         KEYBIND_NAME: {

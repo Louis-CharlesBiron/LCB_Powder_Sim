@@ -1,8 +1,8 @@
 //lcb-powder-sim UMD - v1.0.0
 (function(factory) {
     if (typeof window === "undefined") {
-        window = self
-        ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>window[x] = class{constructor(){}})
+        self["window"] = {}
+        ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>self[x] = class{constructor(){}})
     }
     if (typeof define === "function" && define.amd) define([], factory)
     else if (typeof module === "object" && module.exports) module.exports = factory()
@@ -8810,7 +8810,7 @@ class Dot extends _Obj {
     set cachedPath(path) {this._cachedPath = path}
 }
 ///[[@[%]:1]]
-//[[@export]]
+///[[@export]]
 const SETTINGS = {
 
     MATERIALS: {// 0-15
@@ -9022,7 +9022,7 @@ SETTINGS.SIDE_PRIORITY_NAMES = Object.keys(SETTINGS.SIDE_PRIORITIES)
 const brushesX = Object.keys(SETTINGS.BRUSH_TYPES).filter(b=>b.startsWith("X")), b_ll = brushesX.length
 for (let i=SETTINGS.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
 
-//[[@export]]
+///[[@export]]
 const DEFAULT_KEYBINDS = {
     /**
         KEYBIND_NAME: {

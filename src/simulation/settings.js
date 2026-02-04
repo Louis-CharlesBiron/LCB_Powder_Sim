@@ -1,4 +1,4 @@
-//[[@export]]
+///[[@export]]
 const SETTINGS = {
 
     MATERIALS: {// 0-15

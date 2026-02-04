@@ -1,8 +1,17 @@
-if (window.lcbPS) {
-    window.Simulation = window.lcbPS.Simulation
-    window.FPSCounter = window.lcbPS.FPSCounter
-    window.CDEUtils = window.lcbPS.CDEUtils
-}
+import { Simulation, FPSCounter, CDEUtils } from "./deployements/codeBuilds/esm/raw/lcb-ps.js"
+
+
+
+
+
+
+
+
+
+
+
+
+
 // SIMULATION CREATION
 const simulation = new Simulation(simulationCanvas, readyCB, 
     {

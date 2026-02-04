@@ -8,7 +8,7 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
     if (typeof step === "number" || !step) step = [step||1, step||1, step||1]
     let callback = null
 
-    const {nodeName, type} = input, hasActionCB = CDEUtils.isFunction(actionCB),
+    const {nodeName, type} = input, hasActionCB = typeof actionCB === "function",
           normalStep = step[0],
           ctrlStep = step[1]??normalStep,
           shiftStep = step[2]??ctrlStep
@@ -20,8 +20,8 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
         let stepChosen = normalStep, v = +input.value
         if (e.ctrlKey) stepChosen = ctrlStep
         else if (e.shiftKey) stepChosen = shiftStep
-
-        v = input.value = CDEUtils.clamp(isFowardStep ? v-stepChosen : v+stepChosen, min, max)
+        const value = isFowardStep ? v-stepChosen : v+stepChosen
+        v = input.value = value < min ? min : value > max ? max : value
         if (hasActionCB) actionCB(+input.value)
     }
     else if (nodeName === "SELECT") callback=e=>{
@@ -46,7 +46,7 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
  * @param {Function?} valueMapper Can be used to define a custom option's value. (index, optionName)=>{return optionValue}
  */
 function fillSelectOptions(input, optionNames, valueMapper) {
-    const hasValueMapper = CDEUtils.isFunction(valueMapper)
+    const hasValueMapper = typeof valueMapper === "function"
     optionNames.forEach((name, i)=>{
         const option = document.createElement("option")
         option.value = hasValueMapper ? valueMapper(i, name) : i
@@ -61,9 +61,10 @@ function fillSelectOptions(input, optionNames, valueMapper) {
  * @param {Function?} actionCB A callback called on input. (value)=>{}
  */
 function setRegularNumberInput(input, actionCB) {
-    const hasActionCB = CDEUtils.isFunction(actionCB), min = +input.min||0, max = +input.max||Infinity
+    const hasActionCB = typeof actionCB === "function", min = +input.min||0, max = +input.max||Infinity
     input.addEventListener("input", ()=>{
-        input.value = CDEUtils.clamp(+input.value, min, max)
+        const v = +input.value
+        input.value = v < min ? min : v > max ? max : v
         if (hasActionCB) actionCB(+input.value)
     })
 }

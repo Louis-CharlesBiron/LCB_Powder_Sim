@@ -30,7 +30,10 @@
     ],
     "dependencies": [],
     "workers":[
-        {"file": "RemotePhysicsUnit.js", "dependencyFile": "[-]"}
+        {
+            "file": "RemotePhysicsUnit.js",
+            "esmImports": ["SETTINGS", "PhysicsCore"]
+        }
     ],
     "workerMocks": ["DOMParser", "IntersectionObserver", "HTMLVideoElement", "HTMLAudioElement", "SVGImageElement", "HTMLImageElement", "HTMLCanvasElement", "document"],
     "verisonedFiles": [],
