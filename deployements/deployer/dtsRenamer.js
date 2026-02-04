@@ -10,7 +10,7 @@ console.time(RENAME_TIME_LOG_NAME)
 // GET DTS RENAMED FILES 
 const files = readdirSync(DTS, {recursive:true}).filter(path=>path.includes(".d.ts")).reduce((files, path)=>{
     const content = readFileSync(join(DTS, path), "utf8"), name = NAME_MAPPER[basename(path)]
-    if (name) files[name] = content.slice(0, 10)
+    if (name) files[name] = content
     return files
 }, {})
 

@@ -1,15 +1,21 @@
 {
     "packageJsonPath": "../codeBuilds/package.json",
     "projectName": "lcb-powder-sim",
+
     "projectRoot": "../../",
     "srcRoot": "src",
     "distRoot": "deployements/codeBuilds",
+
+    "readmePath": "readme.md",
+    "licensePath": "LICENSE",
+
     "dtsFolderName": "dts",
     "UMDFolderName": "umd",
     "ESMFolderName": "esm",
     "unminifiedFolderName": "raw",
     "buildNameUMD": "lcbPS",
     "buildNameESM": "lcb-ps",
+
     "mergeOrder": [
         "[*]canvasDotEffect.js",
         "[%]cde.js",

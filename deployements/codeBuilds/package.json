@@ -14,27 +14,26 @@
     },
     "files": [
         "umd/lcbPS.min.js",
+        "dts/lcbPS.umd.d.ts",
         "esm/lcb-ps.min.js",
+        "dts/lcb-ps.esm.d.ts",
         "readme.md",
-        "LICENSE",
-
-        "dts/TODO.d.ts",
-        "dts/TODO.d.ts"
+        "LICENSE"
     ],
     "type": "module",
     "main": "umd/lcbPS.min.js",
     "browser": "umd/lcbPS.min.js",
     "module": "esm/lcb-ps.min.js",
-    "types": "dts/TODO.d.ts",
+    "types": "dts/lcb-ps.esm.d.ts",
     "exports": {
         ".": {
             "require": "./umd/lcbPS.min.js",
             "import": "./esm/lcb-ps.min.js",
-            "types": "./dts/TODO.d.ts"
+            "types": "./dts/lcb-ps.esm.d.ts"
         },
         "./lcbPS": {
             "require": "./umd/lcbPS.min.js",
-            "types": "./dts/TODO.d.ts"
+            "types": "./dts/lcbPS.umd.d.ts"
         }
     },
     "bin": {},

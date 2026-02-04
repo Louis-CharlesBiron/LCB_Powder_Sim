@@ -10,8 +10,13 @@ export const CONFIG_PATH_FROM_DEPLOYER = "../codeBuilds/buildConfig.json",
       SRC = join(ROOT, CONFIG.srcRoot),
       DIST = join(ROOT, CONFIG.distRoot),
       DTS = join(DIST, CONFIG.dtsFolderName),
+
+      README = join(ROOT, CONFIG.readmePath),
+      LICENSE = join(ROOT, CONFIG.licensePath),
+
       BUILD_TIME_LOG_NAME = "Merging",
       RENAME_TIME_LOG_NAME = "Renaming",
+      NPM_TIME_LOG_NAME = "Building npm",
 
       NAME_UMD = CONFIG.buildNameUMD,
       DIST_UMD = join(DIST, CONFIG.UMDFolderName),
