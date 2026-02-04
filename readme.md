@@ -59,12 +59,16 @@ For those who know how to code a bit and want have more control over the simulat
 ### **NPM**:
 Get the ESM version by running `npm install lcb-ps`
 
+----
+
 ### **Browser Build**:
-Get the UMD version by download these two files:
+Get the UMD version by downloading these two files:
 - [lcbPS.min.js](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/blob/main/deployements/codeBuilds/umd/lcbPS.min.js)
 - [RemotePhysicsUnit.min.js](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/blob/main/deployements/codeBuilds/umd/RemotePhysicsUnit.min.js)
 
 (*Or the unminified versions: [Raw builds](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/tree/main/deployements/codeBuilds/umd/raw)*)
+
+----
 
 ## **Getting Started with Modules / Packages**
 
@@ -96,7 +100,7 @@ const {Simulation} = lcbPS
 const simulation = new Simulation(document.getElementById("simulationCanvasId"))
 ```
 
-#### This will create a fully functionnal powder simulation using default settings!
+**This will create a fully functionnal powder simulation using default settings!** [See UMD Template](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/tree/main/examples/UMDTemplate)
 
  
 # [Documentation](#table-of-contents)
