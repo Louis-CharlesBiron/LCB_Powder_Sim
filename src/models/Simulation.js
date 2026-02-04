@@ -309,7 +309,9 @@ class Simulation {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = usesWebWorkers&&!this.isFileServed
-        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit()
+        if ((isWebWorker && this.usesWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
+
+        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit() // TODO, dont reinstanciate every time
 
         if (isWebWorker) {
             this.#simulationHasPixelsBuffer = true
@@ -985,7 +987,7 @@ class Simulation {
     get aimedFPS() {return this._CVS.fpsLimit}
     get backStepSavingEnabled() {return Boolean(this._backStepSavingMaxCount)}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
-    get usesWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
+    get usesWebWorkers() {return (Boolean(this._physicsUnit) && !(this._physicsUnit instanceof LocalPhysicsUnit))}
     get isFileServed() {return location.href.startsWith("file")}
 	get showGrid() {return this._userSettings.showGrid}
 	get showBorder() {return this._userSettings.showBorder}

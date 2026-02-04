@@ -277,6 +277,23 @@ for (let i=SETTINGS.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) SETTI
         preventDefault: true
     },
 
+    DISABLE_WORKERS: {
+        defaultFunction: "updatePhysicsUnitType",
+        defaultParams: [false],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.O],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    ENABLE_WORKERS: {
+        defaultFunction: "updatePhysicsUnitType",
+        defaultParams: [true],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.P],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+
     SELECT_SAND: {
         defaultFunction: "updateSelectedMaterial",
         defaultParams: [SETTINGS.MATERIALS.SAND],
@@ -1323,7 +1340,9 @@ export class Simulation {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = usesWebWorkers&&!this.isFileServed
-        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"module"}) : new LocalPhysicsUnit()
+        if ((isWebWorker && this.usesWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
+
+        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"module"}) : new LocalPhysicsUnit() // TODO, dont reinstanciate every time
 
         if (isWebWorker) {
             this.#simulationHasPixelsBuffer = true
@@ -1999,7 +2018,7 @@ export class Simulation {
     get aimedFPS() {return this._CVS.fpsLimit}
     get backStepSavingEnabled() {return Boolean(this._backStepSavingMaxCount)}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
-    get usesWebWorkers() {return !(this._physicsUnit instanceof LocalPhysicsUnit)}
+    get usesWebWorkers() {return (Boolean(this._physicsUnit) && !(this._physicsUnit instanceof LocalPhysicsUnit))}
     get isFileServed() {return location.href.startsWith("file")}
 	get showGrid() {return this._userSettings.showGrid}
 	get showBorder() {return this._userSettings.showBorder}

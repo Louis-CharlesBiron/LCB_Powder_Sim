@@ -32,7 +32,7 @@
     "workers":[
         {
             "file": "RemotePhysicsUnit.js",
-            "esmImports": ["SETTINGS", "PhysicsCore"]
+            "importExpressions": ["SETTINGS", "PhysicsCore"]
         }
     ],
     "workerMocks": ["DOMParser", "IntersectionObserver", "HTMLVideoElement", "HTMLAudioElement", "SVGImageElement", "HTMLImageElement", "HTMLCanvasElement", "document"],

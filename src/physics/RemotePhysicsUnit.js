@@ -1,11 +1,6 @@
 importScripts("PhysicsCore.js")
 importScripts("../simulation/settings.js")
 
-if (self.lcbPS) {
-    self.SETTINGS = self.lcbPS.SETTINGS
-    self.PhysicsCore = self.lcbPS.PhysicsCore
-}
-
 // CONSTANTS
 const WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES,
       WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS,
@@ -14,13 +9,13 @@ const WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES,
       MATERIAL_STATES = SETTINGS.MATERIAL_STATES,
       MATERIAL_STATES_GROUPS = SETTINGS.MATERIAL_STATES_GROUPS,
       SIDE_PRIORITIES = SETTINGS.SIDE_PRIORITIES,
-      D  = SETTINGS.D,
+      D = SETTINGS.D,
       physicsCore = new PhysicsCore()
 
-// ATTRIBUTES / VARABLES
-let pixels, pxStepUpdated, pxStates, sidePriority,
-    mapWidth, mapHeight
+// MAIN ATTRIBUTES
+let pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight
 
+// WORKER VARIABLES
 let isLoopStarted = false, lastTime = 0, lastStepTime = 0, PHYSICS_DELAY = 1000/60, timeAcc = 0
 
 self.onmessage=e=>{

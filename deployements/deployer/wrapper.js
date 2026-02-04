@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-import {existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync} from "fs"
+import {existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync} from "fs"
 import {basename, extname, join} from "path"
-import { minify_sync } from "terser"
-
-console.clear()
-console.log("TODO COOL BUILD TEXT")
-console.time("build")
+import {minify_sync} from "terser"
 
 const CONFIG = JSON.parse(readFileSync("config.json", "utf8")),
     UMD_BANNER = "//"+CONFIG.projectName+" UMD - v"+CONFIG.version+"\n",
@@ -53,6 +49,11 @@ const ROOT = CONFIG.projectRoot,
       ESM_MERGE_PATH = join(DIST_ESM_RAW, NAME_ESM+".js"),
       ESM_MIN_MERGE_PATH = join(DIST_ESM, NAME_ESM+".min.js")
 
+// STARTS LOGS
+const BUILD_TIME_LOG_NAME = "Build"
+console.log("BUILDING -", CONFIG.projectName)
+console.time(BUILD_TIME_LOG_NAME)
+
 // CREATE DIST DIRS
 if (!existsSync(DIST_UMD)) mkdirSync(DIST_UMD)
 if (!existsSync(DIST_UMD_RAW)) mkdirSync(DIST_UMD_RAW)
@@ -62,9 +63,8 @@ if (!existsSync(DIST_ESM_RAW)) mkdirSync(DIST_ESM_RAW)
 // GET ALL SRC FILES
 const FULL_PATHS = readdirSync(SRC, {recursive:true}).filter(path=>path.includes(CONFIG.srcExtensions)).map(path=>join(SRC, path))
 
-
 // CREATE MERGE VALUE
-let mergeValue = CONFIG.mergeOrder.reduce((mergeText, fileNameExt)=>{//'"use strict";\n'+
+let mergeValue = CONFIG.mergeOrder.reduce((mergeText, fileNameExt)=>{
     let pathIndex = getPathInList(fileNameExt, true)
     
     if (fileNameExt.includes(MODS.UMD_ONLY)) return mergeText += formatCmd(`${MODS.UMD_ONLY}:${pathIndex}`)
@@ -79,23 +79,27 @@ const umdMergeValue = UMDWrap(executeCmd(mergeValue, CMD_TYPES.INSERT_UMD_ONLY, 
 
 // CREATE UMD FILES
 writeFileSync(UMD_MERGE_PATH, UMD_BANNER+executeCmd(umdMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match)))
+console.log("CREATED", UMD_MERGE_PATH)
 writeFileSync(UMD_MIN_MERGE_PATH, UMD_BANNER+getMinified(executeCmd(umdMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, true))))
+console.log("CREATED", UMD_MIN_MERGE_PATH)
 
 // CREATE ESM FILES
 const esmMergeValue = `${ESM_BANNER}if (typeof window === "undefined") {
     self["window"] = {}
-    ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>self[x] = class{constructor(){}})
+    ;[${CONFIG.workerMocks.map(x=>`"${x}"`)}].forEach(x=>self[x] = class{constructor(){}})
 }
 ${executeCmd(executeCmd(mergeValue, CMD_TYPES.INSERT_EXPORTS), CMD_TYPES.INSERT_ESM_ONLY, fileIndex=>`\n${getFileContent(fileIndex)}\n`)}
 `.trim()
 
 writeFileSync(ESM_MERGE_PATH, executeCmd(esmMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, false, true)))
+console.log("CREATED", ESM_MERGE_PATH)
 writeFileSync(ESM_MIN_MERGE_PATH, ESM_BANNER+getMinified(executeCmd(esmMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, true, true))))
+console.log("CREATED", ESM_MIN_MERGE_PATH)
 
 
 // GET WORKERS + CORRECT IMPORTS
 const WORKERS = []
-CONFIG.workers.forEach(({file: fileNameExt, dependencyFile, esmImports})=>{
+CONFIG.workers.forEach(({file: fileNameExt, dependencyFile, importExpressions})=>{
     dependencyFile ||= MODS.AUTO
     const isAutoDep = dependencyFile===MODS.AUTO, content = getFileContent(getPathInList(fileNameExt)),
           files = {
@@ -105,15 +109,16 @@ CONFIG.workers.forEach(({file: fileNameExt, dependencyFile, esmImports})=>{
 
     Object.entries(files).forEach(([type, dep])=>{
         if (dep) {
+            const MIN = "_MIN"
             if (type === "UMD") {
-                let count = 0
-                const cleanContent = content.replaceAll(/importScripts(.+)/gi, ()=>!(count++)?`importScripts("./${dep}")`:"").trim()
-                files[type] = `"use strict"\n${cleanContent}`
+                let cleanContent = content.replaceAll(/importScripts(.+)/gi, "").trim(), safeImports = ""
+                if (importExpressions?.length) safeImports = `\nif (self["${NAME_UMD}"]) {${importExpressions.map(expression=>`\n   self["${expression}"] = self["${NAME_UMD}"]["${expression}"]`)}\n}\n\n`
+                files[type] = `"use strict"\nimportScripts("./${dep}")\n${safeImports}${cleanContent}`
+                files[type+MIN] = `"use strict"\nimportScripts("./${getFileNameMinified(dep)}")\n${safeImports}${cleanContent}`
             } else {
                 const cleanContent = content.replaceAll(/importScripts(.+)/gi, "").trim()
-                files[type] = `"use strict"\nimport {${esmImports}} from "./${dep}"\n\n${cleanContent}`
-
-                //TODO   import {SETTINGS, PhysicsCore} from "./lcb-ps.js"
+                files[type] = `"use strict"\nimport {${importExpressions}} from "./${dep}"\n\n${cleanContent}`
+                files[type+MIN] = `"use strict"\nimport {${importExpressions}} from "./${getFileNameMinified(dep)}"\n\n${cleanContent}`
             }
         }
     })
@@ -123,13 +128,21 @@ CONFIG.workers.forEach(({file: fileNameExt, dependencyFile, esmImports})=>{
 
 // CREATE WORKER FILES
 WORKERS.forEach(({fileNameExt, files})=>{
+    const minName = getFileNameMinified(fileNameExt),
+          UMD_RAW = join(DIST_UMD_RAW, fileNameExt), UMD_MIN = join(DIST_UMD, minName),
+          ESM_RAW = join(DIST_ESM_RAW, fileNameExt), ESM_MIN = join(DIST_ESM, minName)
+
     // UMD
-    writeFileSync(join(DIST_UMD_RAW, fileNameExt), UMD_BANNER+files.UMD)
-    writeFileSync(join(DIST_UMD, stem(fileNameExt)+".min"+extname(fileNameExt)), UMD_BANNER+getMinified(files.UMD))
+    writeFileSync(UMD_RAW, UMD_BANNER+files.UMD)
+    console.log("CREATED WORKER", UMD_RAW)
+    writeFileSync(UMD_MIN, UMD_BANNER+getMinified(files.UMD_MIN))
+    console.log("CREATED WORKER", UMD_MIN)
 
     // ESM
-    writeFileSync(join(DIST_ESM_RAW, fileNameExt), ESM_BANNER+files.ESM)
-    writeFileSync(join(DIST_ESM, stem(fileNameExt)+".min"+extname(fileNameExt)), ESM_BANNER+getMinified(files.ESM))
+    writeFileSync(ESM_RAW, ESM_BANNER+files.ESM)
+    console.log("CREATED WORKER", ESM_RAW)
+    writeFileSync(ESM_MIN, ESM_BANNER+getMinified(files.ESM_MIN))
+    console.log("CREATED WORKER", ESM_MIN)
 })
 
 // TRANSFER DEPENDENCIES
@@ -138,24 +151,33 @@ CONFIG.dependencies.forEach(fileNameExt=>{
     if (fileNameExt.includes(MODS.UMD_ONLY)) writeFileSync(join(DIST_UMD, fileName), content)
     else if (fileNameExt.includes(MODS.ESM_ONLY)) writeFileSync(join(DIST_ESM, fileName), content)
 })
+if (CONFIG?.dependencies?.length) console.log("DEPENDENCIES TRANSFERED")
+
+// END LOGS
+console.log("BUILD COMPLETED -", CONFIG.projectName)
+console.timeEnd(BUILD_TIME_LOG_NAME)
 
 
+// UTILS FUNCTIONS
 
-console.log("TODO COOL END BUILD TEXT, maybe add logs too")
-console.timeEnd("build")
-
-
-// TODO DOC
-function UMDWrap(code, exposedExpressions, workerMocks=CONFIG.workerMocks, exposedName=NAME_UMD) {
+/**
+ * Wraps the provided code in a UMD wrapper 
+ * @param {String} code The code to wrap
+ * @param {String[]} exposedExpressions The variables/classes/functions to expose globally 
+ * @param {String?} workerMocks The classes/expressions to mock when using workers with this code
+ * @param {String?} exposedName The name of the globally exposed root variable
+ * @returns The UMD wrapped code
+ */
+function UMDWrap(code, exposedExpressions, workerMocks=CONFIG.workerMocks) {
     return `(function(factory) {
     if (typeof window === "undefined") {
-        self["window"] = {}
         ;[${workerMocks.map(x=>`"${x}"`)}].forEach(x=>self[x] = class{constructor(){}})
+        self["window"] = {}
     }
     if (typeof define === "function" && define.amd) define([], factory)
     else if (typeof module === "object" && module.exports) module.exports = factory()
-    else if (typeof window !== "undefined") window.${exposedName} = factory()
-    else this.${exposedName} = factory()
+    else if (typeof window !== "undefined") self["${NAME_UMD}"] = factory()
+    else self["${NAME_UMD}"] = factory()
 })(function() {
 "use strict"
 ${code}
@@ -163,7 +185,13 @@ return {${exposedExpressions}}
 })`
 }
 
-// DOC TODO
+/**
+ * Executes a command in the provided text
+ * @param {String} text The text containing commands to execute
+ * @param {CMD_TYPES} cmdType The command to execute
+ * @param {Function?} callback A callback called to replace values with the RESOLVE_WORKER_PATH INSERT_[UMD/ESM]_ONLY and commands. (interessedMatchValue, match?)=>{return "replaceValue"}
+ * @returns The text with the command executed
+ */
 function executeCmd(text, cmdType, callback) {
     let regex = new RegExp(`[\\s]*${esc(CMD_SYNTAX.LINE_START)}[\\s]*${esc(CMD_SYNTAX.PRE)}${cmdType}${esc(CMD_SYNTAX.SUF)}[\\s]*`, "gi"), hasCB = typeof callback === "function"
     if (cmdType === CMD_TYPES.INSERT_EXPORTS) {
@@ -179,45 +207,86 @@ function executeCmd(text, cmdType, callback) {
     else if ((cmdType === CMD_TYPES.INSERT_UMD_ONLY || cmdType === CMD_TYPES.INSERT_ESM_ONLY) && hasCB) return text.replaceAll(regex, match=>callback(+match.match(/[0-9]+/g)[0], match))
 }
 
-
-// DOC TODO
+/**
+ * Replaces a hardcoded worker path string into a relative path
+ * @param {String} fileName The name of the worker file (with extension)
+ * @param {Boolean} isMinified Whether to return the minified file version of the path
+ * @param {Boolean} isESM Whether to return the ESM version of the path
+ * @returns The adjusted path
+ */
 function getResolvedWorkerPath(fileName, isMinified, isESM) {
-    const [name, extension] = stem(fileName, true), base = isESM ? "import.meta.url" : `(document?.currentScript?.src||"err://-1")`
-    return `new URL("./${name+(isMinified ? ".min" : "")+"."+extension}", ${base}).href`
+    const base = isESM ? "import.meta.url" : `(document?.currentScript?.src||"err://-1")`, name = getCleanfileName(fileName)
+    return `new URL("./${isMinified ? getFileNameMinified(name) : basename(name)}", ${base}).href`
 }
 
-// DOC TODO
-function stem(fileNameExt, returnExtension) {
-    const fileNameInfo = basename(fileNameExt).match(/[./a-z0-9_ -]+/gi)[0].split(".")
+/**
+ * Returns the extensionless basename of a file
+ * @param {String} fileName The name of the worker file (with extension)
+ * @param {Boolean} returnExtension If true, returns both the basename and the extension 
+ */
+function stem(fileName, returnExtension) {
+    const fileNameInfo = basename(fileName).match(/[./a-z0-9_ -]+/gi)[0].split(".")
     return returnExtension ? fileNameInfo : fileNameInfo[0]
 }
 
-// DOC TODO
+/**
+ * Minifies the provided content based on the current TERSER_CONFIG
+ * @param {String} content The code/content to minify
+ * @returns The minified code
+ */
 function getMinified(content) {
     return minify_sync(content, TERSER_CONFIG).code
 }
 
-// DOC TODO
+/**
+ * Returns the full path of the provided fileName
+ * @param {String} fileName The name of the worker file
+ * @param {Boolean} returnIndex If true, returns the index in FULL_PATHS instead of the actual path
+ */
 function getPathInList(fileName, returnIndex) {
     return FULL_PATHS[returnIndex ? "findIndex" : "find"](fullPath=>fullPath.includes(getCleanfileName(fileName)))
 }
 
-// DOC TODO
-function getCleanfileName(fileName) {
-    return fileName.match(/[a-z.]+/gi)?.[0]
+/**
+ * Returns the .min in a fileName
+ * @param {String} fileName The name of the worker file 
+ */
+function getFileNameMinified(fileName) {
+    const [name, extension] = stem(fileName, true)
+    return name+".min."+extension
 }
 
-// TODO DOC
+/**
+ * Returns a cleaned valid filename
+ * @param {String} fileName The name of the worker file
+ */
+function getCleanfileName(fileName) {
+    return fileName.match(/[./a-z0-9_ -]+/gi)?.[0]
+}
+
+/**
+ * Reads and returns a file's content
+ * @param {String | Number} fileNameOrIndex A file path or FULL_PATHS index
+ * @returns The file contents
+ */
 function getFileContent(fileNameOrIndex) {
     return readFileSync(typeof fileNameOrIndex === "number" ? FULL_PATHS[fileNameOrIndex] : fileNameOrIndex, "utf8")
 }
 
-// DOC TODO
+/**
+ * Formats a command
+ * @param {CMD_TYPES} cmd The command
+ * @returns The formated command
+ */
 function formatCmd(cmd) {
     return `\n///${CMD_SYNTAX.PRE}${cmd}${CMD_SYNTAX.SUF}\n`
 }
 
-// DOC TODO
+/**
+ * Escapes every character in the provided text
+ * @param {String} text The text to escape
+ * @returns an escaped version of the provided text
+ */
 function esc(text) {
     return [...text].map(x=>"\\"+x).join("")
 }

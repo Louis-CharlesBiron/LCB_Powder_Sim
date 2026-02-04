@@ -59,6 +59,23 @@ const DEFAULT_KEYBINDS = {
         preventDefault: true
     },
 
+    DISABLE_WORKERS: {
+        defaultFunction: "updatePhysicsUnitType",
+        defaultParams: [false],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.O],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+    ENABLE_WORKERS: {
+        defaultFunction: "updatePhysicsUnitType",
+        defaultParams: [true],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.P],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
+
     SELECT_SAND: {
         defaultFunction: "updateSelectedMaterial",
         defaultParams: [SETTINGS.MATERIALS.SAND],
