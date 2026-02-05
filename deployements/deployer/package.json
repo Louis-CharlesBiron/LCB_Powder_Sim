@@ -9,8 +9,8 @@
     "npm-build-raw": "node npmBuild.js",
     "npm-build": "npm run code-build && npm run npm-build-raw",
 
-    "app-build": "node NPMBuild.js",
-    "app-build-raw": "npm run code-build && npm run app-build-raw"
+    "app-build-raw": "node appBuild.js",
+    "app-build": "npm run code-build && npm run app-build-raw"
   },
   "devDependencies": {
     "terser": "^5.46.0",

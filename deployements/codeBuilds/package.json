@@ -15,10 +15,17 @@
     "files": [
         "umd/lcbPS.min.js",
         "dts/lcbPS.umd.d.ts",
+
         "esm/lcb-ps.min.js",
         "dts/lcb-ps.esm.d.ts",
+
         "readme.md",
-        "LICENSE"
+        "LICENSE",
+
+        "bins/global.min.js",
+        "bins/createBrowserProjectTemplate.min.js",
+        "bins/createProjectTemplate.min.js",
+        "bins/openDocumentation.min.js"
     ],
     "type": "module",
     "main": "umd/lcbPS.min.js",
@@ -36,7 +43,12 @@
             "types": "./dts/lcbPS.umd.d.ts"
         }
     },
-    "bin": {},
+    "bin": {
+        "lcb-ps": "./bins/global.min.js",
+        "lcb-ps-template": "./bins/createProjectTemplate.min.js",
+        "lcb-ps-browser-template": "./bins/createBrowserProjectTemplate.min.js",
+        "lcb-ps-documentation": "./bins/openDocumentation.min.js"
+    },
     "homepage":"https://github.com/Louis-CharlesBiron/LCB_Powder_Sim",
     "keywords": [
         "canvas",
@@ -46,6 +58,8 @@
         "lcbps",
         "lcb-ps",
         "lcb-powder-simulator",
+        "multithreading",
+        "webworkers",
         "dynamic",
         "cool",
         "powder",

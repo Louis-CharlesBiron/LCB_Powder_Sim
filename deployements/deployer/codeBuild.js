@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import {existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync} from "fs"
 import {basename, join} from "path"
-import {minify_sync} from "terser"
-import { BUILD_TIME_LOG_NAME, CONFIG, DIST_ESM, DIST_ESM_RAW, DIST_UMD, DIST_UMD_RAW, ESM_MERGE_PATH, ESM_MIN_MERGE_PATH, NAME_UMD, PRE_WRAP_MERGE_PATH, PROJECT_NAME, SRC, UMD_MERGE_PATH, UMD_MIN_MERGE_PATH, VERSION } from "./constants.js"
+import { BUILD_TIME_LOG_NAME, CONFIG, DIST_ESM, DIST_ESM_RAW, DIST_UMD, DIST_UMD_RAW, ESM_MERGE_PATH, ESM_MIN_MERGE_PATH, getFileNameMinified, getMinified, NAME_UMD, PRE_WRAP_MERGE_PATH, PROJECT_NAME, SRC, UMD_MERGE_PATH, UMD_MIN_MERGE_PATH, VERSION } from "./constants.js"
 
 
 const UMD_BANNER = "//"+PROJECT_NAME+" UMD - v"+VERSION+"\n", ESM_BANNER = UMD_BANNER.replace("UMD", "ESM"),
@@ -70,7 +69,7 @@ writeFileSync(PRE_WRAP_MERGE_PATH, preWrapMergeValue)
 console.log("CREATED", UMD_MERGE_PATH)
 writeFileSync(UMD_MERGE_PATH, UMD_BANNER+executeCmd(umdMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match)))
 console.log("CREATED", UMD_MERGE_PATH)
-writeFileSync(UMD_MIN_MERGE_PATH, UMD_BANNER+getMinified(executeCmd(umdMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, true))))
+writeFileSync(UMD_MIN_MERGE_PATH, UMD_BANNER+getMinified(executeCmd(umdMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, true)), TERSER_CONFIG))
 console.log("CREATED", UMD_MIN_MERGE_PATH)
 
 // CREATE ESM FILES
@@ -83,7 +82,7 @@ ${executeCmd(executeCmd(mergeValue, CMD_TYPES.INSERT_EXPORTS), CMD_TYPES.INSERT_
 
 writeFileSync(ESM_MERGE_PATH, executeCmd(esmMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, false, true)))
 console.log("CREATED", ESM_MERGE_PATH)
-writeFileSync(ESM_MIN_MERGE_PATH, ESM_BANNER+getMinified(executeCmd(esmMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, true, true))))
+writeFileSync(ESM_MIN_MERGE_PATH, ESM_BANNER+getMinified(executeCmd(esmMergeValue, CMD_TYPES.RESOLVE_WORKER_PATH, match=>getResolvedWorkerPath(match, true, true)), TERSER_CONFIG))
 console.log("CREATED", ESM_MIN_MERGE_PATH)
 
 
@@ -125,13 +124,13 @@ WORKERS.forEach(({fileNameExt, files})=>{
     // UMD
     writeFileSync(UMD_RAW, UMD_BANNER+files.UMD)
     console.log("CREATED WORKER", UMD_RAW)
-    writeFileSync(UMD_MIN, UMD_BANNER+getMinified(files.UMD_MIN))
+    writeFileSync(UMD_MIN, UMD_BANNER+getMinified(files.UMD_MIN, TERSER_CONFIG))
     console.log("CREATED WORKER", UMD_MIN)
 
     // ESM
     writeFileSync(ESM_RAW, ESM_BANNER+files.ESM)
     console.log("CREATED WORKER", ESM_RAW)
-    writeFileSync(ESM_MIN, ESM_BANNER+getMinified(files.ESM_MIN))
+    writeFileSync(ESM_MIN, ESM_BANNER+getMinified(files.ESM_MIN, TERSER_CONFIG))
     console.log("CREATED WORKER", ESM_MIN)
 })
 
@@ -211,40 +210,12 @@ function getResolvedWorkerPath(fileName, isMinified, isESM) {
 }
 
 /**
- * Returns the extensionless basename of a file
- * @param {String} fileName The name of the worker file (with extension)
- * @param {Boolean} returnExtension If true, returns both the basename and the extension 
- */
-function stem(fileName, returnExtension) {
-    const fileNameInfo = basename(fileName).match(/[./a-z0-9_ -]+/gi)[0].split(".")
-    return returnExtension ? fileNameInfo : fileNameInfo[0]
-}
-
-/**
- * Minifies the provided content based on the current TERSER_CONFIG
- * @param {String} content The code/content to minify
- * @returns The minified code
- */
-function getMinified(content) {
-    return minify_sync(content, TERSER_CONFIG).code
-}
-
-/**
  * Returns the full path of the provided fileName
  * @param {String} fileName The name of the worker file
  * @param {Boolean} returnIndex If true, returns the index in FULL_PATHS instead of the actual path
  */
 function getPathInList(fileName, returnIndex) {
     return FULL_PATHS[returnIndex ? "findIndex" : "find"](fullPath=>fullPath.includes(getCleanfileName(fileName)))
-}
-
-/**
- * Returns the .min in a fileName
- * @param {String} fileName The name of the worker file 
- */
-function getFileNameMinified(fileName) {
-    const [name, extension] = stem(fileName, true)
-    return name+".min."+extension
 }
 
 /**

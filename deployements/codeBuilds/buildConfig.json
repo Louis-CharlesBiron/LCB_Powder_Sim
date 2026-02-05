@@ -8,8 +8,10 @@
 
     "readmePath": "readme.md",
     "licensePath": "LICENSE",
+    "npmVersionedFilePaths": ["readme.md"],
 
     "dtsFolderName": "dts",
+    "binsFolderName": "bins",
     "UMDFolderName": "umd",
     "ESMFolderName": "esm",
     "unminifiedFolderName": "raw",

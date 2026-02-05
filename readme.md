@@ -1,15 +1,14 @@
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Louis-CharlesBiron/LCB_Powder_Sim?link=https%3A%2F%2Fgithub.com%2FLouis-CharlesBiron%2FLCB_Powder_Sim%2Fcommits%2Fmain%2F&label=Commit%20Activity)](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/commits/main/)
 ![GitHub Created At](https://img.shields.io/github/created-at/Louis-CharlesBiron/LCB_Powder_Sim?label=Since&color=orange)
 [![NPM Version](https://img.shields.io/npm/v/lcb-ps?label=Version&color=%237761c0)](https://www.npmjs.com/package/lcb-ps)
-[![NPM Downloads](https://img.shields.io/npm/d18m/lcb-ps?label=NPM%20Downloads&color=%231cc959)](https://www.npmjs.com/package/cdejs)
+[![NPM Downloads](https://img.shields.io/npm/d18m/lcb-ps?label=NPM%20Downloads&color=%231cc959)](https://www.npmjs.com/package/lcb-ps)
 ![NPM License](https://img.shields.io/npm/l/lcb-ps?label=License&color=cadetblue)
 
 # LCB Powder Simulator
-**<u>LCB Powder Simulator</u> is an efficient, fully native JS powder simulation that runs on the [Canvas 2d API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [CDEJS](https://github.com/Louis-CharlesBiron/canvasDotEffect).**
+**<u>LCB Powder Simulator</u> is an efficient, fully native JS powder simulation that runs on the [Canvas 2d API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [lcb-ps](https://github.com/Louis-CharlesBiron/canvasDotEffect).**
 
 # Table of Contents
 - **[Web Interface](#web-interface) ([direct link here](https://louis-charlesbiron.github.io/LCB_Powder_Sim))**
-
 - **[Other deployements: App / NPM](#other-deployements)**
 - **[Documentation](#documentation)**
     - **[Simulation Class](#simulation-class)**
@@ -19,6 +18,7 @@
     - [Brushes](#brushes)
     - [Saves](#saves)
 - [Visual Examples](#visual-examples)
+- [NPX Commands](#npx-commands)
 - [Credits](#credits)
 
 # [Web Interface](#table-of-contents)
@@ -29,9 +29,7 @@ Link: [https://louis-charlesbiron.github.io/LCB_Powder_Sim](https://louis-charle
 
 # [Other deployements](#table-of-contents)
 
-## Applications:
-
-### **Desktop App**:
+## **Desktop App**:
 ### - Download Instructions
 - Coming soon!
 
@@ -43,7 +41,7 @@ Link: [https://louis-charlesbiron.github.io/LCB_Powder_Sim](https://louis-charle
 
 ----
 
-### **Chrome Extension**:
+## **Chrome Extension**:
 ### - Download Instructions
 - Coming soon!
 
@@ -51,22 +49,53 @@ Link: [https://louis-charlesbiron.github.io/LCB_Powder_Sim](https://louis-charle
 - A Nice little distraction in the top right of your browser
 - More compact UI
 
+ 
 
-## Modules / Packages:
+# Modules / Packages:
 
 For those who know how to code a bit and want have more control over the simulation, here are the **NPM** and **native browser build** releases as well as [Documentation](#documentation) bellow!
 
-### **NPM**:
-Get the ESM version by running `npm install lcb-ps`
+## **NPM**:
 
-----
+### Use a quick template:
+- ESM (with Vite) -> `npx lcb-ps template yourProjectName`
+- UMD (vanilla) -> `npx lcb-ps browser-template yourProjectName`
 
-### **Browser Build**:
-Get the UMD version by downloading these two files:
+### Or create the project yourself:
+
+- Get the **ESM** version by running `npm install lcb-ps`
+- Or simply copy the following *package.json* file and run `npm install`
+
+##### - Minimal example package.json
+```json 
+{
+    "name": "project-name",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+      "dev": "vite"
+    },
+    "dependencies": {
+      "lcb-js": "^1.0.0"
+    },
+    "devDependencies": {
+      "vite": "^7.3.1"
+    }
+}
+```
+
+**- Note:** if you are using this librairy [NPM](https://www.npmjs.com/package/lcb-js) version of this librairy, using [Vite](https://vite.dev/) or any other bundler is recommended.
+
+
+## **Browser Build**:
+Get the **UMD** version by downloading these two files:
 - [lcbPS.min.js](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/blob/main/deployements/codeBuilds/umd/lcbPS.min.js)
 - [RemotePhysicsUnit.min.js](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/blob/main/deployements/codeBuilds/umd/RemotePhysicsUnit.min.js)
 
 (*Or the unminified versions: [Raw builds](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/tree/main/deployements/codeBuilds/umd/raw)*)
+
+Again, a fully Node.js-less template is available by running `npx lcb-ps browser-template yourProjectName`
 
 ----
 
@@ -87,7 +116,7 @@ Then place *only* the librairy file in your HTML
     <script src="lcbPS.min.js"></script>
 ```
 
-**2.** In your HTML file, **place a canvas element** to display the simulation on. (*See [CDEJS](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#getting-started--minimal-setup) for more info*)
+**2.** In your HTML file, **place a canvas element** to display the simulation on. (*See [lcb-ps](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#getting-started--minimal-setup) for more info*)
 ```HTML
 <canvas id="simulationCanvasId"></canvas>
 ```
@@ -110,7 +139,7 @@ This section explains what are the available functions and types to control cert
 The `Simulation` class is the core of the simulation and manages all rendering and world manipulation (except for physics).
 #### **The Simulation constructor takes the following parameters:**
 ###### - `new Simulation(CVS, readyCB?, worldStartSettings?, userSettings?, colorSettings?)`
-- **CVS** -> A [CDEJS `Canvas`](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#canvas) instance.
+- **CVS** -> A [lcb-ps `Canvas`](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#canvas) instance.
 - **readyCB**? -> A callback ran once the simulation is started. `(simulation)=>{}`
 - **worldStartSettings**? -> An object defining the simulation start settings. (Defaults to `DEFAULT_WORLD_START_SETTINGS`)
 - **userSettings**? -> An object defining the user settings. (Defaults to `DEFAULT_USER_SETTINGS`)
@@ -291,6 +320,23 @@ All brushes available are given in the `BRUSH_TYPES` enum:
 ![Cool img idk](images/image1.gif)
 
 ![Cool img2 idk](images/image2.png)
+
+# [Npx Commands](#table-of-contents)
+
+### The main command interface: `npx lcb-ps <commandName> <params?>`
+
+This is the global *lcb-ps* command. It provides access to all regular *lcb-ps* commands and some more. It also provides basic command autocompletion upon receiving an incomplete command name.
+
+### Commands:
+
+This is the list of commands available through the `lcb-ps` command.
+  - `template` ->  Creates a simple ESM project template. (*`npx lcb-js template <folderPath?>`*)
+  - `browser-template` ->  Creates a simple UMD project template. (*`npx lcb-js browser-template <folderPath?>`*)
+  - `documentation` ->  Opens the documentation (*`npx lcb-js documentation`*)
+  - `help` ->  Shows commands syntax (*`npx lcb-js help`*)
+  - `list` ->  Shows all available commands and aliases (*`npx lcb-js list`*)
+  - `version` ->  Returns the installed version of the librairy (*`npx lcb-js version`*)
+
 
 ## [Credits](#table-of-contents)
 

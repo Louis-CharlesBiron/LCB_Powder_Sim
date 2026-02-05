@@ -1,4 +1,23 @@
 const {Simulation} = lcbPS
 
-// SIMULATION CREATION
-const simulation = new Simulation(document.getElementById("simulationCanvasId"))
+// Creating the powder simulation
+const simulation = new Simulation(
+    document.getElementById("simulationCanvasId"),
+    onSimulationReady,
+    {
+        usesWebWorkers: false,
+        autoStart: true,
+        aimedFPS: 60,
+    },
+    {
+        autoSimulationSizing: true,
+        showBorder: true,
+        showGrid: true,
+        visualEffectsEnabled: true,
+    }
+)
+
+// Function that runs when the simulation is loaded
+function onSimulationReady(simulation) {
+    console.log("The simulation is ready!")
+}

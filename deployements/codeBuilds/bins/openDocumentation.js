@@ -1,0 +1,3 @@
+#!/usr/bin/env node
+import {exec} from "child_process"
+exec("start https://github.com/Louis-CharlesBiron/LCB_Powder_Sim?tab=readme-ov-file#documentation")
