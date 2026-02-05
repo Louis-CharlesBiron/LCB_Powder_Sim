@@ -1,4 +1,4 @@
-//lcb-powder-sim ESM - v1.0.0
+//lcb-powder-sim ESM - v1.0.2
 "use strict"
 import {SETTINGS,PhysicsCore} from "./lcb-ps.js"
 

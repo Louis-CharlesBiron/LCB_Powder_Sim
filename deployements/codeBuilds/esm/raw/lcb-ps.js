@@ -1,4 +1,4 @@
-//lcb-powder-sim ESM - v1.0.0
+//lcb-powder-sim ESM - v1.0.2
 if (typeof window === "undefined") {
     self["window"] = {}
     ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>self[x] = class{constructor(){}})

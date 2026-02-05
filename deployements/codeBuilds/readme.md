@@ -5,7 +5,7 @@
 ![NPM License](https://img.shields.io/npm/l/lcb-ps?label=License&color=cadetblue)
 
 # LCB Powder Simulator
-**<u>LCB Powder Simulator</u> is an efficient, fully native JS powder simulation that runs on the [Canvas 2d API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [lcb-ps](https://github.com/Louis-CharlesBiron/canvasDotEffect).**
+**<u>LCB Powder Simulator</u> is an efficient, fully native JS powder simulation that runs on the [Canvas 2d API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [cdejs](https://github.com/Louis-CharlesBiron/canvasDotEffect).**
 
 # Table of Contents
 - **[Web Interface](#web-interface) ([direct link here](https://louis-charlesbiron.github.io/LCB_Powder_Sim))**
@@ -18,7 +18,7 @@
     - [Brushes](#brushes)
     - [Saves](#saves)
 - [Visual Examples](#visual-examples)
-- [NPX Commands](#visual-examples)
+- [NPX Commands](#npx-commands)
 - [Credits](#credits)
 
 # [Web Interface](#table-of-contents)
@@ -77,7 +77,7 @@ For those who know how to code a bit and want have more control over the simulat
       "dev": "vite"
     },
     "dependencies": {
-      "lcb-js": "^1.0.0"
+      "lcb-js": "^1.0.2"
     },
     "devDependencies": {
       "vite": "^7.3.1"
@@ -116,7 +116,7 @@ Then place *only* the librairy file in your HTML
     <script src="lcbPS.min.js"></script>
 ```
 
-**2.** In your HTML file, **place a canvas element** to display the simulation on. (*See [lcb-ps](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#getting-started--minimal-setup) for more info*)
+**2.** In your HTML file, **place a canvas element** to display the simulation on. (*See [cdejs](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#getting-started--minimal-setup) for more info*)
 ```HTML
 <canvas id="simulationCanvasId"></canvas>
 ```
@@ -139,7 +139,7 @@ This section explains what are the available functions and types to control cert
 The `Simulation` class is the core of the simulation and manages all rendering and world manipulation (except for physics).
 #### **The Simulation constructor takes the following parameters:**
 ###### - `new Simulation(CVS, readyCB?, worldStartSettings?, userSettings?, colorSettings?)`
-- **CVS** -> A [lcb-ps `Canvas`](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#canvas) instance.
+- **CVS** -> A [CDEJS `Canvas`](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#canvas) instance.
 - **readyCB**? -> A callback ran once the simulation is started. `(simulation)=>{}`
 - **worldStartSettings**? -> An object defining the simulation start settings. (Defaults to `DEFAULT_WORLD_START_SETTINGS`)
 - **userSettings**? -> An object defining the user settings. (Defaults to `DEFAULT_USER_SETTINGS`)

@@ -5,7 +5,7 @@ const simulation = new Simulation(
     document.getElementById("simulationCanvasId"),
     onSimulationReady,
     {
-        usesWebWorkers: false,
+        usesWebWorkers: true,
         autoStart: true,
         aimedFPS: 60,
     },

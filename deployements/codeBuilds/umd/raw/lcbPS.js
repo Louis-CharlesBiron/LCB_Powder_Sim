@@ -1,4 +1,4 @@
-//lcb-powder-sim UMD - v1.0.0
+//lcb-powder-sim UMD - v1.0.2
 (function(factory) {
     if (typeof window === "undefined") {
         ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>self[x] = class{constructor(){}})
