@@ -1,4 +1,4 @@
-//lcb-powder-sim ESM - v1.0.2
+//lcb-powder-sim ESM - v1.0.3
 if (typeof window === "undefined") {
     self["window"] = {}
     ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>self[x] = class{constructor(){}})
@@ -8876,7 +8876,7 @@ export const SETTINGS = {
     BRUSH_GROUPS: {},
     BRUSHES_X_VALUES: [],
     
-    WORKER_RELATIVE_PATH: new URL("./RemotePhysicsUnit.js", import.meta.url).href,
+    WORKER_RELATIVE_PATH: new URL("./RemotePhysicsUnit.js", import.meta.url),
     WORKER_MESSAGE_TYPES: {
         INIT:0,
         STEP:1<<0,
@@ -10814,17 +10814,17 @@ export class Simulation {
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
     get usesWebWorkers() {return (Boolean(this._physicsUnit) && !(this._physicsUnit instanceof LocalPhysicsUnit))}
     get isFileServed() {return location.href.startsWith("file")}
-	get showGrid() {return this._userSettings.showGrid}
-	get showBorder() {return this._userSettings.showBorder}
-	get smoothDrawingEnabled() {return this._userSettings.smoothDrawingEnabled}
-	get visualEffectsEnabled() {return this._userSettings.visualEffectsEnabled}
-	get warningsDisabled() {return this._userSettings.warningsDisabled}
-	get dragAndZoomCanvasEnabled() {return this._userSettings.dragAndZoomCanvasEnabled}
-	get autoSimulationSizing() {return this._userSettings.autoSimulationSizing}
-	get zoomInIncrement() {return this._userSettings.zoomInIncrement}
-	get zoomOutIncrement() {return this._userSettings.zoomOutIncrement}
-	get minZoomThreshold() {return this._userSettings.minZoomThreshold}
-	get maxZoomThreshold() {return this._userSettings.maxZoomThreshold}
+	get showGrid() {return this._userSettings?.showGrid}
+	get showBorder() {return this._userSettings?.showBorder}
+	get smoothDrawingEnabled() {return this._userSettings?.smoothDrawingEnabled}
+	get visualEffectsEnabled() {return this._userSettings?.visualEffectsEnabled}
+	get warningsDisabled() {return this._userSettings?.warningsDisabled}
+	get dragAndZoomCanvasEnabled() {return this._userSettings?.dragAndZoomCanvasEnabled}
+	get autoSimulationSizing() {return this._userSettings?.autoSimulationSizing}
+	get zoomInIncrement() {return this._userSettings?.zoomInIncrement}
+	get zoomOutIncrement() {return this._userSettings?.zoomOutIncrement}
+	get minZoomThreshold() {return this._userSettings?.minZoomThreshold}
+	get maxZoomThreshold() {return this._userSettings?.maxZoomThreshold}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}

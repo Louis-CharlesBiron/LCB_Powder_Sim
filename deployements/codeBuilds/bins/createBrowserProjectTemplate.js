@@ -57,7 +57,7 @@ html, body {
 
 // Create index.js
 writeFileSync(join(DEST, "index.js"),`
-const {Simulation} = lcbPS
+const { Simulation } = lcbPS
 
 // Creating the powder simulation
 const simulation = new Simulation(

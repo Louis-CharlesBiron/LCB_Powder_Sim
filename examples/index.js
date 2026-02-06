@@ -3,22 +3,25 @@ if (window.lcbPS) {
     window.FPSCounter = window.lcbPS.FPSCounter
     window.CDEUtils = window.lcbPS.CDEUtils
 }
-// SIMULATION CREATION
-const simulation = new Simulation(simulationCanvas, readyCB, 
+
+// Creating the powder simulation
+const simulation = new Simulation(
+    document.getElementById("simulationCanvasId"),
+    onSimulationReady,
     {
         usesWebWorkers: true,
         autoStart: true,
         aimedFPS: 60,
-        zoom: 1,
     },
     {
-        autoSimulationSizing: null,
-        dragAndZoomCanvasEnabled: true,
+        autoSimulationSizing: true,
         showBorder: true,
         showGrid: true,
         visualEffectsEnabled: true,
     }
 )
+
+
 
 // FPS / SPS DISPLAY
 const fpsDisplay = document.getElementById("fpsDisplay"), fpsStepDisplay = document.getElementById("fpsStepDisplay"),

@@ -66,7 +66,7 @@ For those who know how to code a bit and want have more control over the simulat
 - Get the **ESM** version by running `npm install lcb-ps`
 - Or simply copy the following *package.json* file and run `npm install`
 
-##### - Minimal example package.json
+##### - Minimal example `package.json`
 ```json 
 {
     "name": "project-name",
@@ -77,11 +77,20 @@ For those who know how to code a bit and want have more control over the simulat
       "dev": "vite"
     },
     "dependencies": {
-      "lcb-js": "^1.0.2"
+      "lcb-js": "^1.0.3"
     },
     "devDependencies": {
       "vite": "^7.3.1"
     }
+}
+```
+
+##### - /!\ <u>For web workers to work</u>, **add** this `vite.config.js`
+```js
+export default {
+  optimizeDeps: {
+    exclude: ["lcb-ps"]
+  }
 }
 ```
 

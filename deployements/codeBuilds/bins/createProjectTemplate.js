@@ -23,7 +23,7 @@ writeFileSync(join(DEST, "index.html"), `
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LCB Powder Simulation | UMD Template</title>
+  <title>LCB Powder Simulation | ESM Template</title>
   <link rel="stylesheet" href="index.css">
 </head>
   <body>
@@ -98,6 +98,16 @@ writeFileSync(join(DEST, "package.json"), `
       "vite": "^7.3.1"
     }
 }`.trim())
+
+// Create vite.config.js
+writeFileSync(join(DEST, "vite.config.js"), `
+export default {
+    optimizeDeps: {
+        exclude: ["${PACKAGE_NAME}"]
+    }
+}
+`.trim())
+
 
 console.log("\nLCB Powder Simulator: ESM project template successfully created at '"+DEST+"'!")
 console.log("Don't forget to run 'npm install'.\n")

@@ -10814,17 +10814,17 @@ class Simulation {
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
     get usesWebWorkers() {return (Boolean(this._physicsUnit) && !(this._physicsUnit instanceof LocalPhysicsUnit))}
     get isFileServed() {return location.href.startsWith("file")}
-	get showGrid() {return this._userSettings.showGrid}
-	get showBorder() {return this._userSettings.showBorder}
-	get smoothDrawingEnabled() {return this._userSettings.smoothDrawingEnabled}
-	get visualEffectsEnabled() {return this._userSettings.visualEffectsEnabled}
-	get warningsDisabled() {return this._userSettings.warningsDisabled}
-	get dragAndZoomCanvasEnabled() {return this._userSettings.dragAndZoomCanvasEnabled}
-	get autoSimulationSizing() {return this._userSettings.autoSimulationSizing}
-	get zoomInIncrement() {return this._userSettings.zoomInIncrement}
-	get zoomOutIncrement() {return this._userSettings.zoomOutIncrement}
-	get minZoomThreshold() {return this._userSettings.minZoomThreshold}
-	get maxZoomThreshold() {return this._userSettings.maxZoomThreshold}
+	get showGrid() {return this._userSettings?.showGrid}
+	get showBorder() {return this._userSettings?.showBorder}
+	get smoothDrawingEnabled() {return this._userSettings?.smoothDrawingEnabled}
+	get visualEffectsEnabled() {return this._userSettings?.visualEffectsEnabled}
+	get warningsDisabled() {return this._userSettings?.warningsDisabled}
+	get dragAndZoomCanvasEnabled() {return this._userSettings?.dragAndZoomCanvasEnabled}
+	get autoSimulationSizing() {return this._userSettings?.autoSimulationSizing}
+	get zoomInIncrement() {return this._userSettings?.zoomInIncrement}
+	get zoomOutIncrement() {return this._userSettings?.zoomOutIncrement}
+	get minZoomThreshold() {return this._userSettings?.minZoomThreshold}
+	get maxZoomThreshold() {return this._userSettings?.maxZoomThreshold}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}

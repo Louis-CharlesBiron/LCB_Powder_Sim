@@ -6603,7 +6603,7 @@ export class Simulation {
     static BRUSH_TYPE_NAMES: any[];
     static "__#private@#BRUSHES_X_VALUES": any[];
     static "__#private@#BRUSH_GROUPS": {};
-    static WORKER_RELATIVE_PATH: string;
+    static WORKER_RELATIVE_PATH: URL;
     static "__#private@#WORKER_MESSAGE_TYPES": {
         INIT: number;
         STEP: number;

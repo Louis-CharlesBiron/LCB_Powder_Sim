@@ -206,7 +206,7 @@ function executeCmd(text, cmdType, callback) {
  */
 function getResolvedWorkerPath(fileName, isMinified, isESM) {
     const base = isESM ? "import.meta.url" : `(document?.currentScript?.src||"err://-1")`, name = getCleanfileName(fileName)
-    return `new URL("./${isMinified ? getFileNameMinified(name) : basename(name)}", ${base}).href`
+    return `new URL("./${isMinified ? getFileNameMinified(name) : basename(name)}", ${base})`
 }
 
 /**
