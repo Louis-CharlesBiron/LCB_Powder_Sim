@@ -1,4 +1,4 @@
-//lcb-powder-sim UMD - v1.0.3
+//lcb-powder-sim UMD - v1.0.4
 "use strict"
 importScripts("./lcbPS.js")
 

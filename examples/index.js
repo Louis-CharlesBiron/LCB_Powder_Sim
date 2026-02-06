@@ -6,8 +6,8 @@ if (window.lcbPS) {
 
 // Creating the powder simulation
 const simulation = new Simulation(
-    document.getElementById("simulationCanvasId"),
-    onSimulationReady,
+    document.getElementById("simulationCanvas"),
+    readyCB,
     {
         usesWebWorkers: true,
         autoStart: true,
@@ -20,8 +20,6 @@ const simulation = new Simulation(
         visualEffectsEnabled: true,
     }
 )
-
-
 
 // FPS / SPS DISPLAY
 const fpsDisplay = document.getElementById("fpsDisplay"), fpsStepDisplay = document.getElementById("fpsStepDisplay"),

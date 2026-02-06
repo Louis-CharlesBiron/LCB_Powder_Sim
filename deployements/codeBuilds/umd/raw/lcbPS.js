@@ -1,4 +1,4 @@
-//lcb-powder-sim UMD - v1.0.3
+//lcb-powder-sim UMD - v1.0.4
 (function(factory) {
     if (typeof window === "undefined") {
         ;["DOMParser","IntersectionObserver","HTMLVideoElement","HTMLAudioElement","SVGImageElement","HTMLImageElement","HTMLCanvasElement","document"].forEach(x=>self[x] = class{constructor(){}})
@@ -8913,9 +8913,7 @@ const SETTINGS = {
     },
 
     FILE_SERVED_WARN:`Web workers are disabled when serving with file:// protocol.\n  Serve this page over http(s):// to enable them.`,
-
     STANDALONE_KEYBIND_WARN:`The keybind pressed is not linked to any function.`,
-
     NOT_INITIALIZED_LOAD_WARN:`Tried loading with 'load()' while simulation is not yet initialized.\n Use the 'readyCB' callback to load a save on launch.`,
     NOT_INITIALIZED_MAP_SIZE_WARN:`Tried updating map size with 'updateMapSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update map size on launch.`,
     NOT_INITIALIZED_PIXEL_SIZE_WARN:`Tried updating pixel size with 'updateMapPixelSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update pixel size on launch.`,
@@ -8945,6 +8943,7 @@ const SETTINGS = {
         showGrid: true,
         smoothDrawingEnabled: true,
         visualEffectsEnabled: true,
+        drawingDisabled: false,
     },
 
     DEFAULT_COLOR_SETTINGS: {
@@ -8969,58 +8968,71 @@ const SETTINGS = {
         SMALL: 18,
         DEFAULT: 10
     },
-}
 
-// SET DEFAULT USER SETTINGS autoSimulationSizing
-if (SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing === null) SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
-
-// SET MATERIAL GROUPS
-SETTINGS.MATERIAL_GROUPS = {
-    TRANSPIERCEABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.CONTAMINANT,
-    LIQUIDS:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.CONTAMINANT,
-    CONTAMINABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER,
-    MELTABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.GRAVEL,
-
-    HAS_VISUAL_EFFECTS:SETTINGS.MATERIALS.ELECTRICITY|SETTINGS.MATERIALS.COPPER,
-
-    REVERSE_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.GRAVEL|SETTINGS.MATERIALS.CONTAMINANT|SETTINGS.MATERIALS.LAVA|SETTINGS.MATERIALS.ELECTRICITY,
-    FORWARDS_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.INVERTED_WATER,
-}
-
-// SET MATERIAL STATES GROUPS
-SETTINGS.MATERIAL_STATES_GROUPS = {
-    COPPER: {
-        ACTIVATED: SETTINGS.MATERIAL_STATES.COPPER.LIT|SETTINGS.MATERIAL_STATES.COPPER.ORIGIN,
-        SOURCEABLE: SETTINGS.MATERIAL_STATES.COPPER.LIT|SETTINGS.MATERIAL_STATES.COPPER.DISABLED
+    REPLACE_MODES: {
+        ALL: -1,
     }
 }
 
-// SET WORKER MESSAGE GROUPS
-SETTINGS.WORKER_MESSAGE_GROUPS = {
-    GIVES_PIXELS_TO_MAIN: SETTINGS.WORKER_MESSAGE_TYPES.STEP|SETTINGS.WORKER_MESSAGE_TYPES.PIXELS,
-    GIVES_PIXELS_TO_WORKER: SETTINGS.WORKER_MESSAGE_TYPES.STEP|SETTINGS.WORKER_MESSAGE_TYPES.PIXELS|SETTINGS.WORKER_MESSAGE_TYPES.START_LOOP,
-}
+;(()=>{
+    // SET DEFAULT USER SETTINGS autoSimulationSizing
+    if (SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing === null) SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
 
-// SET BRUSH GROUPS
-SETTINGS.BRUSH_GROUPS = {
-    SMALL_OPTIMIZED:SETTINGS.BRUSH_TYPES.PIXEL|SETTINGS.BRUSH_TYPES.VERTICAL_CROSS|SETTINGS.BRUSH_TYPES.LINE3|SETTINGS.BRUSH_TYPES.ROW3,
-    X:SETTINGS.BRUSH_TYPES.X3|SETTINGS.BRUSH_TYPES.X5|SETTINGS.BRUSH_TYPES.X15|SETTINGS.BRUSH_TYPES.X25|SETTINGS.BRUSH_TYPES.X55|SETTINGS.BRUSH_TYPES.X99,
-}
+    // SET MATERIAL GROUPS
+    SETTINGS.MATERIAL_GROUPS = {
+        TRANSPIERCEABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.CONTAMINANT,
+        LIQUIDS:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.CONTAMINANT,
+        CONTAMINABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER,
+        MELTABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.GRAVEL,
 
-// SET MATERIAL NAMES
-const M = SETTINGS.MATERIALS, materials = Object.keys(M), m_ll = materials.length
-for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) SETTINGS.MATERIAL_NAMES[i] = materials[ii]
+        HAS_VISUAL_EFFECTS:SETTINGS.MATERIALS.ELECTRICITY|SETTINGS.MATERIALS.COPPER,
 
-// SET BRUSH TYPE NAMES
-const B = SETTINGS.BRUSH_TYPES, brushTypes = Object.keys(B), bt_ll = brushTypes.length
-for (let i=1,ii=0;ii<bt_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
+        REVERSE_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.GRAVEL|SETTINGS.MATERIALS.CONTAMINANT|SETTINGS.MATERIALS.LAVA|SETTINGS.MATERIALS.ELECTRICITY,
+        FORWARDS_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.INVERTED_WATER,
+    }
 
-// SET SIDE PRIORITY NAMES
-SETTINGS.SIDE_PRIORITY_NAMES = Object.keys(SETTINGS.SIDE_PRIORITIES)
+    // SET MATERIAL STATES GROUPS
+    SETTINGS.MATERIAL_STATES_GROUPS = {
+        COPPER: {
+            ACTIVATED: SETTINGS.MATERIAL_STATES.COPPER.LIT|SETTINGS.MATERIAL_STATES.COPPER.ORIGIN,
+            SOURCEABLE: SETTINGS.MATERIAL_STATES.COPPER.LIT|SETTINGS.MATERIAL_STATES.COPPER.DISABLED
+        }
+    }
 
-// SET BRUSHES X VALUES
-const brushesX = Object.keys(SETTINGS.BRUSH_TYPES).filter(b=>b.startsWith("X")), b_ll = brushesX.length
-for (let i=SETTINGS.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
+    // SET WORKER MESSAGE GROUPS
+    SETTINGS.WORKER_MESSAGE_GROUPS = {
+        GIVES_PIXELS_TO_MAIN: SETTINGS.WORKER_MESSAGE_TYPES.STEP|SETTINGS.WORKER_MESSAGE_TYPES.PIXELS,
+        GIVES_PIXELS_TO_WORKER: SETTINGS.WORKER_MESSAGE_TYPES.STEP|SETTINGS.WORKER_MESSAGE_TYPES.PIXELS|SETTINGS.WORKER_MESSAGE_TYPES.START_LOOP,
+    }
+
+    // SET BRUSH GROUPS
+    SETTINGS.BRUSH_GROUPS = {
+        SMALL_OPTIMIZED:SETTINGS.BRUSH_TYPES.PIXEL|SETTINGS.BRUSH_TYPES.VERTICAL_CROSS|SETTINGS.BRUSH_TYPES.LINE3|SETTINGS.BRUSH_TYPES.ROW3,
+        X:SETTINGS.BRUSH_TYPES.X3|SETTINGS.BRUSH_TYPES.X5|SETTINGS.BRUSH_TYPES.X15|SETTINGS.BRUSH_TYPES.X25|SETTINGS.BRUSH_TYPES.X55|SETTINGS.BRUSH_TYPES.X99,
+    }
+
+    // SET MATERIAL NAMES
+    const M = SETTINGS.MATERIALS, materials = Object.keys(M), m_ll = materials.length
+    for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) SETTINGS.MATERIAL_NAMES[i] = materials[ii]
+
+    // SET BRUSH TYPE NAMES
+    const B = SETTINGS.BRUSH_TYPES, brushTypes = Object.keys(B), bt_ll = brushTypes.length
+    for (let i=1,ii=0;ii<bt_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
+
+    // SET SIDE PRIORITY NAMES
+    SETTINGS.SIDE_PRIORITY_NAMES = Object.keys(SETTINGS.SIDE_PRIORITIES)
+
+    // SET BRUSHES X VALUES
+    const brushesX = Object.keys(SETTINGS.BRUSH_TYPES).filter(b=>b.startsWith("X")), b_ll = brushesX.length
+    for (let i=SETTINGS.BRUSH_TYPES[brushesX[0]],ii=0;ii<b_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSHES_X_VALUES[i] = +brushesX[ii].slice(1)
+
+    // SET REPLACE_MODES
+    SETTINGS.REPLACE_MODES = {...SETTINGS.REPLACE_MODES, ...SETTINGS.MATERIALS}
+
+    SETTINGS.REPLACE_MODES.LIQUIDS = SETTINGS.MATERIAL_GROUPS.LIQUIDS
+    SETTINGS.REPLACE_MODES.CONTAMINABLE = SETTINGS.MATERIAL_GROUPS.CONTAMINABLE
+    SETTINGS.REPLACE_MODES.MELTABLE = SETTINGS.MATERIAL_GROUPS.MELTABLE
+})()
 
 ///[[@export]]
 const DEFAULT_KEYBINDS = {
@@ -9841,6 +9853,7 @@ class Simulation {
     static MATERIAL_NAMES = SETTINGS.MATERIAL_NAMES
     static MATERIAL_STATES = SETTINGS.MATERIAL_STATES
     static MATERIAL_STATES_GROUPS = SETTINGS.MATERIAL_STATES_GROUPS
+    static REPLACE_MODES = SETTINGS.REPLACE_MODES
     static D = SETTINGS.D
     static SIDE_PRIORITIES = SETTINGS.SIDE_PRIORITIES
     static SIDE_PRIORITY_NAMES = SETTINGS.SIDE_PRIORITY_NAMES
@@ -9868,6 +9881,7 @@ class Simulation {
     static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
     static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
     static DEFAULT_KEYBINDS = DEFAULT_KEYBINDS
+    static DEFAULT_PRECISE_PLACE_KEY = TypingDevice.KEYS.SHIFT
 
     #simulationHasPixelsBuffer = true // Whether the main thread has the pixel buffer when using webworkers
     #lastPlacedPos = null
@@ -9895,7 +9909,6 @@ class Simulation {
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
         this._isRunning = false
-        this._selectedMaterial = Simulation.MATERIALS.SAND
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
         this._lastStepTime = null
         this._queuedBufferOperations = []
@@ -9904,7 +9917,10 @@ class Simulation {
         // DISPLAY
         this._userSettings = this.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
         this._colorSettings = this.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
+        this._selectedMaterial = Simulation.MATERIALS.SAND
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
+        this._replaceMode = Simulation.REPLACE_MODES.ALL
+
         this._mapGridRenderStyles = this._CVS.render.profile1.update(this._colorSettings.grid, null, null, null, 1)
         this._mapBorderRenderStyles = this._CVS.render.profile2.update(this._colorSettings.border, null, null, null, 2)
         this._imgMap = this._CVS.ctx.createImageData(...this._mapGrid.globalDimensions)
@@ -9916,6 +9932,7 @@ class Simulation {
         this.#updateCachedMapPixelsRows()
         this.#setCanvasZoomAndDrag()
         this.setKeyBinds()
+
         const cameraCenterPos = this._worldStartSettings.cameraCenterPos
         if (cameraCenterPos !== undefined) this._CVS.centerViewAt(cameraCenterPos||this._mapGrid.getCenter(true))
         if (this._worldStartSettings.zoom) this._CVS.zoomAtPos(this._CVS.getCenter(), this._worldStartSettings.zoom)
@@ -9924,7 +9941,7 @@ class Simulation {
         this._CVS.loopingCB = this.#main.bind(this)
         this._CVS.setMouseMove()
         this._CVS.setMouseLeave()
-        this._CVS.setMouseDown(this.#mouseDown.bind(this))
+        this._CVS.setMouseDown()
         this._CVS.setMouseUp(this.#mouseUp.bind(this))
         this._CVS.setKeyUp(null, true)
         this._CVS.setKeyDown(null, true)
@@ -9961,8 +9978,8 @@ class Simulation {
 
         if (loopExtra) loopExtra(deltaTime)
 
-        if (mouse.clicked && !this.keyboard.isDown(TypingDevice.KEYS.SHIFT)) this.#placePixelFromMouse(mouse)
-        
+        if (!this.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.DEFAULT_PRECISE_PLACE_KEY)) this.#placePixelFromMouse(mouse)
+
         if (settings.showGrid) this.#drawMapGrid()
         if (settings.showBorder) this.#drawBorder()
 
@@ -10276,6 +10293,16 @@ class Simulation {
     }
 
     /**
+     * Updates the shape used to draw materials on the simulation with mouse.
+     * @param {Simulation.BRUSH_TYPES} brushType The brush type to use  TODO DOC
+     */
+    updateReplaceMode(replaceMode) {
+        replaceMode = +replaceMode
+        if (!isNaN(replaceMode)) return this._replaceMode = replaceMode
+        return this._replaceMode
+    }
+
+    /**
      * Updates the colors used for the grid and/or the materials.
      * @param {Object} colorSettings The colors to update. (Materials keys need to be in UPPERCASE)
      */
@@ -10453,11 +10480,6 @@ class Simulation {
         if ((!requiredKeys || typingDevice.isDown(requiredKeys)) && (!cancelKeys || !typingDevice.isDown(cancelKeys))) actionCB.bind(this)()
     }
 
-    // mouseDown listener, allows the mouse to place pixels
-    #mouseDown(mouse) {
-        if (!mouse.rightClicked) this.#placePixelFromMouse(mouse)
-    }
-
     // mouseUp listener, disables smooth drawing when mouse is unpressed
     #mouseUp() {
         this.#lastPlacedPos = null
@@ -10549,75 +10571,79 @@ class Simulation {
     /**
      * Places a pixel of a specified material at the specified position on the pixel map.
      * @param {[x,y]} mapPos The map position of the pixel
-     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    placePixel(mapPos, material=this._selectedMaterial) {
+    placePixel(mapPos, material=this._selectedMaterial, replaceMode=this._replaceMode) {
+        const i = this._mapGrid.mapPosToIndex(mapPos)
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.placePixel(mapPos, material))
+            this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material, replaceMode))
             return
         }
 
-        const i = this._mapGrid.mapPosToIndex(mapPos)
-        this._pixels[i] = material
-        this._pxStates[i] = 0
+        this.placePixelAtIndex(i, material, replaceMode)
     }
 
     /**
      * Places a pixel of a specified material at the specified position on the pixel map.
      * @param {Number} x The X value of the pixel on the map
      * @param {Number} y The Y value of the pixel on the map
-     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    placePixelAtCoords(x, y, material=this._selectedMaterial) {
+    placePixelAtCoords(x, y, material=this._selectedMaterial, replaceMode=this._replaceMode) {
+        const i = this._mapGrid.mapPosToIndexCoords(x, y)
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.placePixelAtCoords(x, y, material))
+            this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material, replaceMode))
             return
         }
 
-        const i = this._mapGrid.mapPosToIndexCoords(x, y)
-        this._pixels[i] = material
-        this._pxStates[i] = 0
+        this.placePixelAtIndex(i, material, replaceMode)
     }
 
     /**
      * Places a pixel of a specified material at the specified index on the pixel map.
      * @param {Number} i The index value of the pixel on the map
-     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    placePixelAtIndex(i, material=this._selectedMaterial) {
+    placePixelAtIndex(i, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material))
+            this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material, replaceMode))
             return
         }
 
+        if (replaceMode !== Simulation.REPLACE_MODES.ALL && (replaceMode ? !(this._pixels[i] & replaceMode) : this._pixels[i])) return
         this._pixels[i] = material
         this._pxStates[i] = 0
     }
 
     /**
      * Places pixels at the specified coordinates, according to the provided brush pattern
-     * @param {Number} x The X value of the center positions
-     * @param {Number} y The Y value of the center positions
+     * @param {Number} x The X value of the center position
+     * @param {Number} y The Y value of the center position
      * @param {Simulation.BRUSH_TYPES?} brushType The brush type used (Defaults to the current brush type)
+     * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    placePixelsWithBrush(x, y, brushType=this._brushType) {
+    placePixelsWithBrush(x, y, brushType=this._brushType, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         const B = Simulation.BRUSH_TYPES
         if (brushType & Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
-            if (brushType === B.LINE3 || brushType === B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1])
+            if (brushType === B.LINE3 || brushType === B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1], material, replaceMode)
             if (brushType === B.ROW3 || brushType === B.VERTICAL_CROSS) {
-                if (x) this.placePixelAtCoords(x-1, y)
-                if (x !== this._mapGrid.mapWidth-1) this.placePixelAtCoords(x+1, y)
+                if (x) this.placePixelAtCoords(x-1, y, material, replaceMode)
+                if (x !== this._mapGrid.mapWidth-1) this.placePixelAtCoords(x+1, y, material, replaceMode)
             }
-            this.placePixelAtCoords(x, y)
+            this.placePixelAtCoords(x, y, material, replaceMode)
         } else if (brushType === B.BIG_DOT) {
-            if (x-2 >= 0) this.placePixelAtCoords(x-2, y)
-            if (x+2 < this._mapGrid.mapWidth) this.placePixelAtCoords(x+2, y)
-                this.placePixelAtCoords(x, y-2)
-                this.placePixelAtCoords(x, y+2)
-                this.fillArea([x-1,y-1], [x+1,y+1])
+            if (x-2 >= 0) this.placePixelAtCoords(x-2, y, material, replaceMode)
+            if (x+2 < this._mapGrid.mapWidth) this.placePixelAtCoords(x+2, y, material, replaceMode)
+                this.placePixelAtCoords(x, y-2, material, replaceMode)
+                this.placePixelAtCoords(x, y+2, material, replaceMode)
+                this.fillArea([x-1,y-1], [x+1,y+1], material, replaceMode)
         } else if (brushType & Simulation.#BRUSH_GROUPS.X) {
             const offset = (Simulation.#BRUSHES_X_VALUES[brushType]/2)|0
-            this.fillArea([x-offset,y-offset], [x+offset,y+offset])
+            this.fillArea([x-offset,y-offset], [x+offset,y+offset], material, replaceMode)
         }
     }
 
@@ -10630,7 +10656,7 @@ class Simulation {
 
     /**
      * Fills the entire map with a specific material.
-     * @param {Simulation.MATERIALS} material The material used
+     * @param {Simulation.MATERIALS?} material The material used (Defaults to the selected material)
      */
     fill(material=this._selectedMaterial) {
         if (!this.#simulationHasPixelsBuffer) {
@@ -10648,9 +10674,10 @@ class Simulation {
      * Fills the specified area of the map with a specific material.
      * @param {[leftX, topY]} pos1 The top-left pos of the area
      * @param {[rightX, bottomY]} pos2 The bottom-right pos of the area
-     * @param {Simulation.MATERIALS} material The material used
+     * @param {Simulation.MATERIALS?} material The material used (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    fillArea(pos1, pos2, material=this._selectedMaterial) {
+    fillArea(pos1, pos2, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.fillArea(pos1, pos2, material))
             return
@@ -10675,7 +10702,7 @@ class Simulation {
                 isXLooping = x<x1
             }
             if (isYPassed) break
-            this.placePixelAtIndex(i, material)
+            this.placePixelAtIndex(i, material, replaceMode)
         }
 
         if (!this._isRunning) this.updateImgMapFromPixels()
@@ -10809,12 +10836,14 @@ class Simulation {
 	get offscreenCanvas() {return this._offscreenCanvas}
 	get imgMap() {return this._imgMap}
     get isMouseWithinSimulation() {return this._isMouseWithinSimulation}
-	get selectedMaterial() {return this._selectedMaterial}
     get sidePriority() {return this._sidePriority}
     get isRunning() {return this._isRunning}
 	get backStepSavingMaxCount() {return this._backStepSavingMaxCount}
 	get backStepSaves() {return this._backStepSaves}
+	get selectedMaterial() {return this._selectedMaterial}
     get brushType() {return this._brushType}
+    get replaceMode() {return this._replaceMode}
+    get hasReplaceMode() {return this._replaceMode !== Simulation.REPLACE_MODES.ALL}
 	get worldStartSettings() {return this._worldStartSettings}
 	get userSettings() {return this._userSettings}
 	get colorSettings() {return this._colorSettings}
@@ -10837,13 +10866,15 @@ class Simulation {
 	get zoomOutIncrement() {return this._userSettings?.zoomOutIncrement}
 	get minZoomThreshold() {return this._userSettings?.minZoomThreshold}
 	get maxZoomThreshold() {return this._userSettings?.maxZoomThreshold}
+	get drawingDisabled() {return this._userSettings?.drawingDisabled}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
-	set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
 	set isRunning(isRunning) {this._isRunning = isRunning}
+	set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
 	set brushType(brushType) {return this.updateBrushType(brushType)}
 	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
+	set replaceMode(replaceMode) {return this.updateReplaceMode(replaceMode)}
 	set backStepSavingMaxCount(_backStepSavingMaxCount) {this._backStepSavingMaxCount = _backStepSavingMaxCount}
 	set mapGridRenderStyles(_mapGridRenderStyles) {this._mapGridRenderStyles = _mapGridRenderStyles}
 	set mapBorderRenderStyles(_mapBorderRenderStyles) {return this._mapBorderRenderStyles = _mapBorderRenderStyles}
@@ -10865,6 +10896,7 @@ class Simulation {
     set maxZoomThreshold(maxZoomThreshold) {this._userSettings.maxZoomThreshold = maxZoomThreshold}
     set zoomInIncrement(zoomInIncrement) {this._userSettings.zoomInIncrement = zoomInIncrement}
     set zoomOutIncrement(zoomOutIncrement) {this._userSettings.zoomOutIncrement = zoomOutIncrement}
+    set drawingDisabled(drawingDisabled) {this._userSettings.drawingDisabled = drawingDisabled}
 }
 return {SETTINGS,DEFAULT_KEYBINDS,PhysicsCore,MapGrid,Simulation,FPSCounter,CDEUtils}
 })

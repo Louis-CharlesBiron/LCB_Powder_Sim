@@ -58,13 +58,15 @@ For those who know how to code a bit and want have more control over the simulat
 
 ## **NPM**:
 
-### Use a quick template:
+### Use a quick template (recommended):
 - ESM (with Vite) -> `npx lcb-ps template yourProjectName`
+
 - UMD (vanilla) -> `npx lcb-ps browser-template yourProjectName`
 
 ### Or create the project yourself:
 
 - Get the **ESM** version by running `npm install lcb-ps`
+
 - Or simply copy the following *package.json* file and run `npm install`
 
 ##### - Minimal example `package.json`
@@ -78,7 +80,7 @@ For those who know how to code a bit and want have more control over the simulat
       "dev": "vite"
     },
     "dependencies": {
-      "lcb-js": "^1.0.3"
+      "lcb-js": "^1.0.4"
     },
     "devDependencies": {
       "vite": "^7.3.1"
@@ -188,7 +190,8 @@ The `Simulation` class is the core of the simulation and manages all rendering a
 - `zoomInIncrement` / `zoomOutIncrement` -> Defines the **increment** value for zooming in/out (Defaults to `0.25` / **`-0.2`**)
 - `minZoomThreshold` / `maxZoomThreshold` -> Defines the min/max zoom threshold values (Defaults to `0.1` / `Infinity`)
 - `smoothDrawingEnabled` -> Whether to fill gaps between mouse event for smoother drawing (Defaults to true)
-- `visualEffectsEnabled` -> Whether to display some visual effect (Defaults to true) [MAYBE AFFECT PERFORMANCE]
+- `visualEffectsEnabled` -> Whether to display some visual effect (Defaults to true) [MAY AFFECT PERFORMANCE]
+- `drawingDisabled` -> Whether the user can draw with the mouse. (Defaults to false)
 
 **ColorSettings**:
 This object allows the color customization of the grid and materials.
@@ -240,26 +243,32 @@ This can be used to update map properties / import a world as soon as the simula
 #### - `updateSelectedMaterial(material)` -> Updates the material used by default for world manipulations.
 - `material` The materials to select. One of `MATERIALS`
 #### - `updateBrushType(brushType)` -> Updates the shape used to draw materials on the simulation with mouse.
-- `brushType` The brush type to use -> One of `BRUSH_TYPES` 
+- `brushType` The brush type to use -> One of `BRUSH_TYPES`
+#### - `updateReplaceMode(replaceMode)` -> Updates the material(s) allowed to be replaced when drawing on the simulation.
+- `replaceMode` The material(s) allowed to be replaced, as an `int` -> One of `REPLACE_MODES` 
 #### - `updateColors(colorSettings)` -> Updates the colors used for the grid and/or the materials.
 - `colorSettings` The colors to update
 
 ## - World Interation
-#### - `placePixel(mapPos, material?)` (*Similarly `placePixelAtCoords`, `placePixelAtIndex`*) -> Places a pixel on the map.
+#### - `placePixel(mapPos, material?, replaceMode?)` (*Similarly `placePixelAtCoords`, `placePixelAtIndex`*) -> Places a pixel on the map.
 - `mapPos` The map position of the pixel (`[x,y]`)
 - `material` The material used, one of `MATERIALS`. (Defaults to the selected material)
-#### - `placePixelsWithBrush(x, y, brushType?)` -> Places pixels at the specified coordinates, according to the provided brush pattern.
+- `replaceMode` The material(s) allowed to be replaced, as an `int`. (Defaults to the current replace mode)
+#### - `placePixelsWithBrush(x, y, brushType?, material?, replaceMode?)` -> Places pixels at the specified coordinates, according to the provided brush pattern.
 - `x` The X value of the center positions
 - `y` The Y value of the center positions
 - `brushType` The brush type used, one of `BRUSH_TYPES`. (Defaults to the current brush type)
+- `material` The material used, one of `MATERIALS`. (Defaults to the selected material)
+- `replaceMode` The material(s) allowed to be replaced, as an `int`. (Defaults to the current replace mode)
      
 #### - `clear()` -> Fills the simulation with air
 #### - `fill(material?)` -> Fills the entire simulation with a specific material.
 - `material` The material used, one of `MATERIALS`. (Defaults to the selected material)
-#### - `fillArea(pos1, pos2, material)` -> Fills the specified area of the map with a specific material.
+#### - `fillArea(pos1, pos2, material?, replaceMode?)` -> Fills the specified area of the map with a specific material.
 - `pos1` The top-left pos of the area (`[leftX, topY]`)
 - `pos2` The bottom-right pos of the area (`[rightX, bottomY]`)
 - `material` The material used, one of `MATERIALS`. (Defaults to the selected material)
+- `replaceMode` The material(s) allowed to be replaced, as an `int`. (Defaults to the current replace mode)
 
 ## - Persistence
 #### - `load(mapData, useSaveSizes)` -> Fills the map with saved data.

@@ -6024,48 +6024,187 @@ export class Dot extends _Obj {
     #private;
 }
 export namespace SETTINGS {
+    namespace MATERIALS {
+        let AIR: number;
+        let SAND: number;
+        let WATER: number;
+        let STONE: number;
+        let GRAVEL: number;
+        let INVERTED_WATER: number;
+        let CONTAMINANT: number;
+        let LAVA: number;
+        let ELECTRICITY: number;
+        let COPPER: number;
+    }
     namespace MATERIAL_GROUPS {
-        export let TRANSPIERCEABLE: number;
-        export let LIQUIDS: number;
-        export let CONTAMINABLE: number;
-        export let MELTABLE: number;
-        export let HAS_VISUAL_EFFECTS: number;
-        export let REVERSE_LOOP_CONTAINED_SKIPABLE: number;
-        import FORWARDS_LOOP_CONTAINED_SKIPABLE = INVERTED_WATER;
-        export { FORWARDS_LOOP_CONTAINED_SKIPABLE };
+        let TRANSPIERCEABLE: any;
+        let LIQUIDS: any;
+        let CONTAMINABLE: any;
+        let MELTABLE: any;
+        let HAS_VISUAL_EFFECTS: any;
+        let REVERSE_LOOP_CONTAINED_SKIPABLE: any;
+        let FOWARD_LOOP_CONTAINED_SKIPABLE: any;
+    }
+    let MATERIAL_NAMES: any[];
+    namespace MATERIAL_STATES {
+        export let EMPTY: number;
+        export namespace COPPER_1 {
+            let LIT: number;
+            let ORIGIN: number;
+            let DISABLED: number;
+        }
+        export { COPPER_1 as COPPER };
     }
     namespace MATERIAL_STATES_GROUPS {
-        namespace COPPER {
-            let ACTIVATED: number;
-            let SOURCEABLE: number;
+        export namespace COPPER_2 {
+            let ACTIVATED: any;
+            let SOURCEABLE: any;
         }
+        export { COPPER_2 as COPPER };
+    }
+    namespace D {
+        let b: number;
+        let r: number;
+        let l: number;
+        let br: number;
+        let bl: number;
+        let t: number;
+        let tr: number;
+        let tl: number;
+    }
+    namespace SIDE_PRIORITIES {
+        let RANDOM: number;
+        let LEFT: number;
+        let RIGHT: number;
+        let MAP_DEPENDANT: number;
+    }
+    let SIDE_PRIORITY_NAMES: any[];
+    let DEFAULT_BACK_STEP_SAVING_COUNT: number;
+    namespace EXPORT_STATES {
+        let RAW: number;
+        let COMPACTED: number;
+    }
+    let EXPORT_SEPARATOR: string;
+    namespace BRUSH_TYPES {
+        let PIXEL: number;
+        let VERTICAL_CROSS: number;
+        let LINE3: number;
+        let ROW3: number;
+        let BIG_DOT: number;
+        let X3: number;
+        let X5: number;
+        let X15: number;
+        let X25: number;
+        let X55: number;
+        let X99: number;
+    }
+    let BRUSH_TYPE_NAMES: any[];
+    let BRUSH_GROUPS: {};
+    let BRUSHES_X_VALUES: any[];
+    let WORKER_RELATIVE_PATH: URL;
+    namespace WORKER_MESSAGE_TYPES {
+        let INIT: number;
+        let STEP: number;
+        let START_LOOP: number;
+        let STOP_LOOP: number;
+        let SIDE_PRIORITY: number;
+        let MAP_SIZE: number;
+        let PIXELS: number;
     }
     namespace WORKER_MESSAGE_GROUPS {
-        let GIVES_PIXELS_TO_MAIN: number;
-        let GIVES_PIXELS_TO_WORKER: number;
+        let GIVES_PIXELS_TO_MAIN: any;
+        let GIVES_PIXELS_TO_WORKER: any;
     }
-    namespace BRUSH_GROUPS {
-        let SMALL_OPTIMIZED: number;
-        let X: number;
+    namespace PHYSICS_UNIT_TYPE {
+        let LOCAL: number;
+        let WORKER: number;
     }
-    let SIDE_PRIORITY_NAMES: string[];
+    namespace INITIALIZED_STATES {
+        let NOT_INITIALIZED: number;
+        let READY: number;
+        let INITIALIZED: number;
+    }
+    let FILE_SERVED_WARN: string;
+    let STANDALONE_KEYBIND_WARN: string;
+    let NOT_INITIALIZED_LOAD_WARN: string;
+    let NOT_INITIALIZED_MAP_SIZE_WARN: string;
+    let NOT_INITIALIZED_PIXEL_SIZE_WARN: string;
+    let NOT_INITIALIZED_PHYSICS_TYPE_WARN: string;
+    namespace DEFAULT_WORLD_START_SETTINGS {
+        let autoStart: boolean;
+        let usesWebWorkers: boolean;
+        let aimedFPS: number;
+        let zoom: any;
+        let cameraCenterPos: any;
+        let mapWidth: any;
+        let mapHeight: any;
+        let mapPixelSize: any;
+    }
+    namespace DEFAULT_USER_SETTINGS {
+        let autoSimulationSizing: any;
+        let dragAndZoomCanvasEnabled: boolean;
+        let minZoomThreshold: number;
+        let maxZoomThreshold: number;
+        let zoomInIncrement: number;
+        let zoomOutIncrement: number;
+        let warningsDisabled: boolean;
+        let showBorder: boolean;
+        let showGrid: boolean;
+        let smoothDrawingEnabled: boolean;
+        let visualEffectsEnabled: boolean;
+        let drawingDisabled: boolean;
+    }
+    namespace DEFAULT_COLOR_SETTINGS {
+        export let grid: number[];
+        export let border: number[];
+        let AIR_1: number[];
+        export { AIR_1 as AIR };
+        let SAND_1: number[];
+        export { SAND_1 as SAND };
+        let WATER_1: number[];
+        export { WATER_1 as WATER };
+        let STONE_1: number[];
+        export { STONE_1 as STONE };
+        let GRAVEL_1: number[];
+        export { GRAVEL_1 as GRAVEL };
+        let INVERTED_WATER_1: number[];
+        export { INVERTED_WATER_1 as INVERTED_WATER };
+        let CONTAMINANT_1: number[];
+        export { CONTAMINANT_1 as CONTAMINANT };
+        let LAVA_1: number[];
+        export { LAVA_1 as LAVA };
+        let ELECTRICITY_1: number[];
+        export { ELECTRICITY_1 as ELECTRICITY };
+        let COPPER_3: number[];
+        export { COPPER_3 as COPPER };
+    }
+    namespace DEFAULT_MAP_RESOLUTIONS {
+        let HIGH: number;
+        let MEDIUM: number;
+        let SMALL: number;
+        let DEFAULT: number;
+    }
+    namespace REPLACE_MODES {
+        let ALL: number;
+    }
 }
 export namespace DEFAULT_KEYBINDS {
-    namespace MY_CUSTOM_SIZE_KEYBIND {
+    export namespace MY_CUSTOM_SIZE_KEYBIND {
         export let requiredKeys: string[];
         export let keys: string[];
         import triggerType = ONCE;
         export { triggerType };
         export let preventDefault: boolean;
     }
-    namespace STEP {
+    export namespace STEP_1 {
         export let defaultFunction: string;
         let keys_1: string[];
         export { keys_1 as keys };
         import triggerType_1 = MEDIUM_REPEATING;
         export { triggerType_1 as triggerType };
     }
-    namespace BACK_STEP {
+    export { STEP_1 as STEP };
+    export namespace BACK_STEP {
         let defaultFunction_1: string;
         export { defaultFunction_1 as defaultFunction };
         let keys_2: string[];
@@ -6073,7 +6212,7 @@ export namespace DEFAULT_KEYBINDS {
         import triggerType_2 = MEDIUM_REPEATING;
         export { triggerType_2 as triggerType };
     }
-    namespace STEP_FAST {
+    export namespace STEP_FAST {
         let defaultFunction_2: string;
         export { defaultFunction_2 as defaultFunction };
         let keys_3: string[];
@@ -6081,7 +6220,7 @@ export namespace DEFAULT_KEYBINDS {
         import triggerType_3 = FAST_REPEATING;
         export { triggerType_3 as triggerType };
     }
-    namespace BACK_STEP_FAST {
+    export namespace BACK_STEP_FAST {
         let defaultFunction_3: string;
         export { defaultFunction_3 as defaultFunction };
         let keys_4: string[];
@@ -6089,7 +6228,7 @@ export namespace DEFAULT_KEYBINDS {
         import triggerType_4 = FAST_REPEATING;
         export { triggerType_4 as triggerType };
     }
-    namespace START {
+    export namespace START {
         let defaultFunction_4: string;
         export { defaultFunction_4 as defaultFunction };
         let keys_5: string[];
@@ -6097,7 +6236,7 @@ export namespace DEFAULT_KEYBINDS {
         import triggerType_5 = ONCE;
         export { triggerType_5 as triggerType };
     }
-    namespace STOP {
+    export namespace STOP {
         let defaultFunction_5: string;
         export { defaultFunction_5 as defaultFunction };
         export let defaultParams: string[];
@@ -6106,7 +6245,7 @@ export namespace DEFAULT_KEYBINDS {
         import triggerType_6 = ONCE;
         export { triggerType_6 as triggerType };
     }
-    namespace CLEAR {
+    export namespace CLEAR {
         let defaultFunction_6: string;
         export { defaultFunction_6 as defaultFunction };
         let requiredKeys_1: string[];
@@ -6118,7 +6257,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_1: boolean;
         export { preventDefault_1 as preventDefault };
     }
-    namespace DISABLE_WORKERS {
+    export namespace DISABLE_WORKERS {
         let defaultFunction_7: string;
         export { defaultFunction_7 as defaultFunction };
         let defaultParams_1: boolean[];
@@ -6132,7 +6271,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_2: boolean;
         export { preventDefault_2 as preventDefault };
     }
-    namespace ENABLE_WORKERS {
+    export namespace ENABLE_WORKERS {
         let defaultFunction_8: string;
         export { defaultFunction_8 as defaultFunction };
         let defaultParams_2: boolean[];
@@ -6146,7 +6285,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_3: boolean;
         export { preventDefault_3 as preventDefault };
     }
-    namespace SELECT_SAND {
+    export namespace SELECT_SAND {
         let defaultFunction_9: string;
         export { defaultFunction_9 as defaultFunction };
         let defaultParams_3: number[];
@@ -6159,7 +6298,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_4: boolean;
         export { preventDefault_4 as preventDefault };
     }
-    namespace SELECT_WATER {
+    export namespace SELECT_WATER {
         let defaultFunction_10: string;
         export { defaultFunction_10 as defaultFunction };
         let defaultParams_4: number[];
@@ -6173,7 +6312,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_5: boolean;
         export { preventDefault_5 as preventDefault };
     }
-    namespace SELECT_STONE {
+    export namespace SELECT_STONE {
         let defaultFunction_11: string;
         export { defaultFunction_11 as defaultFunction };
         let defaultParams_5: number[];
@@ -6187,7 +6326,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_6: boolean;
         export { preventDefault_6 as preventDefault };
     }
-    namespace SELECT_GRAVEL {
+    export namespace SELECT_GRAVEL {
         let defaultFunction_12: string;
         export { defaultFunction_12 as defaultFunction };
         let defaultParams_6: number[];
@@ -6201,7 +6340,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_7: boolean;
         export { preventDefault_7 as preventDefault };
     }
-    namespace SELECT_INVERTED_WATER {
+    export namespace SELECT_INVERTED_WATER {
         let defaultFunction_13: string;
         export { defaultFunction_13 as defaultFunction };
         let defaultParams_7: number[];
@@ -6215,7 +6354,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_8: boolean;
         export { preventDefault_8 as preventDefault };
     }
-    namespace SELECT_CONTAMINANT {
+    export namespace SELECT_CONTAMINANT {
         let defaultFunction_14: string;
         export { defaultFunction_14 as defaultFunction };
         let defaultParams_8: number[];
@@ -6229,7 +6368,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_9: boolean;
         export { preventDefault_9 as preventDefault };
     }
-    namespace SELECT_LAVA {
+    export namespace SELECT_LAVA {
         let defaultFunction_15: string;
         export { defaultFunction_15 as defaultFunction };
         let defaultParams_9: number[];
@@ -6243,7 +6382,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_10: boolean;
         export { preventDefault_10 as preventDefault };
     }
-    namespace SELECT_ELECTRICITY {
+    export namespace SELECT_ELECTRICITY {
         let defaultFunction_16: string;
         export { defaultFunction_16 as defaultFunction };
         let defaultParams_10: number[];
@@ -6257,7 +6396,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_11: boolean;
         export { preventDefault_11 as preventDefault };
     }
-    namespace SELECT_COPPER {
+    export namespace SELECT_COPPER {
         let defaultFunction_17: string;
         export { defaultFunction_17 as defaultFunction };
         let defaultParams_11: number[];
@@ -6271,7 +6410,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_12: boolean;
         export { preventDefault_12 as preventDefault };
     }
-    namespace SELECT_AIR {
+    export namespace SELECT_AIR {
         let defaultFunction_18: string;
         export { defaultFunction_18 as defaultFunction };
         let defaultParams_12: number[];
@@ -6285,7 +6424,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_13: boolean;
         export { preventDefault_13 as preventDefault };
     }
-    namespace BRUSH_PIXEL {
+    export namespace BRUSH_PIXEL {
         let defaultFunction_19: string;
         export { defaultFunction_19 as defaultFunction };
         let defaultParams_13: number[];
@@ -6299,7 +6438,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_14: boolean;
         export { preventDefault_14 as preventDefault };
     }
-    namespace BRUSH_VERTICAL_CROSS {
+    export namespace BRUSH_VERTICAL_CROSS {
         let defaultFunction_20: string;
         export { defaultFunction_20 as defaultFunction };
         let defaultParams_14: number[];
@@ -6313,7 +6452,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_15: boolean;
         export { preventDefault_15 as preventDefault };
     }
-    namespace BRUSH_X3 {
+    export namespace BRUSH_X3 {
         let defaultFunction_21: string;
         export { defaultFunction_21 as defaultFunction };
         let defaultParams_15: number[];
@@ -6327,7 +6466,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_16: boolean;
         export { preventDefault_16 as preventDefault };
     }
-    namespace BRUSH_BIG_DOT {
+    export namespace BRUSH_BIG_DOT {
         let defaultFunction_22: string;
         export { defaultFunction_22 as defaultFunction };
         let defaultParams_16: number[];
@@ -6341,7 +6480,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_17: boolean;
         export { preventDefault_17 as preventDefault };
     }
-    namespace BRUSH_X5 {
+    export namespace BRUSH_X5 {
         let defaultFunction_23: string;
         export { defaultFunction_23 as defaultFunction };
         let defaultParams_17: number[];
@@ -6355,7 +6494,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_18: boolean;
         export { preventDefault_18 as preventDefault };
     }
-    namespace BRUSH_X15 {
+    export namespace BRUSH_X15 {
         let defaultFunction_24: string;
         export { defaultFunction_24 as defaultFunction };
         let defaultParams_18: number[];
@@ -6369,7 +6508,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_19: boolean;
         export { preventDefault_19 as preventDefault };
     }
-    namespace BRUSH_X25 {
+    export namespace BRUSH_X25 {
         let defaultFunction_25: string;
         export { defaultFunction_25 as defaultFunction };
         let defaultParams_19: number[];
@@ -6383,7 +6522,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_20: boolean;
         export { preventDefault_20 as preventDefault };
     }
-    namespace BRUSH_X55 {
+    export namespace BRUSH_X55 {
         let defaultFunction_26: string;
         export { defaultFunction_26 as defaultFunction };
         let defaultParams_20: number[];
@@ -6397,7 +6536,7 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_21: boolean;
         export { preventDefault_21 as preventDefault };
     }
-    namespace BRUSH_X99 {
+    export namespace BRUSH_X99 {
         let defaultFunction_27: string;
         export { defaultFunction_27 as defaultFunction };
         let defaultParams_21: number[];
@@ -6565,6 +6704,9 @@ export class Simulation {
             SOURCEABLE: any;
         };
     };
+    static REPLACE_MODES: {
+        ALL: number;
+    };
     static D: {
         b: number;
         r: number;
@@ -6651,6 +6793,7 @@ export class Simulation {
         showGrid: boolean;
         smoothDrawingEnabled: boolean;
         visualEffectsEnabled: boolean;
+        drawingDisabled: boolean;
     };
     static DEFAULT_COLOR_SETTINGS: {
         grid: number[];
@@ -6900,6 +7043,7 @@ export class Simulation {
             preventDefault: boolean;
         };
     };
+    static DEFAULT_PRECISE_PLACE_KEY: string;
     /**
      * The core of the simulation and manages all rendering and world manipulation. (except for physics)
      * @param {HTMLCanvasElement | Canvas} canvas A HTML canvas reference or a CDEJS Canvas instance to display the simulation on
@@ -6921,13 +7065,14 @@ export class Simulation {
     _backStepSaves: any[];
     _isMouseWithinSimulation: boolean;
     _isRunning: boolean;
-    _selectedMaterial: number;
     _sidePriority: number;
     _lastStepTime: any;
     _queuedBufferOperations: any[];
     _userSettings: any;
     _colorSettings: any;
+    _selectedMaterial: number;
     _brushType: number;
+    _replaceMode: number;
     _mapGridRenderStyles: RenderStyles;
     _mapBorderRenderStyles: RenderStyles;
     _imgMap: any;
@@ -7066,6 +7211,11 @@ export class Simulation {
         X99: number;
     };
     /**
+     * Updates the shape used to draw materials on the simulation with mouse.
+     * @param {Simulation.BRUSH_TYPES} brushType The brush type to use  TODO DOC
+     */
+    updateReplaceMode(replaceMode: any): any;
+    /**
      * Updates the colors used for the grid and/or the materials.
      * @param {Object} colorSettings The colors to update. (Materials keys need to be in UPPERCASE)
      */
@@ -7085,7 +7235,8 @@ export class Simulation {
     /**
      * Places a pixel of a specified material at the specified position on the pixel map.
      * @param {[x,y]} mapPos The map position of the pixel
-     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     placePixel(mapPos: [x, y], material?: {
         AIR: number;
@@ -7098,12 +7249,15 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-    }): void;
+    } | null, replaceMode?: {
+        ALL: number;
+    } | null): void;
     /**
      * Places a pixel of a specified material at the specified position on the pixel map.
      * @param {Number} x The X value of the pixel on the map
      * @param {Number} y The Y value of the pixel on the map
-     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     placePixelAtCoords(x: number, y: number, material?: {
         AIR: number;
@@ -7116,11 +7270,14 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-    }): void;
+    } | null, replaceMode?: {
+        ALL: number;
+    } | null): void;
     /**
      * Places a pixel of a specified material at the specified index on the pixel map.
      * @param {Number} i The index value of the pixel on the map
-     * @param {Simulation.MATERIALS} material The material used to draw the pixel
+     * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     placePixelAtIndex(i: number, material?: {
         AIR: number;
@@ -7133,12 +7290,16 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-    }): void;
+    } | null, replaceMode?: {
+        ALL: number;
+    } | null): void;
     /**
      * Places pixels at the specified coordinates, according to the provided brush pattern
-     * @param {Number} x The X value of the center positions
-     * @param {Number} y The Y value of the center positions
+     * @param {Number} x The X value of the center position
+     * @param {Number} y The Y value of the center position
      * @param {Simulation.BRUSH_TYPES?} brushType The brush type used (Defaults to the current brush type)
+     * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     placePixelsWithBrush(x: number, y: number, brushType?: {
         PIXEL: number;
@@ -7152,6 +7313,19 @@ export class Simulation {
         X25: number;
         X55: number;
         X99: number;
+    } | null, material?: {
+        AIR: number;
+        SAND: number;
+        WATER: number;
+        STONE: number;
+        GRAVEL: number;
+        INVERTED_WATER: number;
+        CONTAMINANT: number;
+        LAVA: number;
+        ELECTRICITY: number;
+        COPPER: number;
+    } | null, replaceMode?: {
+        ALL: number;
     } | null): void;
     /**
      * Fills the map with air.
@@ -7159,7 +7333,7 @@ export class Simulation {
     clear(): void;
     /**
      * Fills the entire map with a specific material.
-     * @param {Simulation.MATERIALS} material The material used
+     * @param {Simulation.MATERIALS?} material The material used (Defaults to the selected material)
      */
     fill(material?: {
         AIR: number;
@@ -7172,12 +7346,13 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-    }): void;
+    } | null): void;
     /**
      * Fills the specified area of the map with a specific material.
      * @param {[leftX, topY]} pos1 The top-left pos of the area
      * @param {[rightX, bottomY]} pos2 The bottom-right pos of the area
-     * @param {Simulation.MATERIALS} material The material used
+     * @param {Simulation.MATERIALS?} material The material used (Defaults to the selected material)
+     * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     fillArea(pos1: [leftX, topY], pos2: [rightX, bottomY], material?: {
         AIR: number;
@@ -7190,7 +7365,9 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-    }): void;
+    } | null, replaceMode?: {
+        ALL: number;
+    } | null): void;
     /**
      * Fills the map with saved data.
      * @param {Uint16Array | String | Object} mapData The save data:
@@ -7232,8 +7409,6 @@ export class Simulation {
     get offscreenCanvas(): OffscreenCanvas;
     get imgMap(): any;
     get isMouseWithinSimulation(): boolean;
-    set selectedMaterial(_selectedMaterial: number);
-    get selectedMaterial(): number;
     set sidePriority(sidePriority: number);
     get sidePriority(): number;
     set isRunning(isRunning: boolean);
@@ -7241,8 +7416,13 @@ export class Simulation {
     set backStepSavingMaxCount(_backStepSavingMaxCount: number);
     get backStepSavingMaxCount(): number;
     get backStepSaves(): any[];
+    set selectedMaterial(_selectedMaterial: number);
+    get selectedMaterial(): number;
     set brushType(brushType: number);
     get brushType(): number;
+    set replaceMode(replaceMode: number);
+    get replaceMode(): number;
+    get hasReplaceMode(): boolean;
     get worldStartSettings(): any;
     get userSettings(): any;
     get colorSettings(): any;
@@ -7276,5 +7456,7 @@ export class Simulation {
     get minZoomThreshold(): any;
     set maxZoomThreshold(maxZoomThreshold: any);
     get maxZoomThreshold(): any;
+    set drawingDisabled(drawingDisabled: any);
+    get drawingDisabled(): any;
     #private;
 }
