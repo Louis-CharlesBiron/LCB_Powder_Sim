@@ -8,12 +8,13 @@
 **<u>LCB Powder Simulator</u> is an efficient, fully native JS powder simulation that runs on the [Canvas 2d API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [cdejs](https://github.com/Louis-CharlesBiron/canvasDotEffect).**
 
 # Table of Contents
-- **[Web Interface](#web-interface) ([direct link here](https://louis-charlesbiron.github.io/LCB_Powder_Sim))**
-- **[Other deployements: App / NPM](#other-deployements)**
-- **[Documentation](#documentation)**
-    - **[Simulation Class](#simulation-class)**
+- [Web Interface](#web-interface) ([direct link here](https://louis-charlesbiron.github.io/LCB_Powder_Sim))
+- [Other deployements](#other-deployements)
+- [Getting started](#modules--packages)
+- [Documentation](#documentation)
+    - [Simulation Class](#simulation-class)
     - [MapGrid Class](#mapgrid-class)
-    - **[Simulation API](#simulation-api)**
+    - [Simulation API](#simulation-api)
     - [Materials](#materials)
     - [Brushes](#brushes)
     - [Saves](#saves)
@@ -51,7 +52,7 @@ Link: [https://louis-charlesbiron.github.io/LCB_Powder_Sim](https://louis-charle
 
  
 
-# Modules / Packages:
+# [Modules / Packages](#table-of-contents)
 
 For those who know how to code a bit and want have more control over the simulation, here are the **NPM** and **native browser build** releases as well as [Documentation](#documentation) bellow!
 
