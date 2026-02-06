@@ -1,5 +1,5 @@
 {
-  "applicationId": "TEMPLATE",
+  "applicationId": "lcb-ps-desktop",
   "version": "1.0.0",
   "defaultMode": "window",
   "port": 0,
@@ -13,16 +13,16 @@
     "writeToLogFile": false
   },
   "nativeAllowList": [
-"app.*",
-"os.*",
-"robot.*",
-"debug.log"
+    "app.*",
+    "os.*",
+    "robot.*",
+    "debug.log"
   ],
   "modes": {
     "window": {
-      "title": "TEMPLATE",
-      "width": 800,
-      "height": 500,
+      "title": "lcb-ps-desktop",
+      "width": 1280,
+      "height": 720,
       "minWidth": 400,
       "minHeight": 200,
       "center": true,
@@ -35,15 +35,15 @@
       "maximize": false,
       "hidden": false,
       "resizable": true,
-      "exitProcessOnClose": false
+      "exitProcessOnClose": true
     }
   },
   "cli": {
-    "binaryName": "TEMPLATE",
+    "binaryName": "lcb-ps-desktop",
     "resourcesPath": "/src/",
     "clientLibrary": "/src/assets/scripts/neutralino.js",
-    "binaryVersion": "5.4.0",
-    "clientVersion": "5.4.0"
+    "binaryVersion": "6.5.0",
+    "clientVersion": "6.5.0"
   },
   "chrome": {
     "width": 800,

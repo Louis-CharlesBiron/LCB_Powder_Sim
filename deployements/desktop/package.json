@@ -1,16 +1,10 @@
 {
-  "name": "template",
-  "version": "1.0.0",
-  "description": "",
-  "main": "test.js",
+  "name": "lcb-ps-desktop",
   "scripts": {
-    "i": "npm install && npx @neutralinojs/neu update && powershell -Command \"Remove-Item -Path src/assets/scripts/*.ts -Force\"",
-    "start": "npx @neutralinojs/neu run",
-    "build": ""
-  },
-  "keywords": [],
-  "author": "Louis-Charles Biron",
-  "license": "ISC",
-  "dependencies": {
+    "i": "npm install && npx @neutralinojs/neu update",
+    "start": "cls && npm run removeTmp && npx @neutralinojs/neu run",
+    "build": "cls && npx @neutralinojs/neu build",
+    "removeTmp": "powershell -Command \"if (Test-Path '.tmp/window_state.config.json') {Remove-Item '.tmp/window_state.config.json'}\""
+
   }
 }

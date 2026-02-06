@@ -1,7 +1,5 @@
 {
   "name": "deployer",
-  "version": "1.0.0",
-  "main": "codeBuild.js",
   "type": "module",
   "scripts": {
     "code-build": "cls && node codeBuild.js && npx tsc && node dtsRenamer.js",
