@@ -39,7 +39,8 @@ class PhysicsCore {
     // Calculates a physics step on all pixels
     step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
         const p_ll = pixels.length-1, width2 = mapWidth>>1, PX = 1, STATE = 2,
-              AIR = M.AIR, STONE = M.STONE, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE,
+              AIR = M.AIR, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, TRANSPIERCEABLE = G.REG_TRANSPIERCEABLE, GASES = G.GASES,
+              CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE, STATIC = G.STATIC,
               RT = PhysicsCore.#RANDOM_CACHE, RS = PhysicsCore.#RANDOM_TABLE_SIZE-1, SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGH,
               {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES,
               SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT,
@@ -51,11 +52,11 @@ class PhysicsCore {
         function getSideSelectionPriority(i) {
             if (SP_LEFT) return true
             if (SP_RIGHT) return false
-            if (SP_RANDOM) return RT[PhysicsCore.#RANDOM_INDEX++&RS] < 0.5
+            if (SP_RANDOM) return RT[PhysicsCore.#RANDOM_INDEX++&RS] < .5
             return (i%mapWidth) < width2
         }
 
-        // TODO PERFORMANCES TESTING
+        // PERFORMANCES TESTING
         const timerEnabled = 0
         if (timerEnabled) {
             if (PhysicsCore.#DEBUG_CLS_THRESHOLD++ > 18) {
@@ -65,33 +66,52 @@ class PhysicsCore {
             console.time(".")
         }
 
-        for (let i=p_ll;i>=0;i--) {
-            const mat = pixels[i]
-            if (mat === AIR || pxStepUpdated[i] || mat === STONE) continue
+
+        let i = p_ll
+        for (;i>=0;i--) {
+            const mat = pixels[i]||AIR
+            // SKIP IF STATIC MATERIAL OR ALREADY UPDATED
+            if (mat & STATIC || pxStepUpdated[i]) continue
+
+            // DEFINE USEFUL VARS
             const x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>0, hasR = x<mapWidth-1, hasT = y>0, hasB = y<mapHeight-1,
                   i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i,
                   p_B = pixels[i_B], p_R = pixels[i_R], p_L = pixels[i_L], p_T = pixels[i_T]
 
+            // SKIP IF MATERIAL SUROUNDED BY ITSELF
             if (mat & CONTAINED_SKIPABLE && (p_B^mat|p_R^mat|p_L^mat|p_T^mat) === 0) continue
 
+            // DEFINE USEFUL VARS (CORNERS)
             const i_BL = (hasB&&hasL) ? i+mapWidth-1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i, i_TL = (hasT&&hasL) ? i-mapWidth-1:i, i_TR = (hasT&&hasR) ? i-mapWidth+1:i
 
+            // DEFINE REGULAR RESULT VARS
             let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
 
-            // SAND
+
+            // ↓ MATERIALS PHYSICS ↓ //
+
+            // SAND //
             if (mat === M.SAND) {
-                const m_B = p_B&G.TRANSPIERCEABLE, 
-                      stack = (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0)*D.b | // B  - GO THROUGH TRANSPIERCEABLE
-                              (pixels[i_BR] === AIR)*D.br |                        // BR - GO THROUGH AIR
-                              (pixels[i_BL] === AIR)*D.bl |                        // BL - GO THROUGH AIR
+                //this.testMove(pixels, i, p_B, i_BR, i_BL, TRANSPIERCEABLE, D, GASES, getSideSelectionPriority, SAND_SP_BIT, B, BR, BL, G)
+                
+                // CHECK MOVEMENTS
+                const m_B = p_B&TRANSPIERCEABLE, 
+                      stack = (m_B !== 0)*D.b |                   // B  - GO THROUGH TRANSPIERCEABLE
+                              (pixels[i_BR] & GASES !== 0)*D.br | // BR - GO THROUGH GASES
+                              (pixels[i_BL] & GASES !== 0)*D.bl | // BL - GO THROUGH GASES
                               getSideSelectionPriority(i)*SAND_SP_BIT
 
+                // MOVE
                 const move = SAND_CACHE[stack]
                 if      (move === B)  newIndex = i_B
                 else if (move === BR) newIndex = i_BR
                 else if (move === BL) newIndex = i_BL
 
-                if (newIndex !== -1 && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
+                // IF MOVED
+                if (newIndex !== -1)  {
+                    if (m_B && (p_L&G.REPLACE_TRANSPIERCEABLE || p_R&G.REPLACE_TRANSPIERCEABLE)) replaceMaterial = m_B
+                    //else if (m_B & GASES) replaceMaterial = m_B & GASES
+                }
             }
 
             // WATER
@@ -223,7 +243,7 @@ class PhysicsCore {
                 }
             }
             // ELECTRICITY
-            else if (mat === M.ELECTRICITY) {
+            else if (mat === M.ELECTRICITY) {// TODO REVAMP PHYSICS
                 const ORIGIN = S.COPPER.ORIGIN
 
                 // check if can go down
@@ -251,7 +271,6 @@ class PhysicsCore {
             // COPPER
             else if (mat === M.COPPER) {
                 // TODO OPTIMIZE
-
                 //    FIRST LIT
                 //    0 -> ORIGIN (by electricity) OK
                 //    0 -> LIT (by origin) OK ---1
@@ -265,13 +284,10 @@ class PhysicsCore {
                 //    DISABLED -> ORIGIN (by electricity) OK
                 //    DISABLED -> 0 (by origin) ---5
                 //    DISABLED -> 0 (by 0) [propagation] OK ---6
-
                 const state = pxStates[i],
-
                       ACTIVATED = SG.COPPER.ACTIVATED,
                       ORIGIN = S.COPPER.ORIGIN,
                       ELECTRICITY = M.ELECTRICITY
-
 
                 // IF ORIGIN AND NOT CONNETED TO ELECTRICITY -> DISABLED
                 if (state === ORIGIN) {// ---3
@@ -354,6 +370,38 @@ class PhysicsCore {
                         (p_L === mat && (pxStates[i_L] === ORIGIN || !pxStates[i_L]))
                     ) pxStates[i] = 0
                 }
+            } 
+            // TREE
+            else if (mat === M.TREE) {// TODO
+                /**
+                    A tree can grow between 10-50 blocks high
+                    It falls through air and liquids
+                    It can only start growing it has received water at least once
+                    It can only start growing when on SAND or GRAVEL
+                    
+                    STATES:
+                    0 -> no grown conditions met yet
+                */
+                const state = pxStates[i]
+
+                const m_B = p_B&LIQUIDS 
+                if (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0) newIndex = i_B // GO THROUGH TRANSPIERCEABLE
+
+                // check what to replace prev pos with
+                if (m_B && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
+            }
+            // TREE
+            else if (mat === M.GAS) {// TODO
+                /**
+                    Floats around randomly, slowly moves through air
+                */
+                const state = pxStates[i]
+
+                //const m_B = p_B&LIQUIDS 
+                //if (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0) newIndex = i_B // GO THROUGH TRANSPIERCEABLE
+//
+                //// check what to replace prev pos with
+                //if (m_B && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
             }
 
 
@@ -365,8 +413,6 @@ class PhysicsCore {
             }
         }
         if (timerEnabled) console.timeEnd(".")
-
-        return [pixels, pxStates]
     }
 
 
@@ -377,7 +423,7 @@ class PhysicsCore {
               br = stack & D.br,
               bl = stack & D.bl
 
-        if (b) return MOVES.B// TODO OPTIMIZE
+        if (b) return MOVES.B
         if (isLeftFirst) {
             if (bl) return MOVES.BL
             if (br) return MOVES.BR
@@ -397,7 +443,7 @@ class PhysicsCore {
               br = stack & D.br,
               bl = stack & D.bl
 
-        if (b) return MOVES.B// OPTIMIZE
+        if (b) return MOVES.B
         if (isLeftFirst) {
             if (bl) return MOVES.BL
             if (br) return MOVES.BR
@@ -423,7 +469,7 @@ class PhysicsCore {
 
         if (t) return MOVES.T
         if (isLeftFirst) {
-            if (tl) return MOVES.TL// OPTIMIZE
+            if (tl) return MOVES.TL
             if (tr) return MOVES.TR
             if (l) return MOVES.L
             if (r) return MOVES.R

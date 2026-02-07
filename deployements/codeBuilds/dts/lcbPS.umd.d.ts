@@ -6038,17 +6038,22 @@ declare namespace SETTINGS {
         let LAVA: number;
         let ELECTRICITY: number;
         let COPPER: number;
+        let TREE: number;
+        let GAS: number;
     }
     namespace MATERIAL_GROUPS {
-        let TRANSPIERCEABLE: any;
+        let GASES: any;
+        let REG_TRANSPIERCEABLE: any;
+        let REPLACE_TRANSPIERCEABLE: any;
         let LIQUIDS: any;
         let CONTAMINABLE: any;
         let MELTABLE: any;
         let HAS_VISUAL_EFFECTS: any;
+        let STATIC: any;
         let REVERSE_LOOP_CONTAINED_SKIPABLE: any;
-        let FOWARD_LOOP_CONTAINED_SKIPABLE: any;
+        let FORWARDS_LOOP_CONTAINED_SKIPABLE: any;
     }
-    let MATERIAL_NAMES: any[];
+    let MATERIAL_NAMES: string[];
     namespace MATERIAL_STATES {
         export let EMPTY: number;
         export namespace COPPER_1 {
@@ -6064,6 +6069,59 @@ declare namespace SETTINGS {
             let SOURCEABLE: any;
         }
         export { COPPER_2 as COPPER };
+    }
+    namespace DEFAULT_WORLD_START_SETTINGS {
+        let autoStart: boolean;
+        let usesWebWorkers: boolean;
+        let aimedFPS: number;
+        let zoom: any;
+        let cameraCenterPos: any;
+        let mapWidth: any;
+        let mapHeight: any;
+        let mapPixelSize: any;
+    }
+    namespace DEFAULT_USER_SETTINGS {
+        let autoSimulationSizing: any;
+        let dragAndZoomCanvasEnabled: boolean;
+        let minZoomThreshold: number;
+        let maxZoomThreshold: number;
+        let zoomInIncrement: number;
+        let zoomOutIncrement: number;
+        let warningsDisabled: boolean;
+        let showBorder: boolean;
+        let showGrid: boolean;
+        let smoothDrawingEnabled: boolean;
+        let visualEffectsEnabled: boolean;
+        let drawingDisabled: boolean;
+    }
+    namespace DEFAULT_COLOR_SETTINGS {
+        export let grid: number[];
+        export let border: number[];
+        export let VOID: number[];
+        let AIR_1: number[];
+        export { AIR_1 as AIR };
+        let SAND_1: number[];
+        export { SAND_1 as SAND };
+        let WATER_1: number[];
+        export { WATER_1 as WATER };
+        let STONE_1: number[];
+        export { STONE_1 as STONE };
+        let GRAVEL_1: number[];
+        export { GRAVEL_1 as GRAVEL };
+        let INVERTED_WATER_1: number[];
+        export { INVERTED_WATER_1 as INVERTED_WATER };
+        let CONTAMINANT_1: number[];
+        export { CONTAMINANT_1 as CONTAMINANT };
+        let LAVA_1: number[];
+        export { LAVA_1 as LAVA };
+        let ELECTRICITY_1: number[];
+        export { ELECTRICITY_1 as ELECTRICITY };
+        let COPPER_3: number[];
+        export { COPPER_3 as COPPER };
+        let TREE_1: number[];
+        export { TREE_1 as TREE };
+        let GAS_1: number[];
+        export { GAS_1 as GAS };
     }
     namespace D {
         let b: number;
@@ -6133,54 +6191,6 @@ declare namespace SETTINGS {
     let NOT_INITIALIZED_MAP_SIZE_WARN: string;
     let NOT_INITIALIZED_PIXEL_SIZE_WARN: string;
     let NOT_INITIALIZED_PHYSICS_TYPE_WARN: string;
-    namespace DEFAULT_WORLD_START_SETTINGS {
-        let autoStart: boolean;
-        let usesWebWorkers: boolean;
-        let aimedFPS: number;
-        let zoom: any;
-        let cameraCenterPos: any;
-        let mapWidth: any;
-        let mapHeight: any;
-        let mapPixelSize: any;
-    }
-    namespace DEFAULT_USER_SETTINGS {
-        let autoSimulationSizing: any;
-        let dragAndZoomCanvasEnabled: boolean;
-        let minZoomThreshold: number;
-        let maxZoomThreshold: number;
-        let zoomInIncrement: number;
-        let zoomOutIncrement: number;
-        let warningsDisabled: boolean;
-        let showBorder: boolean;
-        let showGrid: boolean;
-        let smoothDrawingEnabled: boolean;
-        let visualEffectsEnabled: boolean;
-        let drawingDisabled: boolean;
-    }
-    namespace DEFAULT_COLOR_SETTINGS {
-        export let grid: number[];
-        export let border: number[];
-        let AIR_1: number[];
-        export { AIR_1 as AIR };
-        let SAND_1: number[];
-        export { SAND_1 as SAND };
-        let WATER_1: number[];
-        export { WATER_1 as WATER };
-        let STONE_1: number[];
-        export { STONE_1 as STONE };
-        let GRAVEL_1: number[];
-        export { GRAVEL_1 as GRAVEL };
-        let INVERTED_WATER_1: number[];
-        export { INVERTED_WATER_1 as INVERTED_WATER };
-        let CONTAMINANT_1: number[];
-        export { CONTAMINANT_1 as CONTAMINANT };
-        let LAVA_1: number[];
-        export { LAVA_1 as LAVA };
-        let ELECTRICITY_1: number[];
-        export { ELECTRICITY_1 as ELECTRICITY };
-        let COPPER_3: number[];
-        export { COPPER_3 as COPPER };
-    }
     namespace DEFAULT_MAP_RESOLUTIONS {
         let HIGH: number;
         let MEDIUM: number;
@@ -6203,7 +6213,7 @@ declare namespace DEFAULT_KEYBINDS {
         export let defaultFunction: string;
         let keys_1: string[];
         export { keys_1 as keys };
-        import triggerType_1 = MEDIUM_REPEATING;
+        let triggerType_1: any;
         export { triggerType_1 as triggerType };
     }
     export { STEP_1 as STEP };
@@ -6212,59 +6222,57 @@ declare namespace DEFAULT_KEYBINDS {
         export { defaultFunction_1 as defaultFunction };
         let keys_2: string[];
         export { keys_2 as keys };
-        import triggerType_2 = MEDIUM_REPEATING;
+        let triggerType_2: any;
         export { triggerType_2 as triggerType };
     }
-    export namespace STEP_FAST {
+    export namespace BACK_STEP_ONCE {
         let defaultFunction_2: string;
         export { defaultFunction_2 as defaultFunction };
+        let requiredKeys_1: string[];
+        export { requiredKeys_1 as requiredKeys };
         let keys_3: string[];
         export { keys_3 as keys };
-        import triggerType_3 = FAST_REPEATING;
+        let triggerType_3: any;
         export { triggerType_3 as triggerType };
+        let preventDefault_1: boolean;
+        export { preventDefault_1 as preventDefault };
     }
-    export namespace BACK_STEP_FAST {
+    export namespace STEP_FAST {
         let defaultFunction_3: string;
         export { defaultFunction_3 as defaultFunction };
         let keys_4: string[];
         export { keys_4 as keys };
-        import triggerType_4 = FAST_REPEATING;
+        import triggerType_4 = MEDIUM_REPEATING;
         export { triggerType_4 as triggerType };
     }
-    export namespace START {
+    export namespace BACK_STEP_FAST {
         let defaultFunction_4: string;
         export { defaultFunction_4 as defaultFunction };
         let keys_5: string[];
         export { keys_5 as keys };
-        import triggerType_5 = ONCE;
+        import triggerType_5 = MEDIUM_REPEATING;
         export { triggerType_5 as triggerType };
     }
-    export namespace STOP {
+    export namespace START {
         let defaultFunction_5: string;
         export { defaultFunction_5 as defaultFunction };
-        export let defaultParams: string[];
         let keys_6: string[];
         export { keys_6 as keys };
         import triggerType_6 = ONCE;
         export { triggerType_6 as triggerType };
     }
-    export namespace CLEAR {
+    export namespace STOP {
         let defaultFunction_6: string;
         export { defaultFunction_6 as defaultFunction };
-        let requiredKeys_1: string[];
-        export { requiredKeys_1 as requiredKeys };
+        export let defaultParams: string[];
         let keys_7: string[];
         export { keys_7 as keys };
         import triggerType_7 = ONCE;
         export { triggerType_7 as triggerType };
-        let preventDefault_1: boolean;
-        export { preventDefault_1 as preventDefault };
     }
-    export namespace DISABLE_WORKERS {
+    export namespace CLEAR {
         let defaultFunction_7: string;
         export { defaultFunction_7 as defaultFunction };
-        let defaultParams_1: boolean[];
-        export { defaultParams_1 as defaultParams };
         let requiredKeys_2: string[];
         export { requiredKeys_2 as requiredKeys };
         let keys_8: string[];
@@ -6274,11 +6282,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_2: boolean;
         export { preventDefault_2 as preventDefault };
     }
-    export namespace ENABLE_WORKERS {
+    export namespace DISABLE_WORKERS {
         let defaultFunction_8: string;
         export { defaultFunction_8 as defaultFunction };
-        let defaultParams_2: boolean[];
-        export { defaultParams_2 as defaultParams };
+        let defaultParams_1: boolean[];
+        export { defaultParams_1 as defaultParams };
         let requiredKeys_3: string[];
         export { requiredKeys_3 as requiredKeys };
         let keys_9: string[];
@@ -6288,12 +6296,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_3: boolean;
         export { preventDefault_3 as preventDefault };
     }
-    export namespace SELECT_SAND {
+    export namespace ENABLE_WORKERS {
         let defaultFunction_9: string;
         export { defaultFunction_9 as defaultFunction };
-        let defaultParams_3: number[];
-        export { defaultParams_3 as defaultParams };
-        export let cancelKeys: string[];
+        let defaultParams_2: boolean[];
+        export { defaultParams_2 as defaultParams };
+        let requiredKeys_4: string[];
+        export { requiredKeys_4 as requiredKeys };
         let keys_10: string[];
         export { keys_10 as keys };
         import triggerType_10 = ONCE;
@@ -6301,13 +6310,12 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_4: boolean;
         export { preventDefault_4 as preventDefault };
     }
-    export namespace SELECT_WATER {
+    export namespace SELECT_SAND {
         let defaultFunction_10: string;
         export { defaultFunction_10 as defaultFunction };
-        let defaultParams_4: number[];
-        export { defaultParams_4 as defaultParams };
-        let cancelKeys_1: string[];
-        export { cancelKeys_1 as cancelKeys };
+        let defaultParams_3: number[];
+        export { defaultParams_3 as defaultParams };
+        export let cancelKeys: string[];
         let keys_11: string[];
         export { keys_11 as keys };
         import triggerType_11 = ONCE;
@@ -6315,13 +6323,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_5: boolean;
         export { preventDefault_5 as preventDefault };
     }
-    export namespace SELECT_STONE {
+    export namespace SELECT_WATER {
         let defaultFunction_11: string;
         export { defaultFunction_11 as defaultFunction };
-        let defaultParams_5: number[];
-        export { defaultParams_5 as defaultParams };
-        let cancelKeys_2: string[];
-        export { cancelKeys_2 as cancelKeys };
+        let defaultParams_4: number[];
+        export { defaultParams_4 as defaultParams };
+        let cancelKeys_1: string[];
+        export { cancelKeys_1 as cancelKeys };
         let keys_12: string[];
         export { keys_12 as keys };
         import triggerType_12 = ONCE;
@@ -6329,13 +6337,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_6: boolean;
         export { preventDefault_6 as preventDefault };
     }
-    export namespace SELECT_GRAVEL {
+    export namespace SELECT_STONE {
         let defaultFunction_12: string;
         export { defaultFunction_12 as defaultFunction };
-        let defaultParams_6: number[];
-        export { defaultParams_6 as defaultParams };
-        let cancelKeys_3: string[];
-        export { cancelKeys_3 as cancelKeys };
+        let defaultParams_5: number[];
+        export { defaultParams_5 as defaultParams };
+        let cancelKeys_2: string[];
+        export { cancelKeys_2 as cancelKeys };
         let keys_13: string[];
         export { keys_13 as keys };
         import triggerType_13 = ONCE;
@@ -6343,13 +6351,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_7: boolean;
         export { preventDefault_7 as preventDefault };
     }
-    export namespace SELECT_INVERTED_WATER {
+    export namespace SELECT_GRAVEL {
         let defaultFunction_13: string;
         export { defaultFunction_13 as defaultFunction };
-        let defaultParams_7: number[];
-        export { defaultParams_7 as defaultParams };
-        let cancelKeys_4: string[];
-        export { cancelKeys_4 as cancelKeys };
+        let defaultParams_6: number[];
+        export { defaultParams_6 as defaultParams };
+        let cancelKeys_3: string[];
+        export { cancelKeys_3 as cancelKeys };
         let keys_14: string[];
         export { keys_14 as keys };
         import triggerType_14 = ONCE;
@@ -6357,13 +6365,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_8: boolean;
         export { preventDefault_8 as preventDefault };
     }
-    export namespace SELECT_CONTAMINANT {
+    export namespace SELECT_INVERTED_WATER {
         let defaultFunction_14: string;
         export { defaultFunction_14 as defaultFunction };
-        let defaultParams_8: number[];
-        export { defaultParams_8 as defaultParams };
-        let cancelKeys_5: string[];
-        export { cancelKeys_5 as cancelKeys };
+        let defaultParams_7: number[];
+        export { defaultParams_7 as defaultParams };
+        let cancelKeys_4: string[];
+        export { cancelKeys_4 as cancelKeys };
         let keys_15: string[];
         export { keys_15 as keys };
         import triggerType_15 = ONCE;
@@ -6371,13 +6379,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_9: boolean;
         export { preventDefault_9 as preventDefault };
     }
-    export namespace SELECT_LAVA {
+    export namespace SELECT_CONTAMINANT {
         let defaultFunction_15: string;
         export { defaultFunction_15 as defaultFunction };
-        let defaultParams_9: number[];
-        export { defaultParams_9 as defaultParams };
-        let cancelKeys_6: string[];
-        export { cancelKeys_6 as cancelKeys };
+        let defaultParams_8: number[];
+        export { defaultParams_8 as defaultParams };
+        let cancelKeys_5: string[];
+        export { cancelKeys_5 as cancelKeys };
         let keys_16: string[];
         export { keys_16 as keys };
         import triggerType_16 = ONCE;
@@ -6385,13 +6393,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_10: boolean;
         export { preventDefault_10 as preventDefault };
     }
-    export namespace SELECT_ELECTRICITY {
+    export namespace SELECT_LAVA {
         let defaultFunction_16: string;
         export { defaultFunction_16 as defaultFunction };
-        let defaultParams_10: number[];
-        export { defaultParams_10 as defaultParams };
-        let cancelKeys_7: string[];
-        export { cancelKeys_7 as cancelKeys };
+        let defaultParams_9: number[];
+        export { defaultParams_9 as defaultParams };
+        let cancelKeys_6: string[];
+        export { cancelKeys_6 as cancelKeys };
         let keys_17: string[];
         export { keys_17 as keys };
         import triggerType_17 = ONCE;
@@ -6399,13 +6407,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_11: boolean;
         export { preventDefault_11 as preventDefault };
     }
-    export namespace SELECT_COPPER {
+    export namespace SELECT_ELECTRICITY {
         let defaultFunction_17: string;
         export { defaultFunction_17 as defaultFunction };
-        let defaultParams_11: number[];
-        export { defaultParams_11 as defaultParams };
-        let cancelKeys_8: string[];
-        export { cancelKeys_8 as cancelKeys };
+        let defaultParams_10: number[];
+        export { defaultParams_10 as defaultParams };
+        let cancelKeys_7: string[];
+        export { cancelKeys_7 as cancelKeys };
         let keys_18: string[];
         export { keys_18 as keys };
         import triggerType_18 = ONCE;
@@ -6413,13 +6421,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_12: boolean;
         export { preventDefault_12 as preventDefault };
     }
-    export namespace SELECT_AIR {
+    export namespace SELECT_COPPER {
         let defaultFunction_18: string;
         export { defaultFunction_18 as defaultFunction };
-        let defaultParams_12: number[];
-        export { defaultParams_12 as defaultParams };
-        let cancelKeys_9: string[];
-        export { cancelKeys_9 as cancelKeys };
+        let defaultParams_11: number[];
+        export { defaultParams_11 as defaultParams };
+        let cancelKeys_8: string[];
+        export { cancelKeys_8 as cancelKeys };
         let keys_19: string[];
         export { keys_19 as keys };
         import triggerType_19 = ONCE;
@@ -6427,13 +6435,13 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_13: boolean;
         export { preventDefault_13 as preventDefault };
     }
-    export namespace BRUSH_PIXEL {
+    export namespace SELECT_AIR {
         let defaultFunction_19: string;
         export { defaultFunction_19 as defaultFunction };
-        let defaultParams_13: number[];
-        export { defaultParams_13 as defaultParams };
-        let requiredKeys_4: string[];
-        export { requiredKeys_4 as requiredKeys };
+        let defaultParams_12: number[];
+        export { defaultParams_12 as defaultParams };
+        let cancelKeys_9: string[];
+        export { cancelKeys_9 as cancelKeys };
         let keys_20: string[];
         export { keys_20 as keys };
         import triggerType_20 = ONCE;
@@ -6441,11 +6449,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_14: boolean;
         export { preventDefault_14 as preventDefault };
     }
-    export namespace BRUSH_VERTICAL_CROSS {
+    export namespace BRUSH_PIXEL {
         let defaultFunction_20: string;
         export { defaultFunction_20 as defaultFunction };
-        let defaultParams_14: number[];
-        export { defaultParams_14 as defaultParams };
+        let defaultParams_13: number[];
+        export { defaultParams_13 as defaultParams };
         let requiredKeys_5: string[];
         export { requiredKeys_5 as requiredKeys };
         let keys_21: string[];
@@ -6455,11 +6463,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_15: boolean;
         export { preventDefault_15 as preventDefault };
     }
-    export namespace BRUSH_X3 {
+    export namespace BRUSH_VERTICAL_CROSS {
         let defaultFunction_21: string;
         export { defaultFunction_21 as defaultFunction };
-        let defaultParams_15: number[];
-        export { defaultParams_15 as defaultParams };
+        let defaultParams_14: number[];
+        export { defaultParams_14 as defaultParams };
         let requiredKeys_6: string[];
         export { requiredKeys_6 as requiredKeys };
         let keys_22: string[];
@@ -6469,11 +6477,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_16: boolean;
         export { preventDefault_16 as preventDefault };
     }
-    export namespace BRUSH_BIG_DOT {
+    export namespace BRUSH_X3 {
         let defaultFunction_22: string;
         export { defaultFunction_22 as defaultFunction };
-        let defaultParams_16: number[];
-        export { defaultParams_16 as defaultParams };
+        let defaultParams_15: number[];
+        export { defaultParams_15 as defaultParams };
         let requiredKeys_7: string[];
         export { requiredKeys_7 as requiredKeys };
         let keys_23: string[];
@@ -6483,11 +6491,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_17: boolean;
         export { preventDefault_17 as preventDefault };
     }
-    export namespace BRUSH_X5 {
+    export namespace BRUSH_BIG_DOT {
         let defaultFunction_23: string;
         export { defaultFunction_23 as defaultFunction };
-        let defaultParams_17: number[];
-        export { defaultParams_17 as defaultParams };
+        let defaultParams_16: number[];
+        export { defaultParams_16 as defaultParams };
         let requiredKeys_8: string[];
         export { requiredKeys_8 as requiredKeys };
         let keys_24: string[];
@@ -6497,11 +6505,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_18: boolean;
         export { preventDefault_18 as preventDefault };
     }
-    export namespace BRUSH_X15 {
+    export namespace BRUSH_X5 {
         let defaultFunction_24: string;
         export { defaultFunction_24 as defaultFunction };
-        let defaultParams_18: number[];
-        export { defaultParams_18 as defaultParams };
+        let defaultParams_17: number[];
+        export { defaultParams_17 as defaultParams };
         let requiredKeys_9: string[];
         export { requiredKeys_9 as requiredKeys };
         let keys_25: string[];
@@ -6511,11 +6519,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_19: boolean;
         export { preventDefault_19 as preventDefault };
     }
-    export namespace BRUSH_X25 {
+    export namespace BRUSH_X15 {
         let defaultFunction_25: string;
         export { defaultFunction_25 as defaultFunction };
-        let defaultParams_19: number[];
-        export { defaultParams_19 as defaultParams };
+        let defaultParams_18: number[];
+        export { defaultParams_18 as defaultParams };
         let requiredKeys_10: string[];
         export { requiredKeys_10 as requiredKeys };
         let keys_26: string[];
@@ -6525,11 +6533,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_20: boolean;
         export { preventDefault_20 as preventDefault };
     }
-    export namespace BRUSH_X55 {
+    export namespace BRUSH_X25 {
         let defaultFunction_26: string;
         export { defaultFunction_26 as defaultFunction };
-        let defaultParams_20: number[];
-        export { defaultParams_20 as defaultParams };
+        let defaultParams_19: number[];
+        export { defaultParams_19 as defaultParams };
         let requiredKeys_11: string[];
         export { requiredKeys_11 as requiredKeys };
         let keys_27: string[];
@@ -6539,11 +6547,11 @@ declare namespace DEFAULT_KEYBINDS {
         let preventDefault_21: boolean;
         export { preventDefault_21 as preventDefault };
     }
-    export namespace BRUSH_X99 {
+    export namespace BRUSH_X55 {
         let defaultFunction_27: string;
         export { defaultFunction_27 as defaultFunction };
-        let defaultParams_21: number[];
-        export { defaultParams_21 as defaultParams };
+        let defaultParams_20: number[];
+        export { defaultParams_20 as defaultParams };
         let requiredKeys_12: string[];
         export { requiredKeys_12 as requiredKeys };
         let keys_28: string[];
@@ -6552,6 +6560,20 @@ declare namespace DEFAULT_KEYBINDS {
         export { triggerType_28 as triggerType };
         let preventDefault_22: boolean;
         export { preventDefault_22 as preventDefault };
+    }
+    export namespace BRUSH_X99 {
+        let defaultFunction_28: string;
+        export { defaultFunction_28 as defaultFunction };
+        let defaultParams_21: number[];
+        export { defaultParams_21 as defaultParams };
+        let requiredKeys_13: string[];
+        export { requiredKeys_13 as requiredKeys };
+        let keys_29: string[];
+        export { keys_29 as keys };
+        import triggerType_29 = ONCE;
+        export { triggerType_29 as triggerType };
+        let preventDefault_23: boolean;
+        export { preventDefault_23 as preventDefault };
     }
 }
 declare class LocalPhysicsUnit {
@@ -6593,7 +6615,8 @@ declare class PhysicsCore {
     static "__#private@#updateCachedSandTable"(D: any, stack: any): number;
     static "__#private@#updateCachedWaterTable"(D: any, stack: any): number;
     static "__#private@#updateCachedInvertedWaterTable"(D: any, stack: any): number;
-    step(pixels: any, pxStepUpdated: any, pxStates: any, sidePriority: any, mapWidth: any, mapHeight: any, M: any, G: any, D: any, S: any, SG: any, P: any): any[];
+    testMove(stack: any): any;
+    step(pixels: any, pxStepUpdated: any, pxStates: any, sidePriority: any, mapWidth: any, mapHeight: any, M: any, G: any, D: any, S: any, SG: any, P: any): void;
 }
 declare class MapGrid {
     static DEFAULT_PIXEL_SIZE: number;
@@ -6682,17 +6705,22 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     };
     static MATERIAL_GROUPS: {
-        TRANSPIERCEABLE: any;
+        GASES: any;
+        REG_TRANSPIERCEABLE: any;
+        REPLACE_TRANSPIERCEABLE: any;
         LIQUIDS: any;
         CONTAMINABLE: any;
         MELTABLE: any;
         HAS_VISUAL_EFFECTS: any;
+        STATIC: any;
         REVERSE_LOOP_CONTAINED_SKIPABLE: any;
-        FOWARD_LOOP_CONTAINED_SKIPABLE: any;
+        FORWARDS_LOOP_CONTAINED_SKIPABLE: any;
     };
-    static MATERIAL_NAMES: any[];
+    static MATERIAL_NAMES: string[];
     static MATERIAL_STATES: {
         EMPTY: number;
         COPPER: {
@@ -6801,6 +6829,7 @@ declare class Simulation {
     static DEFAULT_COLOR_SETTINGS: {
         grid: number[];
         border: number[];
+        VOID: number[];
         AIR: number[];
         SAND: number[];
         WATER: number[];
@@ -6811,6 +6840,8 @@ declare class Simulation {
         LAVA: number[];
         ELECTRICITY: number[];
         COPPER: number[];
+        TREE: number[];
+        GAS: number[];
     };
     static DEFAULT_MATERIAL: number;
     static DEFAULT_BRUSH_TYPE: number;
@@ -6842,12 +6873,19 @@ declare class Simulation {
         STEP: {
             defaultFunction: string;
             keys: string[];
-            triggerType: number;
+            triggerType: any;
         };
         BACK_STEP: {
             defaultFunction: string;
             keys: string[];
-            triggerType: number;
+            triggerType: any;
+        };
+        BACK_STEP_ONCE: {
+            defaultFunction: string;
+            requiredKeys: string[];
+            keys: string[];
+            triggerType: any;
+            preventDefault: boolean;
         };
         STEP_FAST: {
             defaultFunction: string;
@@ -7172,6 +7210,8 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     }): number | {
         AIR: number;
         SAND: number;
@@ -7183,6 +7223,8 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     };
     /**
      * Updates the shape used to draw materials on the simulation with mouse.
@@ -7252,6 +7294,8 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     } | null, replaceMode?: {
         ALL: number;
     } | null): void;
@@ -7273,6 +7317,8 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     } | null, replaceMode?: {
         ALL: number;
     } | null): void;
@@ -7293,6 +7339,8 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     } | null, replaceMode?: {
         ALL: number;
     } | null): void;
@@ -7327,6 +7375,8 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     } | null, replaceMode?: {
         ALL: number;
     } | null): void;
@@ -7349,6 +7399,8 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     } | null): void;
     /**
      * Fills the specified area of the map with a specific material.
@@ -7368,6 +7420,8 @@ declare class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
+        TREE: number;
+        GAS: number;
     } | null, replaceMode?: {
         ALL: number;
     } | null): void;
@@ -7387,6 +7441,7 @@ declare class Simulation {
      * @returns A string representing the current map
      */
     exportAsText(disableCompacting: boolean, callback: Function | null): string;
+    PERF_REGULAR_SIZE(): void;
     PERF_TEST_FUN(): void;
     PERF_TEST_FULL_WATER_REG(): void;
     PERF_TEST_FULL_WATER_HIGH(): void;

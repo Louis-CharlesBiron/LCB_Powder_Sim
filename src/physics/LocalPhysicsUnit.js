@@ -5,7 +5,7 @@ class LocalPhysicsUnit {
     }
 
     step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight) {
-       const [px, states]  = this._physicsCore.step(
+       this._physicsCore.step(
             pixels,
             pxStepUpdated,
             pxStates,
@@ -19,9 +19,6 @@ class LocalPhysicsUnit {
             Simulation.MATERIAL_STATES_GROUPS,
             Simulation.SIDE_PRIORITIES
         )
-
-        pixels = px
-        pxStates = states
     }
 
 }

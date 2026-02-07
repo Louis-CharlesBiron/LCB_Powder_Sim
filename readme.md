@@ -336,9 +336,9 @@ All brushes available are given in the `BRUSH_TYPES` enum:
 
 ### Create your own isolated interactive worlds!
 
-![Cool img idk](images/image1.gif)
+![Cool img idk](examples/images/image1.gif)
 
-![Cool img2 idk](images/image2.png)
+![Cool img2 idk](examples/images/image2.png)
 
 # [Npx Commands](#table-of-contents)
 

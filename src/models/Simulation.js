@@ -52,7 +52,7 @@ class Simulation {
         this._CVS.fpsLimit = this._worldStartSettings.aimedFPS
         this._initialized = this._worldStartSettings.autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
         this._mapGrid = new MapGrid(this._worldStartSettings.mapPixelSize, this._worldStartSettings.mapWidth, this._worldStartSettings.mapHeight)
-        this._pixels = new Uint16Array(this._mapGrid.arraySize)
+        this._pixels = new Uint16Array(this._mapGrid.arraySize).fill(Simulation.MATERIALS.AIR)
         this._lastPixels = new Uint16Array(this._mapGrid.arraySize)
         this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
         this._pxStates = new Uint8Array(this._mapGrid.arraySize)
@@ -92,7 +92,7 @@ class Simulation {
         this._CVS.loopingCB = this.#main.bind(this)
         this._CVS.setMouseMove()
         this._CVS.setMouseLeave()
-        this._CVS.setMouseDown()
+        this._CVS.setMouseDown(this.#mouseDown.bind(this))
         this._CVS.setMouseUp(this.#mouseUp.bind(this))
         this._CVS.setKeyUp(null, true)
         this._CVS.setKeyDown(null, true)
@@ -476,7 +476,8 @@ class Simulation {
      * @param {Uint16Array} oldPixels The previous/current pixel array
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
-        const arraySize = this._mapGrid.arraySize, pixels = this._pixels = new Uint16Array(arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
+        const arraySize = this._mapGrid.arraySize, skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight,
+        pixels = this._pixels = new Uint16Array(arraySize).fill(Simulation.MATERIALS.AIR)
         this._pxStepUpdated = new Uint8Array(arraySize)
         this._pxStates = new Uint8Array(arraySize)
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
@@ -572,7 +573,7 @@ class Simulation {
     // Updates the cached pixels row used for drawing optimizations
     #updateCachedMapPixelsRows() {
         const colors = Object.entries(this._colorSettings).filter(x=>x[0].toUpperCase()===x[0]).map(x=>x[1]), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
-        for (let i=0,ii=0;ii<c_ll;i=!i?1:i*2,ii++) {
+        for (let i=0,ii=0;ii<c_ll;i?i*=2:i=1,ii++) {
             const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
             for (let x=0;x<size;x++) {
                 const xx = x*4
@@ -634,6 +635,11 @@ class Simulation {
     // mouseUp listener, disables smooth drawing when mouse is unpressed
     #mouseUp() {
         this.#lastPlacedPos = null
+    }
+
+    // mouseDown listener, allows the mouse to place pixels
+    #mouseDown(mouse) {
+        if (!mouse.rightClicked) this.#placePixelFromMouse(mouse)
     }
 
     // Runs when the mouse leaves the simulation's bounding box
@@ -764,7 +770,7 @@ class Simulation {
             return
         }
 
-        if (replaceMode !== Simulation.REPLACE_MODES.ALL && (replaceMode ? !(this._pixels[i] & replaceMode) : this._pixels[i])) return
+        if (replaceMode !== Simulation.REPLACE_MODES.ALL && !(this._pixels[i] & replaceMode)) return
         this._pixels[i] = material
         this._pxStates[i] = 0
     }
@@ -899,13 +905,13 @@ class Simulation {
                     this.updateMapPixelSize(pixelSize)
                 }
 
-                if (exportType==Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data)
-                else if (exportType==Simulation.EXPORT_STATES.COMPACTED) {
+                if (exportType == Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data.map(x=>+x||Simulation.MATERIALS.AIR))
+                else if (exportType == Simulation.EXPORT_STATES.COMPACTED) {
                     let m_ll = data.length, offset = 0 
                     savePixels = new Uint16Array(saveWidth*saveHeight)
                     for (let i=0;i<m_ll;i+=2) {
-                        const count = data[i+1]
-                        savePixels.set(new Uint16Array(count).fill(data[i]), offset)
+                        const count = data[i+1], mat = +data[i]||Simulation.MATERIALS.AIR
+                        savePixels.set(new Uint16Array(count).fill(mat), offset)
                         offset += +count
                     }
                 }
@@ -948,6 +954,10 @@ class Simulation {
     /* SAVE / IMPORT / EXPORT -end */
 
     /* TEMP PERFORMANCE BENCHES */
+    PERF_REGULAR_SIZE() {
+        this.load("1x400,300,2x0,120000", true)
+    }
+
     PERF_TEST_FUN() {
         this.updateMapPixelSize(2)
         this.updateMapSize(400, 300)

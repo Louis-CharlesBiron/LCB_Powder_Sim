@@ -8797,33 +8797,40 @@ class Dot extends _Obj {
     set connections(c) {return this._connections = c}
     set cachedPath(path) {this._cachedPath = path}
 }
-///[[@[%]:1]]
+///[[@[%]:3]]
 ///[[@export]]
 const SETTINGS = {
 
     MATERIALS: {// 0-15
-        AIR:0,
-        SAND:1<<0,
-        WATER:1<<1,
-        STONE:1<<2,
-        GRAVEL:1<<3,
-        INVERTED_WATER:1<<4,
-        CONTAMINANT:1<<5,
-        LAVA:1<<6,
-        ELECTRICITY:1<<7,
-        COPPER:1<<8,
+        AIR: 1<<0,
+        SAND: 1<<1,
+        WATER: 1<<2,
+        STONE: 1<<3,
+        GRAVEL: 1<<4,
+        INVERTED_WATER: 1<<5,
+        CONTAMINANT: 1<<6,
+        LAVA: 1<<7,
+        ELECTRICITY: 1<<8,
+        COPPER: 1<<9,
+        TREE: 1<<10,
+        GAS: 1<<11,
     },
 
     MATERIAL_GROUPS: {
-        TRANSPIERCEABLE:null,
+        GASES:null,
+        REG_TRANSPIERCEABLE:null,
+        REPLACE_TRANSPIERCEABLE:null,
         LIQUIDS:null,
         CONTAMINABLE:null,
         MELTABLE:null,
+
         HAS_VISUAL_EFFECTS:null,
+        
+        STATIC:null,
         REVERSE_LOOP_CONTAINED_SKIPABLE:null,
-        FOWARD_LOOP_CONTAINED_SKIPABLE:null,
+        FORWARDS_LOOP_CONTAINED_SKIPABLE:null,
     },
-    MATERIAL_NAMES: [],
+    MATERIAL_NAMES: ["AIR_"],
 
     MATERIAL_STATES: {
         EMPTY:0,
@@ -8839,6 +8846,52 @@ const SETTINGS = {
             ACTIVATED: null,
             SOURCEABLE: null,
         }
+    },
+
+    DEFAULT_WORLD_START_SETTINGS: {
+        autoStart: true,
+        usesWebWorkers: true,
+        aimedFPS: 60,
+        zoom: null,
+
+        cameraCenterPos: undefined,
+        mapWidth: null,
+        mapHeight: null,
+        mapPixelSize: null,
+    },
+
+    DEFAULT_USER_SETTINGS: {
+        autoSimulationSizing: null,
+        dragAndZoomCanvasEnabled: true,
+        minZoomThreshold: .1,
+        maxZoomThreshold: Infinity,
+        zoomInIncrement: .25,
+        zoomOutIncrement: -.2,
+        warningsDisabled: false,
+        showBorder: true,
+        showGrid: true,
+        smoothDrawingEnabled: true,
+        visualEffectsEnabled: true,
+        drawingDisabled: false,
+    },
+
+    DEFAULT_COLOR_SETTINGS: {
+        grid: [240,248,255,.2],
+        border: [240,248,255,1],
+
+        VOID:[0,0,0,0],
+        AIR:[0,0,0,0],
+        SAND:[235,235,158,1],
+        WATER:[0,15,242,.7],
+        STONE:[100,100,100,1],
+        GRAVEL:[188,188,188,1], 
+        INVERTED_WATER:[55,75,180,.75],
+        CONTAMINANT:[30,95,65,.75],
+        LAVA:[255,132,0,.88],
+        ELECTRICITY:[255,235,0,.9],
+        COPPER:[121,65,52,1],
+        TREE:[98,65,46,1],
+        GAS:[255,255,228,.5],
     },
 
     D: {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7},
@@ -8906,49 +8959,6 @@ const SETTINGS = {
     NOT_INITIALIZED_MAP_SIZE_WARN:`Tried updating map size with 'updateMapSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update map size on launch.`,
     NOT_INITIALIZED_PIXEL_SIZE_WARN:`Tried updating pixel size with 'updateMapPixelSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update pixel size on launch.`,
     NOT_INITIALIZED_PHYSICS_TYPE_WARN:`Tried updating physics unit type with 'updatePhysicsUnitType()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update physics unit type on launch.`,
-    
-    DEFAULT_WORLD_START_SETTINGS: {
-        autoStart: true,
-        usesWebWorkers: true,
-        aimedFPS: 60,
-        zoom: null,
-
-        cameraCenterPos: undefined,
-        mapWidth: null,
-        mapHeight: null,
-        mapPixelSize: null,
-    },
-
-    DEFAULT_USER_SETTINGS: {
-        autoSimulationSizing: null,
-        dragAndZoomCanvasEnabled: true,
-        minZoomThreshold: .1,
-        maxZoomThreshold: Infinity,
-        zoomInIncrement: .25,
-        zoomOutIncrement: -.2,
-        warningsDisabled: false,
-        showBorder: true,
-        showGrid: true,
-        smoothDrawingEnabled: true,
-        visualEffectsEnabled: true,
-        drawingDisabled: false,
-    },
-
-    DEFAULT_COLOR_SETTINGS: {
-        grid: [240,248,255,.2],
-        border: [240,248,255,1],
-
-        AIR:[0,0,0,0],
-        SAND:[235,235,158,1],
-        WATER:[0,15,242,.7],
-        STONE:[100,100,100,1],
-        GRAVEL:[188,188,188,1], 
-        INVERTED_WATER:[55,75,180,.75],
-        CONTAMINANT:[30,95,65,.75],
-        LAVA:[255,132,0,.88],
-        ELECTRICITY:[255,235,0,0.9],
-        COPPER:[121,65,52,1],
-    },
 
     DEFAULT_MAP_RESOLUTIONS: {
         HIGH: 2,
@@ -8958,7 +8968,7 @@ const SETTINGS = {
     },
 
     REPLACE_MODES: {
-        ALL: -1,
+        ALL: 0,
     }
 }
 
@@ -8967,17 +8977,17 @@ const SETTINGS = {
     if (SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing === null) SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
 
     // SET MATERIAL GROUPS
-    SETTINGS.MATERIAL_GROUPS = {
-        TRANSPIERCEABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.CONTAMINANT,
-        LIQUIDS:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.CONTAMINANT,
-        CONTAMINABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER,
-        MELTABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.GRAVEL,
+    SETTINGS.MATERIAL_GROUPS.GASES = SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.GAS
+    SETTINGS.MATERIAL_GROUPS.LIQUIDS = SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.CONTAMINANT
+    SETTINGS.MATERIAL_GROUPS.REG_TRANSPIERCEABLE = SETTINGS.MATERIAL_GROUPS.LIQUIDS|SETTINGS.MATERIAL_GROUPS.GASES
+    SETTINGS.MATERIAL_GROUPS.REPLACE_TRANSPIERCEABLE = SETTINGS.MATERIAL_GROUPS.LIQUIDS|(SETTINGS.MATERIAL_GROUPS.GASES^SETTINGS.MATERIALS.AIR)
+    SETTINGS.MATERIAL_GROUPS.CONTAMINABLE = SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER
+    SETTINGS.MATERIAL_GROUPS.MELTABLE = SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.GRAVEL
 
-        HAS_VISUAL_EFFECTS:SETTINGS.MATERIALS.ELECTRICITY|SETTINGS.MATERIALS.COPPER,
-
-        REVERSE_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.GRAVEL|SETTINGS.MATERIALS.CONTAMINANT|SETTINGS.MATERIALS.LAVA|SETTINGS.MATERIALS.ELECTRICITY,
-        FORWARDS_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.INVERTED_WATER,
-    }
+    SETTINGS.MATERIAL_GROUPS.STATIC = SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.STONE,
+    SETTINGS.MATERIAL_GROUPS.HAS_VISUAL_EFFECTS = SETTINGS.MATERIALS.ELECTRICITY|SETTINGS.MATERIALS.COPPER,
+    SETTINGS.MATERIAL_GROUPS.REVERSE_LOOP_CONTAINED_SKIPABLE = SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.GRAVEL|SETTINGS.MATERIALS.CONTAMINANT|SETTINGS.MATERIALS.LAVA|SETTINGS.MATERIALS.ELECTRICITY,
+    SETTINGS.MATERIAL_GROUPS.FORWARDS_LOOP_CONTAINED_SKIPABLE = SETTINGS.MATERIALS.INVERTED_WATER,
 
     // SET MATERIAL STATES GROUPS
     SETTINGS.MATERIAL_STATES_GROUPS = {
@@ -9001,11 +9011,11 @@ const SETTINGS = {
 
     // SET MATERIAL NAMES
     const M = SETTINGS.MATERIALS, materials = Object.keys(M), m_ll = materials.length
-    for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) SETTINGS.MATERIAL_NAMES[i] = materials[ii]
+    for (let i=SETTINGS.MATERIALS.AIR,ii=0;ii<m_ll;i*=2,ii++) SETTINGS.MATERIAL_NAMES[i] = materials[ii]
 
     // SET BRUSH TYPE NAMES
     const B = SETTINGS.BRUSH_TYPES, brushTypes = Object.keys(B), bt_ll = brushTypes.length
-    for (let i=1,ii=0;ii<bt_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
+    for (let i=SETTINGS.MATERIALS.AIR,ii=0;ii<bt_ll;i*=2,ii++) SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
 
     // SET SIDE PRIORITY NAMES
     SETTINGS.SIDE_PRIORITY_NAMES = Object.keys(SETTINGS.SIDE_PRIORITIES)
@@ -9046,22 +9056,29 @@ const DEFAULT_KEYBINDS = {
     STEP: {
         defaultFunction: "step",
         keys:[TypingDevice.KEYS.ARROW_RIGHT],
-        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.NORMAL
     },
     BACK_STEP: {
         defaultFunction: "backStep",
         keys:[TypingDevice.KEYS.ARROW_LEFT],
-        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.NORMAL
+    },
+    BACK_STEP_ONCE: {
+        defaultFunction: "backStep",
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.Z],
+        triggerType: TypingDevice.TRIGGER_TYPES.NORMAL,
+        preventDefault: true
     },
     STEP_FAST: {
         defaultFunction: "step",
         keys:[TypingDevice.KEYS.ARROW_UP],
-        triggerType: TypingDevice.TRIGGER_TYPES.FAST_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
     },
     BACK_STEP_FAST: {
         defaultFunction: "backStep",
         keys:[TypingDevice.KEYS.ARROW_DOWN],
-        triggerType: TypingDevice.TRIGGER_TYPES.FAST_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
     },
 
     START: {
@@ -9263,7 +9280,7 @@ class LocalPhysicsUnit {
     }
 
     step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight) {
-       const [px, states]  = this._physicsCore.step(
+       this._physicsCore.step(
             pixels,
             pxStepUpdated,
             pxStates,
@@ -9277,9 +9294,6 @@ class LocalPhysicsUnit {
             Simulation.MATERIAL_STATES_GROUPS,
             Simulation.SIDE_PRIORITIES
         )
-
-        pixels = px
-        pxStates = states
     }
 
 }
@@ -9322,10 +9336,18 @@ class PhysicsCore {
         for (let i=0;i<invertedWater_ll;i++) invertedWaterCache[i] = PhysicsCore.#updateCachedInvertedWaterTable(D, i)
     }
 
+    testMove(stack) {
+                const move = SAND_CACHE[stack]
+                if      (move === B)  return newIndex = i_B
+                else if (move === BR) return newIndex = i_BR
+                else if (move === BL) return newIndex = i_BL
+    }
+
     // Calculates a physics step on all pixels
     step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
         const p_ll = pixels.length-1, width2 = mapWidth>>1, PX = 1, STATE = 2,
-              AIR = M.AIR, STONE = M.STONE, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE,
+              AIR = M.AIR, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, TRANSPIERCEABLE = G.REG_TRANSPIERCEABLE, GASES = G.GASES,
+              CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE, STATIC = G.STATIC,
               RT = PhysicsCore.#RANDOM_CACHE, RS = PhysicsCore.#RANDOM_TABLE_SIZE-1, SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGH,
               {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES,
               SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT,
@@ -9337,11 +9359,11 @@ class PhysicsCore {
         function getSideSelectionPriority(i) {
             if (SP_LEFT) return true
             if (SP_RIGHT) return false
-            if (SP_RANDOM) return RT[PhysicsCore.#RANDOM_INDEX++&RS] < 0.5
+            if (SP_RANDOM) return RT[PhysicsCore.#RANDOM_INDEX++&RS] < .5
             return (i%mapWidth) < width2
         }
 
-        // TODO PERFORMANCES TESTING
+        // PERFORMANCES TESTING
         const timerEnabled = 0
         if (timerEnabled) {
             if (PhysicsCore.#DEBUG_CLS_THRESHOLD++ > 18) {
@@ -9351,33 +9373,51 @@ class PhysicsCore {
             console.time(".")
         }
 
-        for (let i=p_ll;i>=0;i--) {
-            const mat = pixels[i]
-            if (mat === AIR || pxStepUpdated[i] || mat === STONE) continue
+
+        let i = p_ll
+        for (;i>=0;i--) {
+            const mat = pixels[i]||AIR
+            // SKIP IF STATIC MATERIAL OR ALREADY UPDATED
+            if (mat & STATIC || pxStepUpdated[i]) continue
+
+            // DEFINE USEFUL VARS
             const x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>0, hasR = x<mapWidth-1, hasT = y>0, hasB = y<mapHeight-1,
                   i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i,
                   p_B = pixels[i_B], p_R = pixels[i_R], p_L = pixels[i_L], p_T = pixels[i_T]
 
+            // SKIP IF MATERIAL SUROUNDED BY ITSELF
             if (mat & CONTAINED_SKIPABLE && (p_B^mat|p_R^mat|p_L^mat|p_T^mat) === 0) continue
 
+            // DEFINE USEFUL VARS (CORNERS)
             const i_BL = (hasB&&hasL) ? i+mapWidth-1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i, i_TL = (hasT&&hasL) ? i-mapWidth-1:i, i_TR = (hasT&&hasR) ? i-mapWidth+1:i
 
+            // DEFINE REGULAR RESULT VARS
             let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
 
-            // SAND
+
+            // ↓ MATERIALS PHYSICS ↓ //
+
+            // SAND //
             if (mat === M.SAND) {
-                const m_B = p_B&G.TRANSPIERCEABLE, 
-                      stack = (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0)*D.b | // B  - GO THROUGH TRANSPIERCEABLE
-                              (pixels[i_BR] === AIR)*D.br |                        // BR - GO THROUGH AIR
-                              (pixels[i_BL] === AIR)*D.bl |                        // BL - GO THROUGH AIR
+                // CHECK MOVEMENTS
+                const m_B = p_B&TRANSPIERCEABLE, 
+                      stack = (m_B !== 0)*D.b |                   // B  - GO THROUGH TRANSPIERCEABLE
+                              (pixels[i_BR] & GASES !== 0)*D.br | // BR - GO THROUGH GASES
+                              (pixels[i_BL] & GASES !== 0)*D.bl | // BL - GO THROUGH GASES
                               getSideSelectionPriority(i)*SAND_SP_BIT
 
-                const move = SAND_CACHE[stack]
-                if      (move === B)  newIndex = i_B
-                else if (move === BR) newIndex = i_BR
-                else if (move === BL) newIndex = i_BL
+                // MOVE
+                //const move = SAND_CACHE[stack]
+                //if      (move === B)  newIndex = i_B
+                //else if (move === BR) newIndex = i_BR
+                //else if (move === BL) newIndex = i_BL
+                newIndex = this.testMove(stack)
 
-                if (newIndex !== -1 && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
+                // IF MOVED
+                if (newIndex !== -1)  {
+                    if (m_B && (p_L&G.REPLACE_TRANSPIERCEABLE || p_R&G.REPLACE_TRANSPIERCEABLE)) replaceMaterial = m_B
+                    //else if (m_B & GASES) replaceMaterial = m_B & GASES
+                }
             }
 
             // WATER
@@ -9509,7 +9549,7 @@ class PhysicsCore {
                 }
             }
             // ELECTRICITY
-            else if (mat === M.ELECTRICITY) {
+            else if (mat === M.ELECTRICITY) {// TODO REVAMP PHYSICS
                 const ORIGIN = S.COPPER.ORIGIN
 
                 // check if can go down
@@ -9537,7 +9577,6 @@ class PhysicsCore {
             // COPPER
             else if (mat === M.COPPER) {
                 // TODO OPTIMIZE
-
                 //    FIRST LIT
                 //    0 -> ORIGIN (by electricity) OK
                 //    0 -> LIT (by origin) OK ---1
@@ -9551,13 +9590,10 @@ class PhysicsCore {
                 //    DISABLED -> ORIGIN (by electricity) OK
                 //    DISABLED -> 0 (by origin) ---5
                 //    DISABLED -> 0 (by 0) [propagation] OK ---6
-
                 const state = pxStates[i],
-
                       ACTIVATED = SG.COPPER.ACTIVATED,
                       ORIGIN = S.COPPER.ORIGIN,
                       ELECTRICITY = M.ELECTRICITY
-
 
                 // IF ORIGIN AND NOT CONNETED TO ELECTRICITY -> DISABLED
                 if (state === ORIGIN) {// ---3
@@ -9640,6 +9676,38 @@ class PhysicsCore {
                         (p_L === mat && (pxStates[i_L] === ORIGIN || !pxStates[i_L]))
                     ) pxStates[i] = 0
                 }
+            } 
+            // TREE
+            else if (mat === M.TREE) {// TODO
+                /**
+                    A tree can grow between 10-50 blocks high
+                    It falls through air and liquids
+                    It can only start growing it has received water at least once
+                    It can only start growing when on SAND or GRAVEL
+                    
+                    STATES:
+                    0 -> no grown conditions met yet
+                */
+                const state = pxStates[i]
+
+                const m_B = p_B&LIQUIDS 
+                if (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0) newIndex = i_B // GO THROUGH TRANSPIERCEABLE
+
+                // check what to replace prev pos with
+                if (m_B && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
+            }
+            // TREE
+            else if (mat === M.GAS) {// TODO
+                /**
+                    Floats around randomly, slowly moves through air
+                */
+                const state = pxStates[i]
+
+                //const m_B = p_B&LIQUIDS 
+                //if (p_B === AIR || (p_B&G.TRANSPIERCEABLE) !== 0) newIndex = i_B // GO THROUGH TRANSPIERCEABLE
+//
+                //// check what to replace prev pos with
+                //if (m_B && (p_L&LIQUIDS || p_R&LIQUIDS)) replaceMaterial = m_B
             }
 
 
@@ -9651,8 +9719,6 @@ class PhysicsCore {
             }
         }
         if (timerEnabled) console.timeEnd(".")
-
-        return [pixels, pxStates]
     }
 
 
@@ -9663,7 +9729,7 @@ class PhysicsCore {
               br = stack & D.br,
               bl = stack & D.bl
 
-        if (b) return MOVES.B// TODO OPTIMIZE
+        if (b) return MOVES.B
         if (isLeftFirst) {
             if (bl) return MOVES.BL
             if (br) return MOVES.BR
@@ -9683,7 +9749,7 @@ class PhysicsCore {
               br = stack & D.br,
               bl = stack & D.bl
 
-        if (b) return MOVES.B// OPTIMIZE
+        if (b) return MOVES.B
         if (isLeftFirst) {
             if (bl) return MOVES.BL
             if (br) return MOVES.BR
@@ -9709,7 +9775,7 @@ class PhysicsCore {
 
         if (t) return MOVES.T
         if (isLeftFirst) {
-            if (tl) return MOVES.TL// OPTIMIZE
+            if (tl) return MOVES.TL
             if (tr) return MOVES.TR
             if (l) return MOVES.L
             if (r) return MOVES.R
@@ -9889,7 +9955,7 @@ class Simulation {
         this._CVS.fpsLimit = this._worldStartSettings.aimedFPS
         this._initialized = this._worldStartSettings.autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
         this._mapGrid = new MapGrid(this._worldStartSettings.mapPixelSize, this._worldStartSettings.mapWidth, this._worldStartSettings.mapHeight)
-        this._pixels = new Uint16Array(this._mapGrid.arraySize)
+        this._pixels = new Uint16Array(this._mapGrid.arraySize).fill(Simulation.MATERIALS.AIR)
         this._lastPixels = new Uint16Array(this._mapGrid.arraySize)
         this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
         this._pxStates = new Uint8Array(this._mapGrid.arraySize)
@@ -9929,7 +9995,7 @@ class Simulation {
         this._CVS.loopingCB = this.#main.bind(this)
         this._CVS.setMouseMove()
         this._CVS.setMouseLeave()
-        this._CVS.setMouseDown()
+        this._CVS.setMouseDown(this.#mouseDown.bind(this))
         this._CVS.setMouseUp(this.#mouseUp.bind(this))
         this._CVS.setKeyUp(null, true)
         this._CVS.setKeyDown(null, true)
@@ -10313,7 +10379,8 @@ class Simulation {
      * @param {Uint16Array} oldPixels The previous/current pixel array
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
-        const arraySize = this._mapGrid.arraySize, pixels = this._pixels = new Uint16Array(arraySize), skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight
+        const arraySize = this._mapGrid.arraySize, skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight,
+        pixels = this._pixels = new Uint16Array(arraySize).fill(Simulation.MATERIALS.AIR)
         this._pxStepUpdated = new Uint8Array(arraySize)
         this._pxStates = new Uint8Array(arraySize)
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
@@ -10409,7 +10476,7 @@ class Simulation {
     // Updates the cached pixels row used for drawing optimizations
     #updateCachedMapPixelsRows() {
         const colors = Object.entries(this._colorSettings).filter(x=>x[0].toUpperCase()===x[0]).map(x=>x[1]), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
-        for (let i=0,ii=0;ii<c_ll;i=!i?1:i*2,ii++) {
+        for (let i=0,ii=0;ii<c_ll;i?i*=2:i=1,ii++) {
             const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
             for (let x=0;x<size;x++) {
                 const xx = x*4
@@ -10471,6 +10538,11 @@ class Simulation {
     // mouseUp listener, disables smooth drawing when mouse is unpressed
     #mouseUp() {
         this.#lastPlacedPos = null
+    }
+
+    // mouseDown listener, allows the mouse to place pixels
+    #mouseDown(mouse) {
+        if (!mouse.rightClicked) this.#placePixelFromMouse(mouse)
     }
 
     // Runs when the mouse leaves the simulation's bounding box
@@ -10601,7 +10673,7 @@ class Simulation {
             return
         }
 
-        if (replaceMode !== Simulation.REPLACE_MODES.ALL && (replaceMode ? !(this._pixels[i] & replaceMode) : this._pixels[i])) return
+        if (replaceMode !== Simulation.REPLACE_MODES.ALL && !(this._pixels[i] & replaceMode)) return
         this._pixels[i] = material
         this._pxStates[i] = 0
     }
@@ -10736,13 +10808,13 @@ class Simulation {
                     this.updateMapPixelSize(pixelSize)
                 }
 
-                if (exportType==Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data)
-                else if (exportType==Simulation.EXPORT_STATES.COMPACTED) {
+                if (exportType == Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data.map(x=>+x||Simulation.MATERIALS.AIR))
+                else if (exportType == Simulation.EXPORT_STATES.COMPACTED) {
                     let m_ll = data.length, offset = 0 
                     savePixels = new Uint16Array(saveWidth*saveHeight)
                     for (let i=0;i<m_ll;i+=2) {
-                        const count = data[i+1]
-                        savePixels.set(new Uint16Array(count).fill(data[i]), offset)
+                        const count = data[i+1], mat = +data[i]||Simulation.MATERIALS.AIR
+                        savePixels.set(new Uint16Array(count).fill(mat), offset)
                         offset += +count
                     }
                 }
@@ -10785,6 +10857,10 @@ class Simulation {
     /* SAVE / IMPORT / EXPORT -end */
 
     /* TEMP PERFORMANCE BENCHES */
+    PERF_REGULAR_SIZE() {
+        this.load("1x400,300,2x0,120000", true)
+    }
+
     PERF_TEST_FUN() {
         this.updateMapPixelSize(2)
         this.updateMapSize(400, 300)

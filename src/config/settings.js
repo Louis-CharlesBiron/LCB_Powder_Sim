@@ -2,28 +2,35 @@
 const SETTINGS = {
 
     MATERIALS: {// 0-15
-        AIR:0,
-        SAND:1<<0,
-        WATER:1<<1,
-        STONE:1<<2,
-        GRAVEL:1<<3,
-        INVERTED_WATER:1<<4,
-        CONTAMINANT:1<<5,
-        LAVA:1<<6,
-        ELECTRICITY:1<<7,
-        COPPER:1<<8,
+        AIR: 1<<0,
+        SAND: 1<<1,
+        WATER: 1<<2,
+        STONE: 1<<3,
+        GRAVEL: 1<<4,
+        INVERTED_WATER: 1<<5,
+        CONTAMINANT: 1<<6,
+        LAVA: 1<<7,
+        ELECTRICITY: 1<<8,
+        COPPER: 1<<9,
+        TREE: 1<<10,
+        GAS: 1<<11,
     },
 
     MATERIAL_GROUPS: {
-        TRANSPIERCEABLE:null,
+        GASES:null,
+        REG_TRANSPIERCEABLE:null,
+        REPLACE_TRANSPIERCEABLE:null,
         LIQUIDS:null,
         CONTAMINABLE:null,
         MELTABLE:null,
+
         HAS_VISUAL_EFFECTS:null,
+        
+        STATIC:null,
         REVERSE_LOOP_CONTAINED_SKIPABLE:null,
-        FOWARD_LOOP_CONTAINED_SKIPABLE:null,
+        FORWARDS_LOOP_CONTAINED_SKIPABLE:null,
     },
-    MATERIAL_NAMES: [],
+    MATERIAL_NAMES: ["AIR_"],
 
     MATERIAL_STATES: {
         EMPTY:0,
@@ -39,6 +46,52 @@ const SETTINGS = {
             ACTIVATED: null,
             SOURCEABLE: null,
         }
+    },
+
+    DEFAULT_WORLD_START_SETTINGS: {
+        autoStart: true,
+        usesWebWorkers: true,
+        aimedFPS: 60,
+        zoom: null,
+
+        cameraCenterPos: undefined,
+        mapWidth: null,
+        mapHeight: null,
+        mapPixelSize: null,
+    },
+
+    DEFAULT_USER_SETTINGS: {
+        autoSimulationSizing: null,
+        dragAndZoomCanvasEnabled: true,
+        minZoomThreshold: .1,
+        maxZoomThreshold: Infinity,
+        zoomInIncrement: .25,
+        zoomOutIncrement: -.2,
+        warningsDisabled: false,
+        showBorder: true,
+        showGrid: true,
+        smoothDrawingEnabled: true,
+        visualEffectsEnabled: true,
+        drawingDisabled: false,
+    },
+
+    DEFAULT_COLOR_SETTINGS: {
+        grid: [240,248,255,.2],
+        border: [240,248,255,1],
+
+        VOID:[0,0,0,0],
+        AIR:[0,0,0,0],
+        SAND:[235,235,158,1],
+        WATER:[0,15,242,.7],
+        STONE:[100,100,100,1],
+        GRAVEL:[188,188,188,1], 
+        INVERTED_WATER:[55,75,180,.75],
+        CONTAMINANT:[30,95,65,.75],
+        LAVA:[255,132,0,.88],
+        ELECTRICITY:[255,235,0,.9],
+        COPPER:[121,65,52,1],
+        TREE:[98,65,46,1],
+        GAS:[255,255,228,.5],
     },
 
     D: {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7},
@@ -106,49 +159,6 @@ const SETTINGS = {
     NOT_INITIALIZED_MAP_SIZE_WARN:`Tried updating map size with 'updateMapSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update map size on launch.`,
     NOT_INITIALIZED_PIXEL_SIZE_WARN:`Tried updating pixel size with 'updateMapPixelSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update pixel size on launch.`,
     NOT_INITIALIZED_PHYSICS_TYPE_WARN:`Tried updating physics unit type with 'updatePhysicsUnitType()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update physics unit type on launch.`,
-    
-    DEFAULT_WORLD_START_SETTINGS: {
-        autoStart: true,
-        usesWebWorkers: true,
-        aimedFPS: 60,
-        zoom: null,
-
-        cameraCenterPos: undefined,
-        mapWidth: null,
-        mapHeight: null,
-        mapPixelSize: null,
-    },
-
-    DEFAULT_USER_SETTINGS: {
-        autoSimulationSizing: null,
-        dragAndZoomCanvasEnabled: true,
-        minZoomThreshold: .1,
-        maxZoomThreshold: Infinity,
-        zoomInIncrement: .25,
-        zoomOutIncrement: -.2,
-        warningsDisabled: false,
-        showBorder: true,
-        showGrid: true,
-        smoothDrawingEnabled: true,
-        visualEffectsEnabled: true,
-        drawingDisabled: false,
-    },
-
-    DEFAULT_COLOR_SETTINGS: {
-        grid: [240,248,255,.2],
-        border: [240,248,255,1],
-
-        AIR:[0,0,0,0],
-        SAND:[235,235,158,1],
-        WATER:[0,15,242,.7],
-        STONE:[100,100,100,1],
-        GRAVEL:[188,188,188,1], 
-        INVERTED_WATER:[55,75,180,.75],
-        CONTAMINANT:[30,95,65,.75],
-        LAVA:[255,132,0,.88],
-        ELECTRICITY:[255,235,0,0.9],
-        COPPER:[121,65,52,1],
-    },
 
     DEFAULT_MAP_RESOLUTIONS: {
         HIGH: 2,
@@ -158,7 +168,7 @@ const SETTINGS = {
     },
 
     REPLACE_MODES: {
-        ALL: -1,
+        ALL: 0,
     }
 }
 
@@ -167,17 +177,17 @@ const SETTINGS = {
     if (SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing === null) SETTINGS.DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
 
     // SET MATERIAL GROUPS
-    SETTINGS.MATERIAL_GROUPS = {
-        TRANSPIERCEABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.CONTAMINANT,
-        LIQUIDS:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.CONTAMINANT,
-        CONTAMINABLE:SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER,
-        MELTABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.GRAVEL,
+    SETTINGS.MATERIAL_GROUPS.GASES = SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.GAS
+    SETTINGS.MATERIAL_GROUPS.LIQUIDS = SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER|SETTINGS.MATERIALS.CONTAMINANT
+    SETTINGS.MATERIAL_GROUPS.REG_TRANSPIERCEABLE = SETTINGS.MATERIAL_GROUPS.LIQUIDS|SETTINGS.MATERIAL_GROUPS.GASES
+    SETTINGS.MATERIAL_GROUPS.REPLACE_TRANSPIERCEABLE = SETTINGS.MATERIAL_GROUPS.LIQUIDS|(SETTINGS.MATERIAL_GROUPS.GASES^SETTINGS.MATERIALS.AIR)
+    SETTINGS.MATERIAL_GROUPS.CONTAMINABLE = SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.INVERTED_WATER
+    SETTINGS.MATERIAL_GROUPS.MELTABLE = SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.GRAVEL
 
-        HAS_VISUAL_EFFECTS:SETTINGS.MATERIALS.ELECTRICITY|SETTINGS.MATERIALS.COPPER,
-
-        REVERSE_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.GRAVEL|SETTINGS.MATERIALS.CONTAMINANT|SETTINGS.MATERIALS.LAVA|SETTINGS.MATERIALS.ELECTRICITY,
-        FORWARDS_LOOP_CONTAINED_SKIPABLE:SETTINGS.MATERIALS.INVERTED_WATER,
-    }
+    SETTINGS.MATERIAL_GROUPS.STATIC = SETTINGS.MATERIALS.AIR|SETTINGS.MATERIALS.STONE,
+    SETTINGS.MATERIAL_GROUPS.HAS_VISUAL_EFFECTS = SETTINGS.MATERIALS.ELECTRICITY|SETTINGS.MATERIALS.COPPER,
+    SETTINGS.MATERIAL_GROUPS.REVERSE_LOOP_CONTAINED_SKIPABLE = SETTINGS.MATERIALS.SAND|SETTINGS.MATERIALS.WATER|SETTINGS.MATERIALS.GRAVEL|SETTINGS.MATERIALS.CONTAMINANT|SETTINGS.MATERIALS.LAVA|SETTINGS.MATERIALS.ELECTRICITY,
+    SETTINGS.MATERIAL_GROUPS.FORWARDS_LOOP_CONTAINED_SKIPABLE = SETTINGS.MATERIALS.INVERTED_WATER,
 
     // SET MATERIAL STATES GROUPS
     SETTINGS.MATERIAL_STATES_GROUPS = {
@@ -201,11 +211,11 @@ const SETTINGS = {
 
     // SET MATERIAL NAMES
     const M = SETTINGS.MATERIALS, materials = Object.keys(M), m_ll = materials.length
-    for (let i=0,ii=0;ii<m_ll;i=!i?1:i*2,ii++) SETTINGS.MATERIAL_NAMES[i] = materials[ii]
+    for (let i=SETTINGS.MATERIALS.AIR,ii=0;ii<m_ll;i*=2,ii++) SETTINGS.MATERIAL_NAMES[i] = materials[ii]
 
     // SET BRUSH TYPE NAMES
     const B = SETTINGS.BRUSH_TYPES, brushTypes = Object.keys(B), bt_ll = brushTypes.length
-    for (let i=1,ii=0;ii<bt_ll;i=!i?1:i*2,ii++) SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
+    for (let i=SETTINGS.MATERIALS.AIR,ii=0;ii<bt_ll;i*=2,ii++) SETTINGS.BRUSH_TYPE_NAMES[i] = brushTypes[ii]
 
     // SET SIDE PRIORITY NAMES
     SETTINGS.SIDE_PRIORITY_NAMES = Object.keys(SETTINGS.SIDE_PRIORITIES)

@@ -1,5 +1,5 @@
 importScripts("PhysicsCore.js")
-importScripts("../simulation/settings.js")
+importScripts("../config/settings.js")
 
 // CONSTANTS
 const WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES,
