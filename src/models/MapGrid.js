@@ -1,7 +1,7 @@
 class MapGrid {
     static DEFAULT_PIXEL_SIZE = 18
-    static DEFAULT_MAP_WIDTH = 50
-    static DEFAULT_MAP_HEIGHT = 35
+    static DEFAULT_MAP_WIDTH = 3//50
+    static DEFAULT_MAP_HEIGHT = 3//35
 
     #lastPixelSize = null
     constructor(pixelSize, mapWidth, mapHeight) {

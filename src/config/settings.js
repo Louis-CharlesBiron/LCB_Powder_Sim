@@ -48,7 +48,7 @@ const SETTINGS = {
         }
     },
 
-    DEFAULT_WORLD_START_SETTINGS: {
+    DEFAULT_WORLD_START_SETTINGS: {// (R?)
         autoStart: true,
         usesWebWorkers: true,
         aimedFPS: 60,
@@ -60,7 +60,7 @@ const SETTINGS = {
         mapPixelSize: null,
     },
 
-    DEFAULT_USER_SETTINGS: {
+    DEFAULT_USER_SETTINGS: {// (R?)
         autoSimulationSizing: null,
         dragAndZoomCanvasEnabled: true,
         minZoomThreshold: .1,
@@ -75,7 +75,15 @@ const SETTINGS = {
         drawingDisabled: false,
     },
 
-    DEFAULT_COLOR_SETTINGS: {
+    DEFAULT_PHYSICS_CONFIG: {// (R?)
+        timerMaxLog: 18,
+        timerEnabled: false,
+        timerName: ".",
+
+        randomTableSize: 1<<16
+    },
+
+    DEFAULT_COLOR_SETTINGS: {// (R?)
         grid: [240,248,255,.2],
         border: [240,248,255,1],
 

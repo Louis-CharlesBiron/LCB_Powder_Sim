@@ -23,9 +23,16 @@ class Simulation {
     static #CACHED_MATERIALS_ROWS = []
     static #CACHED_GRID_LINES = null
     static #CACHED_GRID_BORDER = null
+    static #PHYSICS_UNIT_INSTANCES = [null, null]
+    static #C_GRID_INDEXES = Int32Array
+    static #C_GRID_MATERIALS = Uint16Array
+    static #C_FLAGS_SMALL = Uint8Array
+    static #C_PHYSICS_REGULAR = Float32Array
+    static #C_PHYSICS_SMALL = (typeof Float16Array === "undefined" ? Float32Array : Float16Array)
     // DEFAULTS
     static DEFAULT_WORLD_START_SETTINGS = SETTINGS.DEFAULT_WORLD_START_SETTINGS
     static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
+    static DEFAULT_PHYSICS_CONFIG = SETTINGS.DEFAULT_PHYSICS_CONFIG
     static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
@@ -45,17 +52,53 @@ class Simulation {
      * @param {Object?} userSettings An object defining the user settings
      * @param {Object?} colorSettings An object defining the color settings
      */
-    constructor(canvas, readyCB, worldStartSettings, userSettings, colorSettings) {
+    constructor(canvas, readyCB, worldStartSettings, userSettings, physicsConfig, colorSettings) {
         // SIMULATION
         this._CVS = canvas instanceof Canvas ? canvas : new Canvas(canvas)
-        this._worldStartSettings = this.getAdjustedSettings(worldStartSettings, Simulation.DEFAULT_WORLD_START_SETTINGS)
+        this._worldStartSettings = SimUtils.getAdjustedSettings(worldStartSettings, Simulation.DEFAULT_WORLD_START_SETTINGS)
         this._CVS.fpsLimit = this._worldStartSettings.aimedFPS
         this._initialized = this._worldStartSettings.autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
         this._mapGrid = new MapGrid(this._worldStartSettings.mapPixelSize, this._worldStartSettings.mapWidth, this._worldStartSettings.mapHeight)
-        this._pixels = new Uint16Array(this._mapGrid.arraySize).fill(Simulation.MATERIALS.AIR)
-        this._lastPixels = new Uint16Array(this._mapGrid.arraySize)
-        this._pxStepUpdated = new Uint8Array(this._mapGrid.arraySize)
-        this._pxStates = new Uint8Array(this._mapGrid.arraySize)
+
+        //
+
+        /**
+         * ADD pixelToAdd
+         * i = ++this._indexCount
+         * states[i] = pixelToAdd
+         * index[pixelToAdd] = i
+         */
+
+        /**
+         * REMOVE pixelToDel
+         * last_i = --this._indexCount
+         * states[pixelToDel_i] = states[last_i] 
+         * this._indexes[last_i] = pixelToDel_i
+         */
+
+        /**
+         * CHECK pixel
+         * i = this._indexes[pixel]
+         * states[i]
+         */
+
+        const arrSize = this._mapGrid.arraySize
+        this._gridIndexes = new Simulation.#C_GRID_INDEXES(arrSize).fill(-1)// index represents map pos, value! represents _indexStates index (static AND dynamic, but static is -1)
+
+        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arrSize).fill(Simulation.MATERIALS.AIR)// index represents map pos, value! represents materials (static AND dynamic) | (like old _pixels) 
+        this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arrSize)// index represents last map pos, value! represents last materials (static AND dynamic) (like old _lastPixels)
+       
+        this._indexCount = [0] // represents the contiguous number of indexes
+
+        // index represents NOTHING, value represents phycics attribute (ONLY dynamic)
+        this._indexFlags = new Simulation.#C_FLAGS_SMALL(arrSize) // (Whether already updated in the current step, ...)
+        this._indexPosX = new Simulation.#C_PHYSICS_REGULAR(arrSize)
+        this._indexPosY = new Simulation.#C_PHYSICS_REGULAR(arrSize)
+        this._indexVelX = new Simulation.#C_PHYSICS_REGULAR(arrSize)
+        this._indexVelY = new Simulation.#C_PHYSICS_REGULAR(arrSize)
+        this._indexGravity = new Simulation.#C_PHYSICS_SMALL(arrSize)
+        this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_CONFIG)
+
         this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
@@ -66,8 +109,8 @@ class Simulation {
         this.updatePhysicsUnitType(this._worldStartSettings.usesWebWorkers)
 
         // DISPLAY
-        this._userSettings = this.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
-        this._colorSettings = this.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
+        this._userSettings = SimUtils.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
+        this._colorSettings = SimUtils.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
         this._selectedMaterial = Simulation.MATERIALS.SAND
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
         this._replaceMode = Simulation.REPLACE_MODES.ALL
@@ -150,21 +193,21 @@ class Simulation {
             return
         }
 
-        const pixels = this._pixels, p_ll = pixels.length, pxStates = this._pxStates, map = this._mapGrid, M = Simulation.MATERIALS, G = Simulation.MATERIAL_GROUPS, SG = Simulation.MATERIAL_STATES_GROUPS, D = Simulation.D,
+        const pixels = this._gridMaterials, p_ll = pixels.length, map = this._mapGrid, M = Simulation.MATERIALS, G = Simulation.MATERIAL_GROUPS, SG = Simulation.MATERIAL_STATES_GROUPS, D = Simulation.D,
               w = map.mapWidth, pxSize = map.pixelSize, pxSize2 = pxSize/4, random = Math.random(), batchStroke = this.render.batchStroke.bind(this.render), batchFill = this.render.batchFill.bind(this.render)
 
         for (let i=0;i<p_ll;i++) {
             const mat = pixels[i]
             if ((mat&G.HAS_VISUAL_EFFECTS) === 0) continue
 
-            const py = (i/w)|0, x = (i-py*w)*pxSize, y = py*pxSize, state = pxStates[i]
+            const py = (i/w)|0, x = (i-py*w)*pxSize, y = py*pxSize
 
             // ELECTRICITY
             if (mat === M.ELECTRICITY) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,0,0.45*random])
             // COPPER
-            else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.LIT) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,0,0.35*random])
-            else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.ORIGIN) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,220,0.4])
-            else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.DISABLED) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [0,0,220,0.3])
+            //else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.LIT) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,0,0.35*random])
+            //else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.ORIGIN) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [255,235,220,0.4])
+            //else if (mat === M.COPPER && state === Simulation.MATERIAL_STATES.COPPER.DISABLED) batchFill(Render.getPositionsRect([x-pxSize2,y-pxSize2], [x+pxSize+pxSize2,y+pxSize+pxSize2]), [0,0,220,0.3])
         }  
     }
 
@@ -183,13 +226,13 @@ class Simulation {
      * Updates the display image map according to the pixels array (renders a frame)
      * @param {Boolean?} force If true, disables optimization and forces every pixel to get redrawn
      */
-    updateImgMapFromPixels(force) {
+    renderPixels(force) {
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.updateImgMapFromPixels(force))
+            this._queuedBufferOperations.push(()=>this.renderPixels(force))
             return
         }
 
-        const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length, map = this._mapGrid, enableOptimization = force ? false : lastPixels.length===p_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
+        const pixels = this._gridMaterials, lastPixels = this._lastGridMaterials, p_ll = pixels.length, map = this._mapGrid, enableOptimization = force ? false : lastPixels.length===p_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
         for (let i=0;i<p_ll;i++) {
             const mat = pixels[i]
             if (enableOptimization && mat===lastPixels[i]) continue
@@ -198,7 +241,7 @@ class Simulation {
         } 
         if (!enableOptimization) map.lastPixelSize = map.pixelSize
 
-        this._lastPixels = this.#getPixelsCopy()
+        this._lastGridMaterials = this.#getGridMaterialsCopy()
     }
     
     /**
@@ -215,7 +258,7 @@ class Simulation {
 
     /* SIMULATION CONTROL */
     /**
-     * Runs and displays one physics step
+     * Runs and displays one physics step (R?)
      */
     step() {
         const T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit
@@ -223,14 +266,18 @@ class Simulation {
             const stepExtra = this._stepExtra
             this.saveStep()
             if (stepExtra) stepExtra()
-            unit.step(this._pixels, this._pxStepUpdated, this._pxStates, this._sidePriority, this._mapGrid.mapWidth, this._mapGrid.mapHeight)
-            this.updateImgMapFromPixels()
+            unit.step(
+                this._gridIndexes, this._gridMaterials, this._lastGridMaterials,
+                this._indexCount, this._indexFlags, this._indexPosX, this._indexPosY, this._indexVelX, this._indexVelY, this._indexGravity,
+                this._sidePriority, this._mapGrid.mapWidth, this._mapGrid.mapHeight
+            )
+            this.renderPixels()
         }
         else if (this.#simulationHasPixelsBuffer) this.#sendPixelsToWorker(T.STEP)
     }
 
     /**
-     * Displays the previous physics step saved
+     * Displays the previous physics step saved (R?)
      */
     backStep() {
         if (!this.#simulationHasPixelsBuffer) {
@@ -241,7 +288,7 @@ class Simulation {
         const saves = this._backStepSaves, b_ll = saves.length
         if (b_ll) {
             let lastSave = saves[b_ll-1]
-            const lastSaveArray = lastSave[0], l_ll = lastSaveArray.length, currentSave = this.#getPixelsCopy()
+            const lastSaveArray = lastSave[0], l_ll = lastSaveArray.length, currentSave = this.#getGridMaterialsCopy()
             
             let hasChanges = l_ll !== currentSave.length
             for (let i=0;i<l_ll;i++) {
@@ -259,11 +306,11 @@ class Simulation {
     }
 
     /**
-     * Saves a physics step
+     * Saves a physics step (R?)
      */
     saveStep() {
         if (this.backStepSavingEnabled) {
-            const saves = this._backStepSaves, b_ll = saves.length, lastSave = saves[b_ll-1]?.[0], l_ll = lastSave?.length, currentSave = this.#getPixelsCopy()
+            const saves = this._backStepSaves, b_ll = saves.length, lastSave = saves[b_ll-1]?.[0], l_ll = lastSave?.length, currentSave = this.#getGridMaterialsCopy()
 
             if (lastSave) {
                 let hasChanges = l_ll !== currentSave.length
@@ -307,23 +354,26 @@ class Simulation {
 
     /* SIMULATION API */
     /**
-     * Updates whether the physics calculations are offloaded to a worker thread 
+     * Updates whether the physics calculations are offloaded to a worker thread (R?)
      * @param {Boolean} usesWebWorkers Whether an other thread is used. (Defaults to true)
      */
     updatePhysicsUnitType(usesWebWorkers=true) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
-        const isWebWorker = usesWebWorkers&&!this.isFileServed
+        const isWebWorker = +(usesWebWorkers&&!this.isFileServed)
         if ((isWebWorker && this.usesWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
 
-        this._physicsUnit = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit() // TODO, dont reinstanciate every time
+
+        let instance = Simulation.#PHYSICS_UNIT_INSTANCES[isWebWorker]
+        if (!instance) instance = Simulation.#PHYSICS_UNIT_INSTANCES[isWebWorker] = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit(this._physicsConfig, Simulation)
+        this._physicsUnit = instance
 
         if (isWebWorker) {
             this.#simulationHasPixelsBuffer = true
             this._physicsUnit.onmessage=this.#physicsUnitMessage.bind(this)
             this._physicsUnit.postMessage({
                 type:Simulation.#WORKER_MESSAGE_TYPES.INIT,
-                pixels:this._pixels, pxStepUpdated:this._pxStepUpdated, pxStates:this._pxStates, sidePriority:this._sidePriority, 
+                pixels:this._gridIndexes, pxStepUpdated:this._indexUpdated, pxStates:this._indexStates, sidePriority:this._sidePriority, 
                 mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight,
                 aimedFps:this._CVS.fpsLimit
             })
@@ -367,7 +417,7 @@ class Simulation {
             this._offscreenCanvas.height = map.globalDimensions[1]
             this.#updateCachedMapPixelsRows()
             this.#updateCachedGridDisplays()
-            this.updateImgMapFromPixels()
+            this.renderPixels()
 
             this.#updateMouseListeners()
         }
@@ -388,23 +438,23 @@ class Simulation {
 
         const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight
             if ((width && width !== oldWidth) || (height && height !== oldHeight)) {
-            const oldPixels = this.#getPixelsCopy()
+            const oldArrays = this.#getArraysCopy()
             height = map.mapHeight = height||map.mapHeight
             width = map.mapWidth = width||map.mapWidth
-            this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldPixels)
+            this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldArrays)
             this.#updateCachedGridDisplays()
 
             this._imgMap = this.ctx.createImageData(...map.globalDimensions)
             this._offscreenCanvas.width = map.globalDimensions[0]
             this._offscreenCanvas.height = map.globalDimensions[1]
-            this.updateImgMapFromPixels()
+            this.renderPixels()
 
             this.#updateMouseListeners()
         }
     }
 
     /**
-     * Updates the side prioritised first by the physics.
+     * Updates the side prioritised first by the physics. (R?)
      * @param {Simulation.SIDE_PRIORITIES} sidePriority The side priority value
      * @returns The new priority
      */
@@ -420,7 +470,7 @@ class Simulation {
      */
     getPixelAtMapPos(mapPos) {
         const i = this._mapGrid.mapPosToIndex(mapPos)
-        return this.usesWebWorkers ? this._lastPixels[i] : this._pixels[i]
+        return this.usesWebWorkers ? this._lastGridMaterials[i] : this._gridMaterials[i]
     }
 
     /**
@@ -458,13 +508,13 @@ class Simulation {
      * @param {Object} colorSettings The colors to update. (Materials keys need to be in UPPERCASE)
      */
     updateColors(colorSettings) {
-        this._colorSettings = this.getAdjustedSettings(colorSettings, this._colorSettings)
+        this._colorSettings = SimUtils.getAdjustedSettings(colorSettings, this._colorSettings)
 
         if (colorSettings.grid) this._mapGridRenderStyles.update(this._colorSettings.grid)
         if (colorSettings.border) this._mapBorderRenderStyles.update(this._colorSettings.border)
 
         this.#updateCachedMapPixelsRows()
-        this.updateImgMapFromPixels(true)
+        this.renderPixels(true)
     }
 
     /**
@@ -473,32 +523,32 @@ class Simulation {
      * @param {Number} oldHeight The previous/current height of the map
      * @param {Number} newWidth The new/updated width of the map
      * @param {Number} newHeight The new/updated height of the map
-     * @param {Uint16Array} oldPixels The previous/current pixel array
+     * @param {Uint16Array} // DOC TODO
      */
-    #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldPixels) {
+    #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldArrays) {
         const arraySize = this._mapGrid.arraySize, skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight,
-        pixels = this._pixels = new Uint16Array(arraySize).fill(Simulation.MATERIALS.AIR)
-        this._pxStepUpdated = new Uint8Array(arraySize)
-        this._pxStates = new Uint8Array(arraySize)
+            newArrays = [
+                this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1),
+                this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR),
+                this._indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize),
+                this._indexPosX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                this._indexPosY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                this._indexVelX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                this._indexVelY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                this._indexGravity = new Simulation.#C_PHYSICS_SMALL(arraySize)
+            ]
+
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
         
-        for (let y=0,i=0,oi=0;y<smallestHeight;y++) {
-            pixels.set(oldPixels.subarray(oi, oi+smallestWidth), i)
-            oi += oldWidth
-            i += oldWidth+skipOffset
-        }
-    }
+        const a_ll = newArrays.length 
+        for (let y=0,offset=0,oi=0;y<smallestHeight;y++) {
+            for (let i=0;i<a_ll;i++) newArrays[i].set(oldArrays[i].subarray(oi, oi+smallestWidth), offset)
 
-    /**
-     * Merges a modification object and a base object
-     * @param {Object} inputSettings The object with modifications
-     * @param {Object} defaultSettings The object to update
-     * @returns The merged object
-     */
-    getAdjustedSettings(inputSettings, defaultSettings) {
-        const newSettings = {...defaultSettings}
-        if (inputSettings) Object.entries(inputSettings).forEach(([key, value])=>newSettings[key] = value)
-        return newSettings
+            oi += oldWidth
+            offset += oldWidth+skipOffset
+        }
+
+        this._indexCount[0] = this._gridIndexes.filter(x=>x !== -1).length
     }
 
     /**
@@ -523,19 +573,19 @@ class Simulation {
     /* SIMULATION API -end */
 
     /* WEB WORKER CONTROL */
-    // Listener for web worker messages
+    // Listener for web worker messages (R?)
     #physicsUnitMessage(e) {
         const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES, stepExtra = this._stepExtra
 
         if (type & Simulation.#WORKER_MESSAGE_GROUPS.GIVES_PIXELS_TO_MAIN) {
-            this._pixels = new Uint16Array(data.pixels)
-            this._pxStates = new Uint16Array(data.pxStates)
+            //this._gridMaterials = new Uint16Array(data.pixels) TODO
+            //this._indexStates = new Uint16Array(data.pxStates)
             this.#simulationHasPixelsBuffer = true
         }
 
         if (type === T.STEP) {// RECEIVE STEP RESULTS (is step/sec bound)
             // DO BUFFER OPERATION
-            this.updateImgMapFromPixels()
+            this.renderPixels()
             this.#executeQueuedOperations()
 
             if (stepExtra) stepExtra()
@@ -548,18 +598,18 @@ class Simulation {
         }
     }
 
-    /**
-     * Sends a command of a certain type to the worker, needing pixels 
+    /** 
+     * Sends a command of a certain type to the worker, needing pixels (R?)
      * @param {Simulation.#WORKER_MESSAGE_TYPES} type The worker message type
      */
     #sendPixelsToWorker(type) {
-        const pixels = this._pixels, pxStates = this._pxStates
+        const pixels = this._gridMaterials//, pxStates = this._indexStates TODO
         this.saveStep()
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
         else this.#simulationHasPixelsBuffer = true
     }
 
-    // Executes queued operations
+    // Executes queued operations (R??)
     #executeQueuedOperations() {
         const queued = this._queuedBufferOperations, q_ll = queued.length
         for (let i=0;i<q_ll;i++) {
@@ -603,7 +653,7 @@ class Simulation {
 
     /* USER INPUT */
     /**
-     * Creates functional keybinds
+     * Creates functional keybinds (R?)
      * @param {Object} keybinds The keybinds to set (Defaults to Simulation.DEFAULT_KEYBINDS)
      */
     setKeyBinds(keybinds=Simulation.DEFAULT_KEYBINDS) {
@@ -621,7 +671,7 @@ class Simulation {
         }, keybinds.MY_CUSTOM_SIZE_KEYBIND), keybinds.MY_CUSTOM_SIZE_KEYBIND.triggerType)
     }
 
-    // Utils function to check if keybind's conditions are met before executing the action
+    // Utils function to check if keybind's conditions are met before executing the action (R?)
     #keybindTryAction(typingDevice, e, actionCB, bindValue) {
         const hasAction = CDEUtils.isFunction(actionCB), {requiredKeys, cancelKeys, preventDefault} = bindValue
         if (preventDefault && e.target.value === undefined) e.preventDefault()
@@ -664,10 +714,11 @@ class Simulation {
             else this.placePixelsWithBrush(x, y)
 
             this.#lastPlacedPos = mapPos
-            if (!isRunning) this.updateImgMapFromPixels()
+            if (!isRunning) this.renderPixels()
         }
     }
 
+    // Zooms in/out towards the provided pos
     #zoomTowardsPos(pos,  zoomDirection) {
         const newZoom = this._CVS.zoom + (zoomDirection<0 ? this.zoomInIncrement : this.zoomOutIncrement)
         if (newZoom > this.minZoomThreshold && newZoom < this.maxZoomThreshold) {
@@ -676,7 +727,7 @@ class Simulation {
         }  else return false
     }
 
-    // Adds the ability do zoom/move around the canvas (if dragAndZoomCanvasEnabled)
+    // Adds the ability do zoom/move around the canvas (if dragAndZoomCanvasEnabled) (R?)
     #setCanvasZoomAndDrag() {
         const CVS = this._CVS
 
@@ -760,19 +811,60 @@ class Simulation {
 
     /**
      * Places a pixel of a specified material at the specified index on the pixel map.
-     * @param {Number} i The index value of the pixel on the map
+     * @param {Number} gridIndex The index value of the pixel on the map
      * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    placePixelAtIndex(i, material=this._selectedMaterial, replaceMode=this._replaceMode) {
+    placePixelAtIndex(gridIndex, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material, replaceMode))
+            this._queuedBufferOperations.push(()=>this.placePixelAtIndex(gridIndex, material, replaceMode))
             return
         }
 
-        if (replaceMode !== Simulation.REPLACE_MODES.ALL && !(this._pixels[i] & replaceMode)) return
-        this._pixels[i] = material
-        this._pxStates[i] = 0
+        const gridMaterials = this._gridMaterials, oldMat = gridMaterials[gridIndex]
+        if (material === oldMat) return
+
+
+        if (replaceMode !== Simulation.REPLACE_MODES.ALL && !(gridMaterials[gridIndex] & replaceMode)) return
+
+
+        const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC), gridIndexes = this._gridIndexes, oldIndex = gridIndexes[gridIndex]
+        gridMaterials[gridIndex] = material
+
+        console.log("PLACED", gridIndex, material, isStatic, oldIndex)
+
+
+        // DELETE IF DYNAMIC 
+        if (oldIndex !== -1) {
+            const i = --this._indexCount[0]
+            if (oldIndex !== i) {
+                console.log("ok deleting dybnamic", oldIndex, i)
+                this._indexFlags[oldIndex] = this._indexFlags[i]
+                this._indexPosX[oldIndex] = this._indexPosX[i]
+                this._indexPosY[oldIndex] = this._indexPosY[i]
+                this._indexVelX[oldIndex] = this._indexVelX[i]
+                this._indexVelY[oldIndex] = this._indexVelY[i]
+                this._indexGravity[oldIndex] = this._indexGravity[i]
+                const newGridIndex = (this._indexPosY[oldIndex]|0)*this._mapGrid.mapWidth+(this._indexPosX[oldIndex]|0)
+                gridIndexes[newGridIndex] = oldIndex
+            }
+            gridIndexes[gridIndex] = -1
+        }
+
+        if (!isStatic) {
+            const mapWidth = this._mapGrid.mapWidth,
+                i = this._indexCount[0]++,
+                y = (gridIndex/mapWidth)|0,
+                x = gridIndex-y*mapWidth
+            
+            this._indexFlags[i] = 0
+            this._indexPosX[i] = x
+            this._indexPosY[i] = y
+            this._indexVelX[i] = 0
+            this._indexVelY[i] = 0
+            this._indexGravity[i] = 0
+            gridIndexes[gridIndex] = i
+        }
     }
 
     /**
@@ -815,16 +907,16 @@ class Simulation {
      * Fills the entire map with a specific material.
      * @param {Simulation.MATERIALS?} material The material used (Defaults to the selected material)
      */
-    fill(material=this._selectedMaterial) {
+    fill(material=this._selectedMaterial) {// TODO FIX
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.fill(material))
             return
         }
 
-        const pixels = this._pixels, lastPixels = this._lastPixels, p_ll = pixels.length
-        lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
-        pixels.set(new Uint16Array(p_ll).fill(material))
-        if (!this._isRunning) this.updateImgMapFromPixels()
+        const pixels = this._gridMaterials, lastPixels = this._lastGridMaterials, p_ll = pixels.length
+        //lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
+        //pixels.set(new Uint16Array(p_ll).fill(material))
+        if (!this._isRunning) this.renderPixels()
     }
 
     /**
@@ -840,7 +932,7 @@ class Simulation {
             return
         }
 
-        const pixels = this._pixels, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, x1 = pos1[0]<0?0:pos1[0], y1 = pos1[1]<0?0:pos1[1], x2 = pos2[0]<0?0:pos2[0], y2 = pos2[1]<0?0:pos2[1]
+        const pixels = this._gridMaterials, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, x1 = pos1[0]<0?0:pos1[0], y1 = pos1[1]<0?0:pos1[1], x2 = pos2[0]<0?0:pos2[0], y2 = pos2[1]<0?0:pos2[1]
         for (let i=map.mapPosToIndex([x1, y1]);i<p_ll;i++) {
             let y = (i/w)|0, x = i-y*w, isXPassed = x>x2, isYPassed = y>y2, isXLooping = x<x1, isYLooping = y<y1
             if (isXPassed && !isYPassed) {
@@ -862,7 +954,7 @@ class Simulation {
             this.placePixelAtIndex(i, material, replaceMode)
         }
 
-        if (!this._isRunning) this.updateImgMapFromPixels()
+        if (!this._isRunning) this.renderPixels()
     }
     /* PIXEL EDIT -end */
 
@@ -870,20 +962,52 @@ class Simulation {
     /* SAVE / IMPORT / EXPORT */
     /**
      * Returns a copy of the current pixels array 
-     * @returns A Uint16Array
+     * @returns TODO DOC
      */
-    #getPixelsCopy() {
-        const arraySize = this._mapGrid.arraySize, pixelsCopy = new Uint16Array(arraySize)
-        pixelsCopy.set(this._pixels.subarray(0, arraySize))
-        return pixelsCopy
+    #getGridMaterialsCopy() {
+        const arraySize = this._mapGrid.arraySize, gridMaterialsCopy = new Simulation.#C_GRID_MATERIALS(arraySize)
+        gridMaterialsCopy.set(this._gridMaterials.subarray(0, arraySize))
+        return gridMaterialsCopy
+    }
+
+    // TODO DOC
+    #getArraysCopy() {
+        const arraySize = this._mapGrid.arraySize, 
+            gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1),
+            gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR),
+            indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize),
+            indexPosX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+            indexPosY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+            indexVelX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+            indexVelY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+            indexGravity = new Simulation.#C_PHYSICS_SMALL(arraySize)
+
+        gridIndexes.set(this._gridIndexes.subarray(0, arraySize))
+        gridMaterials.set(this._gridMaterials.subarray(0, arraySize))
+        indexFlags.set(this._indexFlags.subarray(0, arraySize))
+        indexPosX.set(this._indexPosX.subarray(0, arraySize))
+        indexPosY.set(this._indexPosY.subarray(0, arraySize))
+        indexVelX.set(this._indexVelX.subarray(0, arraySize))
+        indexVelY.set(this._indexVelY.subarray(0, arraySize))
+        indexGravity.set(this._indexGravity.subarray(0, arraySize))
+
+        return [
+            gridIndexes,
+            gridMaterials,
+            indexFlags,
+            indexPosX,
+            indexPosY,
+            indexVelX,
+            indexPosY,
+            indexGravity,
+        ]
     }
 
     /**
      * Fills the map with saved data.
-     * @param {Uint16Array | String | Object} mapData The save data:
+     * @param {Uint16Array | String} mapData The save data:
      * - Either a Uint16Array containing the material value for each index
      * - Or a string in the format created by the function exportAsText()
-     * - Or an Object containing the material value for each index {"index": material}
      * @param {Boolean? | [width, height]?} useSaveSizes Whether to resize the map size and pixel size to the save's values (Also used internally to specify the save data dimensions when mapData is of Uint16Array type)
      */
     load(mapData, useSaveSizes=null) {
@@ -895,7 +1019,9 @@ class Simulation {
         }
 
         if (mapData) {
-            if (mapData instanceof Uint16Array) this.#updatePixelsFromSize(useSaveSizes[0], useSaveSizes[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
+            const gridMaterialsContainer = Simulation.#C_GRID_MATERIALS
+
+            if (mapData instanceof gridMaterialsContainer) this.#updatePixelsFromSize(useSaveSizes[0], useSaveSizes[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
             else if (typeof mapData === "string") {
                 const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x)
                 let savePixels = null
@@ -905,19 +1031,19 @@ class Simulation {
                     this.updateMapPixelSize(pixelSize)
                 }
 
-                if (exportType == Simulation.EXPORT_STATES.RAW) savePixels = new Uint16Array(data.map(x=>+x||Simulation.MATERIALS.AIR))
+                if (exportType == Simulation.EXPORT_STATES.RAW) savePixels = new gridMaterialsContainer(data.map(x=>+x||Simulation.MATERIALS.AIR))
                 else if (exportType == Simulation.EXPORT_STATES.COMPACTED) {
                     let m_ll = data.length, offset = 0 
-                    savePixels = new Uint16Array(saveWidth*saveHeight)
+                    savePixels = new gridMaterialsContainer(saveWidth*saveHeight)
                     for (let i=0;i<m_ll;i+=2) {
                         const count = data[i+1], mat = +data[i]||Simulation.MATERIALS.AIR
-                        savePixels.set(new Uint16Array(count).fill(mat), offset)
+                        savePixels.set(new gridMaterialsContainer(count).fill(mat), offset)
                         offset += +count
                     }
                 }
                 this.#updatePixelsFromSize(saveWidth, saveHeight, this._mapGrid.mapWidth, this._mapGrid.mapHeight, savePixels)
-            } else this._pixels = new Uint16Array(Object.values(mapData))
-            this.updateImgMapFromPixels()
+            }
+            this.renderPixels()
         }
     }
 
@@ -933,7 +1059,7 @@ class Simulation {
             return
         }
 
-        let pixels = this._pixels, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
+        let pixels = this._gridMaterials, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
         if (disableCompacting) {
             state = Simulation.EXPORT_STATES.RAW
             textResult += pixels.toString()
@@ -987,11 +1113,11 @@ class Simulation {
 	get mapGrid() {return this._mapGrid}
 	get loopExtra() {return this._loopExtra}
 	get stepExtra() {return this._stepExtra}
-	get pxStepUpdated() {return this._pxStepUpdated}
-	get pxStates() {return this._pxStates}
-	get lastPixels() {return this._lastPixels}
+	//get pxStepUpdated() {return this._indexUpdated} TODO
+	//get pxStates() {return this._indexStates}
+	//get lastPixels() {return this._lastGridMaterials}
 	get lastStepTime() {return this._lastStepTime}
-	get pixels() {return this._pixels}
+	//get pixels() {return this._gridIndexes}
 	get mapGridRenderStyles() {return this._mapGridRenderStyles}
 	get mapBorderRenderStyles() {return this._mapBorderRenderStyles}
 	get offscreenCanvas() {return this._offscreenCanvas}
