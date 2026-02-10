@@ -46,6 +46,7 @@ const mousePosStatus = document.getElementById("mousePosStatus"),
       sidePriorityStatus = document.getElementById("sidePriorityStatus"),
       isRunningStatus = document.getElementById("isRunningStatus"),
       physicsUnitTypeStatus = document.getElementById("physicsUnitTypeStatus"),
+      timeStampStatus = document.getElementById("timeStampStatus")
       zoomStatus = document.getElementById("zoomStatus")
 
 let STATUS_REFRESH_RATE = 1000/10
@@ -84,6 +85,10 @@ function statusLoopCore() {
     const physicsUnitTypeText = simulation.usesWebWorkers ? "WORKER" : "LOCAL"
     if (physicsUnitTypeStatus.textContent !== physicsUnitTypeText) physicsUnitTypeStatus.textContent = physicsUnitTypeText
 
+    const timeStampText = simulation.CVS.timeStamp
+    if (timeStampStatus.textContent !== timeStampText) timeStampStatus.textContent = timeStampText
+
+    // ZOOM LEVEL
     const zoomText = CDEUtils.truncateDecimals(simulation.CVS.zoom, 3)
     if (zoomStatus.textContent != zoomText) zoomStatus.textContent = zoomText
 
@@ -101,8 +106,14 @@ function readyCB(simulation) {
         true
     )*/
     
-    //simulation.PERF_TEST_FULL_WATER_HIGH()
-    //simulation.fill(2)
+    //simulation.updateMapSize(231, 149)
+    //simulation.updateMapPixelSize(4)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+
+    //simulation.updateMapPixelSize(1)
+    //simulation.updateMapSize(1000, 1000)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
+    //simulation.timerEnabled = true
 }
 //DEMO 1
 //1x73,44,20x0,2,4,1,32,1,4,1,0,70,4,1,32,1,4,1,0,70,4,1,32,1,4,1,0,45,256,16,0,9,4,1,32,1,4,15,0,31,256,1,0,14,256,1,0,9,4,1,32,15,4,1,0,31,256,1,0,7,128,1,0,6,256,1,0,9,4,14,32,2,4,1,0,31,256,1,0,5,16,3,0,6,256,1,0,22,4,1,32,2,4,1,0,31,256,1,0,3,16,9,0,2,256,1,0,22,4,1,32,2,4,1,0,31,256,1,0,3,16,11,256,1,0,22,4,1,32,2,4,1,0,31,256,1,16,14,256,1,0,22,4,1,0,1,32,1,4,1,0,31,256,1,16,14,256,1,0,22,4,1,0,2,4,15,0,17,256,1,16,14,256,1,0,22,4,1,0,16,4,1,0,17,256,1,16,14,256,1,0,22,4,16,0,1,4,1,0,17,256,1,16,8,0,1,16,4,0,1,256,1,0,37,4,1,0,1,4,1,0,17,256,1,16,7,0,7,256,1,0,15,64,1,0,21,4,1,0,1,4,1,0,17,256,1,0,14,256,1,0,37,4,1,0,1,4,1,0,17,256,1,0,14,256,1,0,12,64,1,0,6,64,1,0,17,4,1,0,1,4,1,0,17,256,16,0,14,64,4,0,16,4,4,0,1,4,1,0,45,64,8,0,14,4,1,0,4,4,1,0,40,4,1,0,2,64,9,0,15,4,1,0,2,4,3,0,40,4,1,64,1,0,1,64,11,0,13,4,1,0,2,4,18,0,25,4,2,64,6,4,2,0,1,64,1,0,15,4,1,0,19,4,1,0,25,4,2,64,6,4,3,64,1,0,1,64,1,0,13,4,17,0,3,4,1,0,25,4,2,64,7,4,2,0,2,64,1,0,29,4,1,0,3,4,1,0,25,4,2,64,7,4,2,0,1,64,3,0,28,4,1,0,3,4,1,0,25,4,2,64,7,4,2,0,36,4,1,0,25,4,2,64,7,4,2,0,2,64,1,0,59,4,3,64,6,4,2,0,62,4,3,64,6,4,2,0,62,4,3,64,5,4,4,0,27,1,2,0,32,4,4,64,4,4,4,0,2,2,1,0,2,2,14,0,1,2,4,0,1,2,1,1,4,2,7,0,1,2,2,0,1,2,1,0,1,2,3,0,1,2,4,0,1,2,2,0,1,2,2,0,1,2,3,4,4,64,3,4,5,2,26,1,5,2,30,4,4,64,3,4,5,2,25,1,6,2,30,4,4,64,3,4,5,2,25,1,7,2,29,4,5,64,1,4,7,2,23,1,9,2,28,4,5,64,1,4,7,2,22,1,11,2,27,4,13,2,21,1,13,2,26,4,13,1,2,2,9,1,2,2,7,1,15,2,3,1,1,2,21,4,14,1,2,2,7,1,4,2,5,1,17,2,1,1,3,2,1,1,1,2,18,4,14,1,2,2,6,1,7,2,2,1,6,8,6,1,13,2,17,4,15,1,2,2,4,1,14,8,3,4,4,8,4,1,11,2,16,4,15,1,2,2,3,1,2,8,2,4,2,8,1,1,7,4,2,8,1,4,9,1,1,8,2,1,10,2,14,4,16,1,6,4,4,8,4,4,21,8,3,1,6,2,13,4,17,1,4,4,32,8,3,1,5,2,12
