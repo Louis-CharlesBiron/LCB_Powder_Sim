@@ -1,35 +1,140 @@
+const FLAGS = {
+    COLLISION_Y: 1<<0,
+}
+
 // DOC TODO
 function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     console.log("CONTEXT:", self.constructor.name)
     
     // CONSTANTS //
-    const RANDOM_TABLE = createRandomTable()
-
+    const RTSize = CONFIG.randomTableSize-1,
+        RANDOM_TABLE = createRandomTable()
+        
     // VARIABLES //
     // TIMER
     let timerCount = 0,
     // RANDOMNESS
-    randomIndex = 0
+    randomIndex = 0,
+    // GLOBAL CACHES
+    SP_RANDOM = null, SP_LEFT = null, SP_RIGHT = null,
+    MAP_WIDTH = null, MAP_HEIGHT = null, WIDTH2 = null
+
 
 
     // DOC TODO
-    function physicsStep(// TODO, check for delta time
+    function physicsStep(
         gridIndexes, gridMaterials, lastGridMaterials,
         indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity,
-        sidePriority, mapWidth, mapHeight
+        sidePriority, mapWidth, mapHeight,
+        deltaTime
     ) {
         if (CONFIG.timerEnabled) handleTimerPre()
 
-        const count = indexCount[0]
-        for (let i=0;i<count;i++) {
-            const x = indexPosX[i]|0, y = indexPosY[i]|0, gridIndex = y*mapWidth+x
-            
-            const mat = gridMaterials[gridIndex]
-            
-            //console.log([x,y], mat, i)
+        // VARIABLES UPDATES
+        SP_RANDOM = sidePriority===SP.RANDOM
+        SP_LEFT = sidePriority===SP.LEFT
+        SP_RIGHT = sidePriority===SP.RIGH
+        MAP_WIDTH = mapWidth 
+        MAP_HEIGHT = mapHeight 
+        WIDTH2 = mapWidth>>1
 
+        let countIndex = 0, count = indexCount[0]
+        for (;countIndex<count;countIndex++) {
+            const oldX = indexPosX[countIndex]|0, oldY = indexPosY[countIndex]|0, gi = oldY*mapWidth+oldX, 
+                mat = gridMaterials[gi], i = gridIndexes[gi]
+
+
+            //const gi_B = getAdjacencyCoords(oldX, oldY+1), gi_T = getAdjacencyCoords(oldX, oldY-1),
+            //      gi_R = getAdjacencyCoords(oldX+1, oldY), gi_L = getAdjacencyCoords(oldX-1, oldY),
+            //      m_B = gridMaterials[gi_B], m_R = gridMaterials[gi_R], m_L = gridMaterials[gi_L], m_T = gridMaterials[gi_T]
+            //if (mat & G.DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat|m_R^mat|m_L^mat|m_T^mat) === 0) continue
+
+            
+            //console.log(mat, gi, oldX, oldY, i)
             if (mat === M.SAND) {
-                console.log("hey")
+
+                let dx = 0, dy = 0
+
+                // IF COLLSION
+                if (indexFlags[i] & FLAGS.COLLISION_Y) {
+                    // CHECK MAIN DIRECTIONS
+                    if (gridMaterials[getAdjacencyCoords(oldX, oldY+1)] & G.REG_TRANSPIERCEABLE) {
+                        // can go down
+                        indexFlags[i] ^= FLAGS.COLLISION_Y
+                    } 
+                    else {
+                        if (getSideSelectionPriority(gi)) {
+                            if (gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)] & G.GASES) {
+                                dx += 1
+                                dy += 1
+                            }
+                        } else {
+                            if (gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)] & G.GASES) {
+                                dx -= 1
+                                dy += 1
+                            }
+                        }
+                    }
+                }
+
+
+                // ADD FORCES
+                indexVelY[i] += indexGravity[i]*deltaTime
+
+                // MOVE
+                dx += indexVelX[i]*deltaTime
+                dy += indexVelY[i]*deltaTime
+                indexPosX[i] += dx
+                indexPosY[i] += dy
+
+
+
+                let newX = indexPosX[i]|0, newY = indexPosY[i]|0
+                const gdx = newX-oldX, gdy = newY-oldY
+
+                // CHECK FOR COLLISION (only y for now)
+                if (gdy > 1) {
+                    for (let colY=oldY+1;colY<=newY;colY++) {
+                        // check collision at oldY..newY
+                        const gi_Dest = getAdjacencyCoords(newX, colY), hasCollision = !(gridMaterials[gi_Dest] & G.REG_TRANSPIERCEABLE)
+                        if (hasCollision) {
+                            indexPosY[i] = colY-1
+                            indexFlags[i] |= FLAGS.COLLISION_Y
+                            //if (gridMaterials[gi_Dest] !== mat) indexVelY[i] = 0
+                            break
+                        }
+                    }
+                } else if (gdy !== 0) {
+                    // check collision at destination pos
+                    const gi_Dest = getAdjacencyCoords(newX, newY), hasCollision = !(gridMaterials[gi_Dest] & G.REG_TRANSPIERCEABLE)
+                    if (hasCollision) {
+                        indexPosY[i] = oldY
+                        indexFlags[i] |= FLAGS.COLLISION_Y
+                        //if (gridMaterials[gi_Dest] !== mat) indexVelY[i] = 0
+                    }
+                }
+
+                newX = indexPosX[i]|0
+                newY = indexPosY[i]|0
+
+                
+
+
+                // UPDATE GRID
+                const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & G.REG_TRANSPIERCEABLE
+
+                // fall down
+                if (m_Dest) {
+                    const atGridI = gridIndexes[newGridI]
+                    // move to new pos
+                    gridIndexes[newGridI] = i
+                    gridMaterials[newGridI] = mat
+
+                    // switch info 
+                    gridIndexes[gi] = atGridI
+                    gridMaterials[gi] = m_Dest
+                }
+
             }
         }
 
@@ -37,7 +142,36 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         if (CONFIG.timerEnabled) console.timeEnd(CONFIG.timerName)
     }
 
+    function getSideSelectionPriority(gi) {
+        if (SP_LEFT) return true
+        if (SP_RIGHT) return false
+        if (SP_RANDOM) return RANDOM_TABLE[randomIndex++&RTSize] < .5
+        return (gi%MAP_WIDTH) < WIDTH2
+    }
 
+
+    /**
+    * Calculates the adjacent index based on the provided index, direction and distance
+    * @param {Number} i The index of a pixel in the pixels array
+    * @param {Simulation.D} direction A direction specified by one of Simulation.D
+    * @param {Number?} distance The distance to go by in the provided direction (defaults to 1)
+    * @returns The calculated adjacent index
+    */
+    function getAdjacency(i, mapWidth, mapHeight, direction, distance=1) {
+        const dWidth = mapWidth*distance, x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>=distance, hasR = x+distance<mapWidth, hasT = y>=distance, hasB = y+distance<mapHeight
+        if (direction === D.b)       return hasB ? i+dWidth:i
+        else if (direction === D.t)  return hasT ? i-dWidth:i
+        else if (direction === D.l)  return hasL ? i-distance:i
+        else if (direction === D.r)  return hasR ? i+distance:i
+        else if (direction === D.bl) return (hasB&&hasL) ? i+dWidth-distance:i
+        else if (direction === D.br) return (hasB&&hasR) ? i+dWidth+distance:i
+        else if (direction === D.tl) return (hasT&&hasL) ? i-dWidth-distance:i
+        else if (direction === D.tr) return (hasT&&hasR) ? i-dWidth+distance:i
+    }
+
+    function getAdjacencyCoords(x, y) {
+        return y*MAP_WIDTH+x
+    }
 
     // DOC TODO
     function handleTimerPre() {
@@ -50,88 +184,11 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
     // DOC TODO
     function createRandomTable() {
-        const rt_ll = CONFIG.randomTableSize, table = new Float32Array(rt_ll), random = Math.random
-        for (let i=0;i<rt_ll;i++) table[i] = random()
+        const table = new Float32Array(RTSize), random = Math.random
+        for (let i=0;i<RTSize;i++) table[i] = random()
         return table
     }
 
 
     return physicsStep
 }
-
-
-
-
-
-
-
-
-
-
-
-/*class PhysicsCore {
-    static #DEBUG_CLS_THRESHOLD = 0
-
-    constructor(globals) {
-        this.#createGlobalConstants(globals)
-    }
-
-    #createGlobalConstants(globals) {
-        Object.entries(globals||[]).forEach(([name, value])=>self[name] = value)
-    }
-
-    // Calculates a physics step on all pixels
-    step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
-        console.log("STEP", pixels)
-
-        _physicsStep()
-        return
-
-        const p_ll = pixels.length-1, width2 = mapWidth>>1, PX = 1, STATE = 2,
-              AIR = M.AIR, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, TRANSPIERCEABLE = G.REG_TRANSPIERCEABLE, GASES = G.GASES,
-              CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE, STATIC = G.STATIC,
-              SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGH
-        
-        //pxStepUpdated.fill(0)
-
-        // PERFORMANCES TESTING
-        const timerEnabled = 0
-        if (timerEnabled) {
-            if (PhysicsCore.#DEBUG_CLS_THRESHOLD++ > 18) {console.clear();PhysicsCore.#DEBUG_CLS_THRESHOLD = 0}
-            console.time(".")
-        }
-
-
-        let i = p_ll
-        for (;i>=0;i--) {
-            const mat = pixels[i]||AIR
-            // SKIP IF STATIC MATERIAL OR ALREADY UPDATED
-            if (mat & STATIC || pxStepUpdated[i]) continue
-
-            // DEFINE USEFUL VARS
-            const x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>0, hasR = x<mapWidth-1, hasT = y>0, hasB = y<mapHeight-1,
-                  i_B  = hasB ? i+mapWidth:i, i_T  = hasT ? i-mapWidth:i, i_L  = hasL ? i-1:i, i_R  = hasR ? i+1:i,
-                  p_B = pixels[i_B], p_R = pixels[i_R], p_L = pixels[i_L], p_T = pixels[i_T]
-
-            // SKIP IF MATERIAL SUROUNDED BY ITSELF
-            if (mat & CONTAINED_SKIPABLE && (p_B^mat|p_R^mat|p_L^mat|p_T^mat) === 0) continue
-
-            // DEFINE USEFUL VARS (CORNERS)
-            const i_BL = (hasB&&hasL) ? i+mapWidth-1:i, i_BR = (hasB&&hasR) ? i+mapWidth+1:i, i_TL = (hasT&&hasL) ? i-mapWidth-1:i, i_TR = (hasT&&hasR) ? i-mapWidth+1:i
-
-            // DEFINE REGULAR RESULT VARS
-            let newMaterial = mat, newIndex = -1, replaceMaterial = AIR
-
-
-            // ↓ MATERIALS PHYSICS ↓ //
-
-            // SAND //
-            if (mat === M.SAND) {
-
-            }
-
-        }
-
-        if (timerEnabled) console.timeEnd(".")
-    }
-}*/

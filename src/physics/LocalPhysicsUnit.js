@@ -16,12 +16,14 @@ class LocalPhysicsUnit {
     step(
         gridIndexes, gridMaterials, lastGridMaterials,
         indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity,
-        sidePriority, mapWidth, mapHeight
+        sidePriority, mapWidth, mapHeight,
+        deltaTime
     ) {
         this._physicsCore(
             gridIndexes, gridMaterials, lastGridMaterials,
             indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity,
-            sidePriority, mapWidth, mapHeight
+            sidePriority, mapWidth, mapHeight,
+            deltaTime
         )
     }
 

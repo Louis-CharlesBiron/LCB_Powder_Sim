@@ -40,7 +40,7 @@ class PhysicsCore {
     step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, M, G, D, S, SG, P) {
         const p_ll = pixels.length-1, width2 = mapWidth>>1, PX = 1, STATE = 2,
               AIR = M.AIR, LIQUIDS = G.LIQUIDS, MELTABLE = G.MELTABLE, TRANSPIERCEABLE = G.REG_TRANSPIERCEABLE, GASES = G.GASES,
-              CONTAINED_SKIPABLE = G.REVERSE_LOOP_CONTAINED_SKIPABLE, STATIC = G.STATIC,
+              CONTAINED_SKIPABLE = G.DOWN_MAIN_CONTAINED_SKIPABLE, STATIC = G.STATIC,
               RT = PhysicsCore.#RANDOM_CACHE, RS = PhysicsCore.#RANDOM_TABLE_SIZE-1, SP_RANDOM = sidePriority===P.RANDOM, SP_LEFT = sidePriority===P.LEFT, SP_RIGHT = sidePriority===P.RIGH,
               {B, R, L, BR, BL, T, TR, TL} = PhysicsCore.#REGULAR_MOVES,
               SAND_CACHE = PhysicsCore.#SAND_CACHE, SAND_SP_BIT = PhysicsCore.#SAND_SP_BIT,
