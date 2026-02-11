@@ -826,7 +826,7 @@ class Simulation {
         }
 
         const gridMaterials = this._gridMaterials, oldMat = gridMaterials[gridIndex]
-        if (material === oldMat) return
+        if (material === oldMat || gridIndex < 0) return
 
 
         if (replaceMode !== Simulation.REPLACE_MODES.ALL && !(gridMaterials[gridIndex] & replaceMode)) return
@@ -834,7 +834,7 @@ class Simulation {
         const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC), gridIndexes = this._gridIndexes, oldIndex = gridIndexes[gridIndex]
         gridMaterials[gridIndex] = material
 
-        //console.log("PLACED", gridIndex, material, isStatic, oldIndex) TODO
+        //0console.log("PLACED", !!isStatic, gridIndex, material, oldIndex)
 
         // DELETE IF DYNAMIC 
         if (oldIndex !== -1) {
@@ -863,7 +863,7 @@ class Simulation {
             this._indexPosX[i] = x
             this._indexPosY[i] = y+CDEUtils.random(0, .85, 3)
             this._indexVelX[i] = 0
-            this._indexVelY[i] = 2
+            this._indexVelY[i] = 2+CDEUtils.random(0, 1, 3)
             this._indexGravity[i] = 90+CDEUtils.random(-10, 20)
             gridIndexes[gridIndex] = i
         }

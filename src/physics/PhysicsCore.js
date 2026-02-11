@@ -8,8 +8,14 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     
     // CONSTANTS //
     const RTSize = CONFIG.randomTableSize-1,
-        RANDOM_TABLE = createRandomTable()
-        
+        RANDOM_TABLE = createRandomTable(),
+
+    // ENUMS DESTRUCTURING
+    {AIR, SAND, WATER, STONE, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, ELECTRICITY, COPPER, TREE, GAS} = M,
+    {GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, STATIC, DOWN_MAIN_CONTAINED_SKIPABLE} = G,
+    {RANDOM, LEFT, RIGHT} = SP,
+    {COLLISION_Y} = FLAGS
+
     // VARIABLES //
     // TIMER
     let timerCount = 0,
@@ -31,16 +37,16 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         if (CONFIG.timerEnabled) handleTimerPre()
 
         // VARIABLES UPDATES
-        SP_RANDOM = sidePriority===SP.RANDOM
-        SP_LEFT = sidePriority===SP.LEFT
-        SP_RIGHT = sidePriority===SP.RIGH
+        SP_RANDOM = sidePriority===RANDOM
+        SP_LEFT = sidePriority===LEFT
+        SP_RIGHT = sidePriority===RIGH
         MAP_WIDTH = mapWidth 
         MAP_HEIGHT = mapHeight 
         WIDTH2 = mapWidth>>1
 
         // DEBUG
-        let skipped1ENABLE = false
-        let skipped1 = 0
+        let skippedENABLE = false,
+            skipped1 = 0, skipped2 = 0
 
 
         let countIndex = 0, count = indexCount[0]
@@ -50,51 +56,40 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
             
             //console.log(mat, gi, oldX, oldY, i)
-            if (mat === M.SAND) {
-
-                /**
-                 * If nothing under falls 
-                 * Else if nothing on a L+BL pr R+BR slide down
-                 * Else only check the conditions above
-                 */
-
-
-                let dx = 0, dy = 0//, safeDx = 0, safeDy = 0
-
-
-                //if (!(indexFlags[i]&FLAGS.COLLISION_Y) && !(gridMaterials[getAdjacencyCoords(oldX, oldY+1)] & G.REG_TRANSPIERCEABLE)) {
-                //    console.log("EARLY COL SET")
-                //    indexFlags[i] |= FLAGS.COLLISION_Y
-                //}
+            if (mat === SAND) {
+                const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)]
+                let dx = 0, dy = 0
+                
+                // SKIP IF EARLY COLLISION
+                if (m_B !== mat && !(m_B & REG_TRANSPIERCEABLE)) {
+                    indexFlags[i] |= COLLISION_Y
+                    skipped1++
+                    continue
+                }
 
                 // IF COLLSION
-                if (indexFlags[i]&FLAGS.COLLISION_Y) {
-                    const gi_B = getAdjacencyCoords(oldX, oldY+1), gi_R = getAdjacencyCoords(oldX+1, oldY), gi_L = getAdjacencyCoords(oldX-1, oldY), gi_T = getAdjacencyCoords(oldX, oldY-1),
-                          m_B = gridMaterials[gi_B], m_R = gridMaterials[gi_R], m_L = gridMaterials[gi_L], m_T = gridMaterials[gi_T]
+                if (indexFlags[i]&COLLISION_Y) {
+                    const gi_R = getAdjacencyCoords(oldX+1, oldY), gi_L = getAdjacencyCoords(oldX-1, oldY),
+                          m_R = gridMaterials[gi_R], m_L = gridMaterials[gi_L], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
 
-                    if (mat & G.DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat|m_R^mat|m_L^mat|m_T^mat) === 0) {
-                        skipped1++
+                    // SKIP IF CONTAINED
+                    if (mat & DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat) === 0 && ((m_BR^mat|m_BL^mat) === 0 || (m_R^mat|m_L^mat) === 0)) {
+                        skipped2++
                         continue
                     }
 
 
                     // CHECK MAIN DIRECTIONS
-                    if (gridMaterials[gi_B] & G.REG_TRANSPIERCEABLE) {
-                        // can go down
-                        indexFlags[i] ^= FLAGS.COLLISION_Y
-                    } 
+                    if (m_B & REG_TRANSPIERCEABLE) indexFlags[i] ^= COLLISION_Y
                     else {
-                        //console.log("SIDES CHEKING", i)
                         // GO SIDES
                         if (getSideSelectionPriority(gi)) {
-                            if (m_R & G.GASES && gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)] & G.GASES) {
-                                console.log("NO PHYSICS")
+                            if (m_R & GASES && gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)] & GASES) {
                                 dx += 1
                                 dy += 1
                             } 
                         } else {
-                            if (m_L & G.GASES && gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)] & G.GASES) {
-                                console.log("NO PHYSICS")
+                            if (m_L & GASES && gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)] & GASES) {
                                 dx -= 1
                                 dy += 1
                             } 
@@ -103,9 +98,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 } 
                 
                 // NO COLLISION Y
-                if (!(indexFlags[i]&FLAGS.COLLISION_Y)) {
-                    console.log("Y PHYSICS")
-                    // TODO --
+                if (!(indexFlags[i]&COLLISION_Y)) {
                     // ADD VERTICAL FORCES
                     const velY = indexVelY[i] += indexGravity[i]*deltaTime
                     dy += velY*deltaTime
@@ -133,10 +126,10 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 if (gdy > 1) {
                     for (let colY=oldY+1;colY<=newY;colY++) {
                         // check collision at oldY..newY
-                        const gi_Dest = getAdjacencyCoords(newX, colY), hasCollision = !(gridMaterials[gi_Dest] & G.REG_TRANSPIERCEABLE)
+                        const gi_Dest = getAdjacencyCoords(newX, colY), hasCollision = !(gridMaterials[gi_Dest] & REG_TRANSPIERCEABLE)
                         if (hasCollision) {
                             newY = (indexPosY[i] = colY-1)|0
-                            indexFlags[i] |= FLAGS.COLLISION_Y
+                            indexFlags[i] |= COLLISION_Y
                             if (gridMaterials[gi_Dest] !== mat) indexVelY[i] = 2
                             break
                         }
@@ -144,24 +137,24 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 } 
                 else if (gdy !== 0) {
                     // check collision at destination pos
-                    const gi_Dest = getAdjacencyCoords(newX, newY), hasCollision = !(gridMaterials[gi_Dest] & G.REG_TRANSPIERCEABLE)
+                    const gi_Dest = getAdjacencyCoords(newX, newY), hasCollision = !(gridMaterials[gi_Dest] & REG_TRANSPIERCEABLE)
                     if (hasCollision) {
                         newY = (indexPosY[i] = oldY)|0
                         if (gridMaterials[gi_Dest] !== mat) indexVelY[i] = 2
-                        indexFlags[i] |= FLAGS.COLLISION_Y
+                        indexFlags[i] |= COLLISION_Y
                     }
                 }
-                // NO GRID MOVEMENT -> skip
+                // NO (Y) GRID MOVEMENT -> skip
                 else continue
 
                 newX = indexPosX[i]|0
 
 
                 // UPDATE GRID
-                const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & G.REG_TRANSPIERCEABLE
+                const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & REG_TRANSPIERCEABLE
 
                 // SWITCH ONLY IF DEST IS TRANSPIERCEABLE
-                if (m_Dest) {
+                if (m_Dest !== 0) {
                     const atGridI = gridIndexes[newGridI]
                     // move to new pos
                     gridIndexes[newGridI] = i
@@ -171,14 +164,14 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                     gridIndexes[gi] = atGridI
                     gridMaterials[gi] = m_Dest
                 }
-
             }
         }
 
         //TEMP_VERIFY(gridIndexes,gridMaterials,lastGridMaterials,indexCount,indexFlags,indexPosXindexPosY,indexVelX,indexVelY,indexGravity,sidePriority,mapWidth,mapHeight)
 
-        if (skipped1ENABLE) console.log(skipped1)
+        if (skippedENABLE) console.log(skipped1, skipped2)
         skipped1 = 0
+        skipped2 = 0
         if (CONFIG.timerEnabled) console.timeEnd(CONFIG.timerName)
     }
 
