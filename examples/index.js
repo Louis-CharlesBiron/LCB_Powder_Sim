@@ -14,7 +14,7 @@ const simulation = new Simulation(
         aimedFPS: 60,
     },
     {
-        autoSimulationSizing: 80,
+        autoSimulationSizing: 20,
         showBorder: true,
         showGrid: true,
         visualEffectsEnabled: true,

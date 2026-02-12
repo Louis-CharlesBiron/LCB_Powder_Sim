@@ -862,7 +862,7 @@ class Simulation {
             this._indexFlags[i] = 0
             this._indexPosX[i] = x
             this._indexPosY[i] = y+CDEUtils.random(0, .85, 3)
-            this._indexVelX[i] = 90*(CDEUtils.random(-2, 1)||1)//5
+            this._indexVelX[i] = 90//*(CDEUtils.random(-2, 1)||1)//5
             this._indexVelY[i] = 2+CDEUtils.random(0, 1, 3)
             this._indexGravity[i] = 90+CDEUtils.random(-10, 20)
             gridIndexes[gridIndex] = i
