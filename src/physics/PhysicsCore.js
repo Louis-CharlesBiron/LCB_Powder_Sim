@@ -55,9 +55,9 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
         // DEBUG
         let skippedENABLE = false,
-            skip1 = 0, skip2 = 0, skip3 = 0, skip4 = 0
+            skip1 = 0, skip2 = 0, skip3 = 0
 
-    deltaTime = 0.016
+    //deltaTime = 0.016
 
 
         let countIndex = 0, count = indexCount[0]
@@ -71,13 +71,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)]
                 let dx = 0, dy = 0
                 
-                // SKIP IF EARLY COLLISION
-                //if (m_B !== mat && !(m_B & REG_TRANSPIERCEABLE)) {
-                //    indexFlags[i] |= COLLISION_BOTTOM
-                //    skip1++
-                //    continue
-                //}
-
                 // IF COLLSION BOTTOM
                 if (indexFlags[i]&COLLISION_BOTTOM) {
                     const gi_R = getAdjacencyCoords(oldX+1, oldY), gi_L = getAdjacencyCoords(oldX-1, oldY),
@@ -85,10 +78,9 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
                     // SKIP IF CONTAINED
                     if ((indexFlags[i]&COLLISION_X) && mat & DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat) === 0 && ((m_BR^mat|m_BL^mat) === 0 || (m_R^mat|m_L^mat) === 0)) {
-                        skip2++
+                        skip1++
                         continue
                     }
-
 
                     // CHECK MAIN DIRECTIONS
                     if (m_B & REG_TRANSPIERCEABLE) indexFlags[i] ^= COLLISION_BOTTOM
@@ -124,7 +116,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
                 // MOVE
                 const hasPhysicsMovements = dy || dx
-                if (!hasPhysicsMovements) {skip3++;continue}
+                if (!hasPhysicsMovements) {skip2++;continue}
 
                 indexPosX[i] = safeTrunc(clamp(ox+dx))
                 indexPosY[i] += safeTrunc(dy)
@@ -133,11 +125,11 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 const gdx = newX-oldX, gdy = newY-oldY, 
                     hasNoGdx = gdx === 0, hasNoGdy = gdy === 0
 
-                //console.log(i, [newX, newY], "| +", clamp(ox+dx), ox+dx, [gdx, gdy], "y", indexPosY[i])
+                //console.log(i, [newX, newY], "| +", safeTrunc(clamp(ox+dx)), safeTrunc(ox+dx), [gdx, gdy], "x/y", [indexPosX[i],indexPosY[i]])
 
 
-                // NO GRID MOVEMENT -> skip
-                if (hasNoGdy && hasNoGdx) {skip4++;continue}
+                // NO GRID MOVEMENT -> skip (RECONSIDER)
+                if (hasNoGdy && hasNoGdx) {skip3++;continue}
 
                 const absGdx = abs(gdx), absGdy = abs(gdy),
                     dirGdy = 1|(gdy>>LAST_BIT), dirGdx = 1|(gdx>>LAST_BIT)
@@ -203,7 +195,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
                         if (gi_Dest === gi && (dirGdx > 0 ? newX < mapWidth-1 : newX > 0)) console.log("VERY BAD auto collision", gi_Dest, gi, [newX, newY])//
 
-
                         newX = (indexPosX[i] = oldX)|0
 
                         const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-indexVelX[i])
@@ -246,31 +237,17 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             }
         }
 
-        if (skippedENABLE) console.log("1:", skip1, "2:", skip2, "3:", skip3, "4:", skip4)
-        skip1 = 0
-        skip2 = 0
-        skip3 = 0
-        skip4 = 0
+        if (skippedENABLE) console.log("1:", skip1, "2:", skip2, "3:", skip3)
+        skip1 = skip2 = skip3 = 0
         if (CONFIG.timerEnabled) console.timeEnd(CONFIG.timerName)
     }
 
 
-    function TEMP_VERIFY(
-        gridIndexes, gridMaterials, lastGridMaterials,
-        indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity,
-        sidePriority, mapWidth, mapHeight,
-    ) {
-        let countIndex = 0, count = indexCount[0]
-        for (;countIndex<count;countIndex++) {
-            const oldX = indexPosX[countIndex]|0, oldY = indexPosY[countIndex]|0, gi = oldY*mapWidth+oldX, 
-                mat = gridMaterials[gi], i = gridIndexes[gi]
-            
-            if (mat !== gridMaterials[getAdjacencyCoords(oldX, oldY)]) console.log("BADDDD")
-        }
-    }
-
+    const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
     function safeTrunc(num) {
-        return (num*1e5|0)*1e-5
+        FLOAT32_TRUNC_ARR[0] = num
+        if (FLOAT32_TRUNC_ARR[0] > num) UINT32_TRUNC_ARR[0]--
+        return FLOAT32_TRUNC_ARR[0]
     }
 
     function abs(num) {
