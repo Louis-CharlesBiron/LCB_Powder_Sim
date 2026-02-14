@@ -55,9 +55,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
         // DEBUG
         let skippedENABLE = false,
-            skip1 = 0, skip2 = 0, skip3 = 0
-
-    //deltaTime = 0.016
+            skip1=0, skip2=0, skip3=0, skip4=0
 
 
         let countIndex = 0, count = indexCount[0]
@@ -66,33 +64,34 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 mat = gridMaterials[gi], i = gridIndexes[gi]
 
             
-            //console.log(mat, gi, oldX, oldY, i)
+            if (i==null || i == -1) console.log("gi:",gi, [oldX, oldY], "i:", i, "|", countIndex)
+
             if (mat === SAND) {
-                const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)]
+                // B  - GO THROUGH TRANSPIERCEABLE
+                // BR - GO THROUGH GASES
+                // BL - GO THROUGH GASES
+                const transpierceableMain = REG_TRANSPIERCEABLE, transpierceableSec = GASES, m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)], hasColX = indexFlags[i]&COLLISION_X
                 let dx = 0, dy = 0
-                
+
                 // IF COLLSION BOTTOM
                 if (indexFlags[i]&COLLISION_BOTTOM) {
                     const gi_R = getAdjacencyCoords(oldX+1, oldY), gi_L = getAdjacencyCoords(oldX-1, oldY),
                           m_R = gridMaterials[gi_R], m_L = gridMaterials[gi_L], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
 
                     // SKIP IF CONTAINED
-                    if ((indexFlags[i]&COLLISION_X) && mat & DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat) === 0 && ((m_BR^mat|m_BL^mat) === 0 || (m_R^mat|m_L^mat) === 0)) {
-                        skip1++
-                        continue
-                    }
+                    if (hasColX && mat & DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat) === 0 && ((m_BR^mat|m_BL^mat) === 0 || (m_R^mat|m_L^mat) === 0)) {skip1++;continue}
 
                     // CHECK MAIN DIRECTIONS
-                    if (m_B & REG_TRANSPIERCEABLE) indexFlags[i] ^= COLLISION_BOTTOM
+                    if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
                     else {
                         // GO SIDES
                         if (getSideSelectionPriority(gi)) {
-                            if (m_R & GASES && m_BR & GASES) {
+                            if (m_R & transpierceableSec && m_BR & transpierceableSec) {
                                 dx += 1
                                 dy += 1
                             } 
                         } else {
-                            if (m_L & GASES && m_BL & GASES) {
+                            if (m_L & transpierceableSec && m_BL & transpierceableSec) {
                                 dx -= 1
                                 dy += 1
                             } 
@@ -103,63 +102,61 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 // NO COLLISION BOTTOM
                 if (!(indexFlags[i]&COLLISION_BOTTOM)) {
                     // ADD VERTICAL FORCES
-                    const velY = indexVelY[i] += indexGravity[i]*deltaTime
-                    dy += velY*deltaTime
+                    indexVelY[i] += indexGravity[i]*deltaTime
+                    dy += indexVelY[i]*deltaTime
                 }
+
 
                 // NO COLLISION LEFT/RIGHT
-                if (!(indexFlags[i]&COLLISION_X)) {
+                if (!hasColX) {
                     // ADD HORIZONTAL FORCES
+                    //indexVelX[i] += indexGravity[i]*deltaTime
                     dx += indexVelX[i]*deltaTime
                 }
-
 
                 // MOVE
                 const hasPhysicsMovements = dy || dx
                 if (!hasPhysicsMovements) {skip2++;continue}
+                //console.log(dy, dx, indexVelY[i])
 
-                indexPosX[i] = safeTrunc(clamp(ox+dx))
-                indexPosY[i] += safeTrunc(dy)
+                if (dx) indexPosX[i] = safeTrunc(clamp(ox+dx))
+                if (dy)  indexPosY[i] += safeTrunc(dy)
                 let newX = (ox+dx)|0, newY = indexPosY[i]|0
-
-                const gdx = newX-oldX, gdy = newY-oldY, 
-                    hasNoGdx = gdx === 0, hasNoGdy = gdy === 0
-
+                const gdx = newX-oldX, gdy = newY-oldY, hasNoGdx = gdx === 0, hasNoGdy = gdy === 0
                 //console.log(i, [newX, newY], "| +", safeTrunc(clamp(ox+dx)), safeTrunc(ox+dx), [gdx, gdy], "x/y", [indexPosX[i],indexPosY[i]])
-
 
                 // NO GRID MOVEMENT -> skip (RECONSIDER)
                 if (hasNoGdy && hasNoGdx) {skip3++;continue}
 
-                const absGdx = abs(gdx), absGdy = abs(gdy),
-                    dirGdy = 1|(gdy>>LAST_BIT), dirGdx = 1|(gdx>>LAST_BIT)
-
+                const absGdx = abs(gdx), absGdy = abs(gdy), dirGdy = 1|(gdy>>LAST_BIT), dirGdx = 1|(gdx>>LAST_BIT)
 
                 // CHECK FOR COLLISION Y
                 if (absGdy > 1) {
                     for (let colY=oldY+dirGdy,colI=0; colI<absGdy; colI++,colY+=dirGdy) {
                         // check collision at oldY..newY
-                        const gi_Dest = getAdjacencyCoords(newX, colY), hasCollision = !(gridMaterials[gi_Dest] & REG_TRANSPIERCEABLE)
-                        //console.log(i, "2TR-Y", gi_Dest, gi, [newX, newY], gridMaterials[gi_Dest])
+                        const gi_Dest = getAdjacencyCoords(newX, colY), m_dest = gridMaterials[gi_Dest], hasCollision = !(m_dest & transpierceableMain)
+                        //console.log(i, "2TR-Y", gi_Dest, gi, [newX, newY], m_dest)
                         if (hasCollision) {
                             newY = (indexPosY[i] = colY-dirGdy)|0
                             //console.log(i, "2Y", gi_Dest, gi, [newX, newY])
 
                             indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
-                            if (gridMaterials[gi_Dest] !== mat) indexVelY[i] = 2
+                            if (m_dest && m_dest !== mat) indexVelY[i] = 2
+                            else if (!m_dest) indexVelY[i] = 0
                             break
                         }
                     }
                 } else if (!hasNoGdy) {
                     // check collision at destination pos
-                    const gi_Dest = getAdjacencyCoords(newX, newY), hasCollision = !(gridMaterials[gi_Dest] & REG_TRANSPIERCEABLE)
-                    //console.log(i, "TR-Y", gi_Dest, gi, [newX, newY], "old", [oldX, oldY], gridMaterials[gi_Dest])
+                    const gi_Dest = getAdjacencyCoords(newX, newY), m_dest = gridMaterials[gi_Dest], hasCollision = !(m_dest & transpierceableMain)
+                    //console.log(i, "TR-Y", gi_Dest, gi, [newX, newY], "old", [oldX, oldY], m_dest)
                     if (hasCollision) {
-                        newY = (indexPosY[i] = oldY)|0// TRY oy instead of oldY TODO
-                        //console.log(i, "Y", gi_Dest, gi, [newX, newY])
-                        if (gridMaterials[gi_Dest] !== mat) indexVelY[i] = 2
-                        if (gi_Dest)
+                        //console.log(i, "Y", gi_Dest, gi, [newX, newY], velDiff)
+                        newY = (indexPosY[i] = oldY)|0
+
                         indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
+                        if (m_dest && m_dest !== mat) indexVelY[i] = 2
+                        else if (!m_dest) indexVelY[i] = 0
                     }
                 }
 
@@ -167,18 +164,13 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 if (absGdx > 1) {
                     for (let colX=oldX+dirGdx,colI=0; colI<absGdx; colI++,colX+=dirGdx) {
                         // check collision at oldX..newX
-                        const gi_Dest = getAdjacencyCoords(colX, newY), hasCollision = !(gridMaterials[gi_Dest] & REG_TRANSPIERCEABLE)
+                        const gi_Dest = getAdjacencyCoords(colX, newY), m_dest = gridMaterials[gi_Dest], hasCollision = !(m_dest & transpierceableMain)
                         if (hasCollision) {
-
-                            if (gi_Dest === gi && (dirGdx > 0 ? newX < mapWidth-1 : newX > 0)) console.log("VERY BAD auto collision", gi_Dest, gi, [newX, newY])//
-
-
                             newX = (indexPosX[i] = colX-dirGdx)|0
 
-                            const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-indexVelX[i])
+                            const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-indexVelX[i])// TODO put velocity threshold in Y collisions too
                             //console.log(i, [newX, newY], "2col x", gi_Dest, gi, "2VEL:", indexVelX[i], "->", indexVelX[gridIndexes[gi_Dest]], "|", gi_Dest === gi, velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD)
-
-                            if (gridMaterials[gi_Dest] & STATIC || gi_Dest === gi || velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD) {
+                            if (m_dest & STATIC || gi_Dest === gi || velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD) {
                                 //console.log("RESET VEL2", i)
                                 indexVelX[i] = 0
                                 indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
@@ -188,19 +180,15 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                     }
                 } else if (!hasNoGdx) {
                     // check collision at destination pos
-                    const gi_Dest = getAdjacencyCoords(newX, newY), hasCollision = !(gridMaterials[gi_Dest] & REG_TRANSPIERCEABLE)
+                    const gi_Dest = getAdjacencyCoords(newX, newY), m_dest = gridMaterials[gi_Dest], hasCollision = !(m_dest & transpierceableMain)
                     //console.log("CHEK COL", gi, gi_Dest, hasCollision)
 
                     if (hasCollision) {
-
-                        if (gi_Dest === gi && (dirGdx > 0 ? newX < mapWidth-1 : newX > 0)) console.log("VERY BAD auto collision", gi_Dest, gi, [newX, newY])//
-
                         newX = (indexPosX[i] = oldX)|0
 
                         const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-indexVelX[i])
                         //console.log(i, [newX, newY], "col x", gi_Dest, gi, "VEL:", indexVelX[i], "->", indexVelX[gridIndexes[gi_Dest]], "|", gi_Dest === gi, velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD)
-
-                        if (gridMaterials[gi_Dest] & STATIC || gi_Dest === gi || velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD) {
+                        if (m_dest & STATIC || gi_Dest === gi || velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD) {
                             //console.log("RESET VEL", i)
                             indexVelX[i] = 0
                             indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
@@ -209,8 +197,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 }
 
                 // UPDATE GRID
-                const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & REG_TRANSPIERCEABLE
-                //console.log("GRID", i, ": new pos ->", newX, newY, " | . ", indexPosX[i], indexPosY[i], "|", !!m_Dest, m_Dest, newGridI, "replace mat", gridMaterials[newGridI])
+                const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & transpierceableMain
 
                 // SWITCH ONLY IF DEST IS TRANSPIERCEABLE
                 if (m_Dest !== 0) {
@@ -231,14 +218,166 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                         //console.log(i, "-------CANCEL-Y", ": changes ->", gdx, gdy, "|", newX-oldX, newY-oldY, "|", indexPosX[i], indexPosY[i], ox, oy)
                         indexPosY[i] = oy
                     }
-                    
-                    //console.log("------------CANCEL", i, ": changes ->", gdx, gdy, "|", newX-oldX, newY-oldY, "|", indexPosX[i], indexPosY[i], ox, oy)
                 }
+            }
+
+            if (mat === WATER) {
+                // B  - GO THROUGH GASES
+                // BR - GO THROUGH GASES
+                // BL - GO THROUGH GASES
+                // R  - GO THROUGH GASES
+                // L  - GO THROUGH GASES
+                const transpierceableMain = GASES, transpierceableSec = GASES, m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)], hasColX = indexFlags[i]&COLLISION_X
+                let dx = 0, dy = 0
+
+                // IF COLLSION BOTTOM
+                if (indexFlags[i]&COLLISION_BOTTOM) {
+                    const gi_R = getAdjacencyCoords(oldX+1, oldY), gi_L = getAdjacencyCoords(oldX-1, oldY),
+                          m_R = gridMaterials[gi_R], m_L = gridMaterials[gi_L], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
+
+                    // SKIP IF CONTAINED
+                    //if (hasColX && mat & DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat) === 0 && ((m_BR^mat|m_BL^mat) === 0 || (m_R^mat|m_L^mat) === 0)) {skip1++;continue}
+
+                    // CHECK MAIN DIRECTIONS
+                    if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
+                    else {
+                        // GO SIDES
+                        if (getSideSelectionPriority(gi)) {
+                            const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
+                            if (leftEmpty && m_BL & transpierceableSec) {
+                                dx -= 1
+                                dy += 1
+                            } else if (rightEmpty && m_BR & transpierceableSec) {
+                                dx += 1
+                                dy += 1
+                            }
+                            else if (leftEmpty) dx -= 1
+                            else if (rightEmpty) dx += 1
+                        } else {
+                            const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
+                            if (rightEmpty && m_BR & transpierceableSec) {
+                                dx += 1
+                                dy += 1
+                            } else if (leftEmpty && m_BL & transpierceableSec) {
+                                dx -= 1
+                                dy += 1
+                            }
+                            else if (rightEmpty) dx += 1
+                            else if (leftEmpty) dx -= 1
+                        }
+                    }
+                }
+
+                // NO COLLISION BOTTOM
+                if (!(indexFlags[i]&COLLISION_BOTTOM)) {
+                    // ADD VERTICAL FORCES
+                    indexVelY[i] += indexGravity[i]*deltaTime
+                }
+                    dy += indexVelY[i]*deltaTime
+
+                // NO COLLISION LEFT/RIGHT
+                if (!hasColX) {
+                    // ADD HORIZONTAL FORCES
+                }
+                    dx += indexVelX[i]*deltaTime
+
+                
+                // MOVE
+                const hasPhysicsMovements = dy || dx
+                if (!hasPhysicsMovements) {skip2++;continue}
+
+                if (dx) indexPosX[i] = safeTrunc(clamp(ox+dx))
+                if (dy)  indexPosY[i] += safeTrunc(dy)
+                let newX = (ox+dx)|0, newY = indexPosY[i]|0
+                const gdx = newX-oldX, gdy = newY-oldY, hasNoGdx = gdx === 0, hasNoGdy = gdy === 0
+
+                // NO GRID MOVEMENT -> skip (RECONSIDER)
+                if (hasNoGdy && hasNoGdx) {skip3++;continue}
+
+                const absGdx = abs(gdx), absGdy = abs(gdy), dirGdy = 1|(gdy>>LAST_BIT), dirGdx = 1|(gdx>>LAST_BIT)
+
+                // CHECK FOR COLLISION Y
+                if (absGdy > 1) {
+                    // check collision at oldY..newY
+                    for (let colY=oldY+dirGdy,colI=0; colI<absGdy; colI++,colY+=dirGdy) {
+                        const gi_Dest = getAdjacencyCoords(newX, colY), m_dest = gridMaterials[gi_Dest], hasCollision = !(m_dest & transpierceableMain)
+                        if (hasCollision) {
+                            newY = (indexPosY[i] = colY-dirGdy)|0
+                            indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
+                            if (m_dest && m_dest !== mat) indexVelY[i] = 2
+                            else if (!m_dest) indexVelY[i] = 0
+                            break
+                        }
+                    }
+                } else if (!hasNoGdy) {
+                    // check collision at destination pos
+                    const gi_Dest = getAdjacencyCoords(newX, newY), m_dest = gridMaterials[gi_Dest], hasCollision = !(m_dest & transpierceableMain)
+                    if (hasCollision) {
+                        newY = (indexPosY[i] = oldY)|0
+                        indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
+                        if (m_dest && m_dest !== mat) indexVelY[i] = 2
+                        else if (!m_dest) indexVelY[i] = 0
+                    }
+                }
+
+                // CHECK FOR COLLISION X
+                if (absGdx > 1) {
+                    // check collision at oldX..newX
+                    for (let colX=oldX+dirGdx,colI=0; colI<absGdx; colI++,colX+=dirGdx) {
+                        const gi_Dest = getAdjacencyCoords(colX, newY), m_dest = gridMaterials[gi_Dest], hasCollision = !(m_dest & transpierceableMain)
+                        if (hasCollision) {
+                            const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-indexVelX[i])
+                            newX = (indexPosX[i] = colX-dirGdx)|0
+                            if (m_dest & STATIC || gi_Dest === gi || velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD) {
+                                //console.log("RESET VEL2", i)
+                                indexVelX[i] = 0
+                                indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
+                            }
+                            break
+                        }
+                    }
+                } else if (!hasNoGdx) {
+                    // check collision at destination pos
+                    const gi_Dest = getAdjacencyCoords(newX, newY), m_dest = gridMaterials[gi_Dest], hasCollision = !(m_dest & transpierceableMain)
+                    if (hasCollision) {
+                        const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-indexVelX[i])
+                        newX = (indexPosX[i] = oldX)|0
+                        if (m_dest & STATIC || gi_Dest === gi || velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD) {
+                            indexVelX[i] = 0
+                            indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
+                        }
+                    }
+                }
+
+
+                // UPDATE GRID
+                const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & transpierceableMain
+
+                // SWITCH ONLY IF DEST IS TRANSPIERCEABLE
+                if (m_Dest !== 0) {
+                    const atGridI = gridIndexes[newGridI]
+                    // move to new pos
+                    gridIndexes[newGridI] = i
+                    gridMaterials[newGridI] = mat
+
+                    // switch info 
+                    gridIndexes[gi] = atGridI
+                    gridMaterials[gi] = m_Dest
+                } else {
+                    if (newX-oldX !== 0) {
+                        indexPosX[i] = ox
+                    }
+                    if (newY-oldY !== 0) {
+                        indexPosY[i] = oy
+                    }
+                }
+
             }
         }
 
-        if (skippedENABLE) console.log("1:", skip1, "2:", skip2, "3:", skip3)
-        skip1 = skip2 = skip3 = 0
+
+        if (skippedENABLE) console.log("1:", skip1, "2:", skip2, "3:", skip3, "4:", skip4)
+        skip1 = skip2 = skip3 = skip4 = 0
         if (CONFIG.timerEnabled) console.timeEnd(CONFIG.timerName)
     }
 
@@ -263,26 +402,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         if (SP_RIGHT) return false
         if (SP_RANDOM) return RANDOM_TABLE[randomIndex++&RTSize] < .5
         return (gi%MAP_WIDTH) < WIDTH2
-    }
-
-
-    /**
-    * Calculates the adjacent index based on the provided index, direction and distance
-    * @param {Number} i The index of a pixel in the pixels array
-    * @param {Simulation.D} direction A direction specified by one of Simulation.D
-    * @param {Number?} distance The distance to go by in the provided direction (defaults to 1)
-    * @returns The calculated adjacent index
-    */
-    function getAdjacency(i, mapWidth, mapHeight, direction, distance=1) {
-        const dWidth = mapWidth*distance, x = i%mapWidth, y = (i/mapWidth)|0, hasL = x>=distance, hasR = x+distance<mapWidth, hasT = y>=distance, hasB = y+distance<mapHeight
-        if (direction === D.b)       return hasB ? i+dWidth:i
-        else if (direction === D.t)  return hasT ? i-dWidth:i
-        else if (direction === D.l)  return hasL ? i-distance:i
-        else if (direction === D.r)  return hasR ? i+distance:i
-        else if (direction === D.bl) return (hasB&&hasL) ? i+dWidth-distance:i
-        else if (direction === D.br) return (hasB&&hasR) ? i+dWidth+distance:i
-        else if (direction === D.tl) return (hasT&&hasL) ? i-dWidth-distance:i
-        else if (direction === D.tr) return (hasT&&hasR) ? i-dWidth+distance:i
     }
 
     function clamp(num, min=0, max=MAP_WIDTH-1) {

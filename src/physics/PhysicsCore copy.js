@@ -116,11 +116,11 @@ class PhysicsCore {
 
             // WATER
             else if (mat === M.WATER) {
-                const stack = (p_B === AIR)*D.b |         // B  - GO THROUGH AIR
-                            (pixels[i_BR] === AIR)*D.br | // BR - GO THROUGH AIR
-                            (pixels[i_BL] === AIR)*D.bl | // BL - GO THROUGH AIR
-                            (p_R === AIR)*D.r |           // R  - GO THROUGH AIR
-                            (p_L === AIR)*D.l |           // L  - GO THROUGH AIR
+                const stack = (p_B === AIR)*D.b |         // B  - GO THROUGH GASES
+                            (pixels[i_BR] === AIR)*D.br | // BR - GO THROUGH GASES
+                            (pixels[i_BL] === AIR)*D.bl | // BL - GO THROUGH GASES
+                            (p_R === AIR)*D.r |           // R  - GO THROUGH GASES
+                            (p_L === AIR)*D.l |           // L  - GO THROUGH GASES
                             getSideSelectionPriority(i)*WATER_SP_BIT
 
                 const move = WATER_CACHE[stack]

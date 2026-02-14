@@ -14,7 +14,7 @@ const simulation = new Simulation(
         aimedFPS: 60,
     },
     {
-        autoSimulationSizing: 20,
+        autoSimulationSizing: false,//15
         showBorder: true,
         showGrid: true,
         visualEffectsEnabled: true,
@@ -101,6 +101,9 @@ function statusLoopCore() {
 function readyCB(simulation) {
     console.log("%cSIMULATION LOADED", "font-size:9.5px;color:#9c9c9c;")
 
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.WATER)
+
+    //simulation.placePixelAtCoords(22, 13)
 
     //simulation.updateMapSize(300, 200)
     //simulation.updateMapPixelSize(3)
@@ -115,6 +118,8 @@ function readyCB(simulation) {
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
     //simulation.timerEnabled = true
 }
+
+document.oncontextmenu=e=>e.preventDefault()
 
 // CONTROLS BUTTONS
 document.getElementById("startButton").onclick=()=>simulation.start()

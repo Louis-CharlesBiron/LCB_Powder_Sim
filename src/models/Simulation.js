@@ -59,38 +59,13 @@ class Simulation {
         this._CVS.fpsLimit = this._worldStartSettings.aimedFPS
         this._initialized = this._worldStartSettings.autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
         this._mapGrid = new MapGrid(this._worldStartSettings.mapPixelSize, this._worldStartSettings.mapWidth, this._worldStartSettings.mapHeight)
-
-        //
-
-        /**
-         * ADD pixelToAdd
-         * i = ++this._indexCount
-         * states[i] = pixelToAdd
-         * index[pixelToAdd] = i
-         */
-
-        /**
-         * REMOVE pixelToDel
-         * last_i = --this._indexCount
-         * states[pixelToDel_i] = states[last_i] 
-         * this._indexes[last_i] = pixelToDel_i
-         */
-
-        /**
-         * CHECK pixel
-         * i = this._indexes[pixel]
-         * states[i]
-         */
-
+        
         const arrSize = this._mapGrid.arraySize
         this._gridIndexes = new Simulation.#C_GRID_INDEXES(arrSize).fill(-1)// index represents map pos, value! represents _indexStates index (static AND dynamic, but static is -1)
-
         this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arrSize).fill(Simulation.MATERIALS.AIR)// index represents map pos, value! represents materials (static AND dynamic) | (like old _pixels) 
         this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arrSize)// index represents last map pos, value! represents last materials (static AND dynamic) (like old _lastPixels)
-       
         this._indexCount = [0] // represents the contiguous number of indexes
-
-        // index represents NOTHING, value represents phycics attribute (ONLY dynamic)
+        // index represents NOTHING, value represents phycics attribute (ONLY dynamic) //
         this._indexFlags = new Simulation.#C_FLAGS_SMALL(arrSize) // (Whether already updated in the current step, ...)
         this._indexPosX = new Simulation.#C_PHYSICS_REGULAR(arrSize)
         this._indexPosY = new Simulation.#C_PHYSICS_REGULAR(arrSize)
@@ -524,13 +499,13 @@ class Simulation {
      * @param {Number} oldHeight The previous/current height of the map
      * @param {Number} newWidth The new/updated width of the map
      * @param {Number} newHeight The new/updated height of the map
-     * @param {Uint16Array} // DOC TODO
+     * @param {Uint16Array} // DOC TODO and optimize
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldGridIndexes, oldGridMaterials, oldIndexArrays) {
-        const arraySize = this._mapGrid.arraySize, skipOffset = newWidth-oldWidth, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight,
+        const arraySize = this._mapGrid.arraySize, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight,
             gridIndexes = this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1),
             gridMaterials = this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR),    
-            newArrays = [
+            newIndexArrays = [
                 this._indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize),
                 this._indexPosX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
                 this._indexPosY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
@@ -539,25 +514,60 @@ class Simulation {
                 this._indexGravity = new Simulation.#C_PHYSICS_SMALL(arraySize)
             ]
 
-        const a_ll = newArrays.length
-        for (let i=0;i<a_ll;i++) newArrays[i].set(oldIndexArrays[i].subarray(0, newWidth))
-        
+
+        /*
+        TODO
+
+        // TODO KEEPING WRONG STUFF ON TRIMING/DELETE VERTICALLY (and gridIndex is not good either)
+            1. when trimming something (vertical only), check what has be deleted by the trim -> delete that instead of using subarray
+            2. then rebuild gridIndexes based on indexPosX/Y (materials is ok as is)
+
+
+        // TODO ERROR WHEN SCALING. (happens when there are width+2 pixels and then up the width by 1)
+            MIGHT BE FIXED BY newSize
+        */
+
+
+
+        const a_ll = newIndexArrays.length, newSize = newWidth*newHeight
+        for (let i=0;i<a_ll;i++) newIndexArrays[i].set(oldIndexArrays[i].subarray(0, newSize))
+
         for (let y=0,offset=0,oi=0;y<smallestHeight;y++) {
             gridIndexes.set(oldGridIndexes.subarray(oi, oi+smallestWidth), offset)
             gridMaterials.set(oldGridMaterials.subarray(oi, oi+smallestWidth), offset)
-
             oi += oldWidth
-            offset += oldWidth+skipOffset
+            offset += newWidth
         }
 
-        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
+        // TODO FINISH
+        if (newWidth < oldWidth) 
+            for (let x=newWidth;x<oldWidth;x++) 
+                for (let y=0;y<oldHeight;y++) {
+                    const delGi = y*oldWidth+x, delI = oldGridIndexes[delGi]
+                    if (delI !== -1) {
+                        const lastI = --this._indexCount[0]
+                        if (delI !== lastI) {
+                            for (let ii=0;ii<a_ll;ii++) newIndexArrays[ii][delI] = oldIndexArrays[ii][lastI]
+                            const newGridIndex = (newIndexArrays[2][delI]|0)*newWidth+(newIndexArrays[1][delI]|0)
+                            console.log("REMOVED", lastI, delI, "|", delGi, newGridIndex, [newIndexArrays[1][delI], newIndexArrays[2][delI]])
+                            gridIndexes[newGridIndex] = delI
+                            gridIndexes[delGi] = -1
+                        }
+                    }
+                }
 
-        this._indexCount[0] = this._gridIndexes.filter(x=>x !== -1).length
+
+        //const gi_ll = gridIndexes.length
+        //let count = 0
+        //for (let i=0;i<gi_ll;i++) if (gridIndexes[i] !== -1) count++
+        //this._indexCount[0] = count
+
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
     }
 
     /**
      * Check whether the simulation is initialized
-     * @param {String} warningMessage Warning message to log if no initialized
+     * @param {String} warningMessage Warning message to log if not initialized
      * @returns True if the simulation is NOT initialized
      */
     #checkInitializationState(warningMessage) {
@@ -860,10 +870,10 @@ class Simulation {
             
             this._indexFlags[i] = 0
             this._indexPosX[i] = x
-            this._indexPosY[i] = y+CDEUtils.random(0, .85, 3)
-            this._indexVelX[i] = 90//*(CDEUtils.random(-2, 1)||1)//5
-            this._indexVelY[i] = 2+CDEUtils.random(0, 1, 3)
-            this._indexGravity[i] = 90+CDEUtils.random(-10, 20)
+            this._indexPosY[i] = y//+CDEUtils.random(0, .85, 3)
+            this._indexVelX[i] = 90//50*(CDEUtils.random(-2, 1)||1)//5
+            this._indexVelY[i] = 2//+CDEUtils.random(0, 1, 3)
+            this._indexGravity[i] = 90//+CDEUtils.random(-10, 20)
             gridIndexes[gridIndex] = i
         }
     }
@@ -999,7 +1009,7 @@ class Simulation {
             indexPosX,
             indexPosY,
             indexVelX,
-            indexPosY,
+            indexVelY,
             indexGravity,
         ]
     }
@@ -1116,11 +1126,7 @@ class Simulation {
 	get mapGrid() {return this._mapGrid}
 	get loopExtra() {return this._loopExtra}
 	get stepExtra() {return this._stepExtra}
-	//get pxStepUpdated() {return this._indexUpdated} TODO
-	//get pxStates() {return this._indexStates}
-	//get lastPixels() {return this._lastGridMaterials}
 	get lastStepTime() {return this._lastStepTime}
-	//get pixels() {return this._gridIndexes}
 	get mapGridRenderStyles() {return this._mapGridRenderStyles}
 	get mapBorderRenderStyles() {return this._mapBorderRenderStyles}
 	get offscreenCanvas() {return this._offscreenCanvas}
