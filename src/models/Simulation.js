@@ -777,6 +777,14 @@ class Simulation {
                 }
             })
 
+                frame.addEventListener("mouseleave", e=>{
+                if (this.dragAndZoomCanvasEnabled && isCameraMoving) {
+                    const {clientX, clientY} = e
+                    lastDragPos = [clientX, clientY]
+                    isCameraMoving = false
+                }
+            })
+
             frame.addEventListener("mouseup", e=>{
                 if (isCameraMoving && e.button === Mouse.BUTTON_TYPES.RIGHT) isCameraMoving = false
             })
@@ -871,7 +879,7 @@ class Simulation {
             this._indexFlags[i] = 0
             this._indexPosX[i] = x
             this._indexPosY[i] = y//+CDEUtils.random(0, .85, 3)
-            this._indexVelX[i] = 90//50*(CDEUtils.random(-2, 1)||1)//5
+            this._indexVelX[i] = 0//50*(CDEUtils.random(-2, 1)||1)//5
             this._indexVelY[i] = 2//+CDEUtils.random(0, 1, 3)
             this._indexGravity[i] = 90//+CDEUtils.random(-10, 20)
             gridIndexes[gridIndex] = i

@@ -201,14 +201,20 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
                 // SWITCH ONLY IF DEST IS TRANSPIERCEABLE
                 if (m_Dest !== 0) {
-                    const atGridI = gridIndexes[newGridI]
+                    const atI = gridIndexes[newGridI]
                     // move to new pos
                     gridIndexes[newGridI] = i
                     gridMaterials[newGridI] = mat
 
                     // switch info 
-                    gridIndexes[gi] = atGridI
+                    gridIndexes[gi] = atI
                     gridMaterials[gi] = m_Dest
+                    indexFlags[atI] = indexFlags[i]
+                    indexPosX[atI] = ox
+                    indexPosY[atI] = oy
+                    indexVelX[atI] = indexVelX[i]
+                    indexVelY[atI] = indexVelY[i]
+                    indexGravity[atI] = indexGravity[i]
                 } else {
                     if (newX-oldX !== 0) {
                         //console.log(i, "-------CANCEL-X", ": changes ->", gdx, gdy, "|", newX-oldX, newY-oldY, "|", indexPosX[i], indexPosY[i], ox, oy)
@@ -236,7 +242,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                           m_R = gridMaterials[gi_R], m_L = gridMaterials[gi_L], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
 
                     // SKIP IF CONTAINED
-                    //if (hasColX && mat & DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat) === 0 && ((m_BR^mat|m_BL^mat) === 0 || (m_R^mat|m_L^mat) === 0)) {skip1++;continue}
+                    if (hasColX && mat & DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat|m_BR^mat|m_BL^mat|m_R^mat|m_L^mat) === 0) {skip1++;continue}
 
                     // CHECK MAIN DIRECTIONS
                     if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
@@ -355,14 +361,20 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
                 // SWITCH ONLY IF DEST IS TRANSPIERCEABLE
                 if (m_Dest !== 0) {
-                    const atGridI = gridIndexes[newGridI]
+                    const atI = gridIndexes[newGridI]
                     // move to new pos
                     gridIndexes[newGridI] = i
                     gridMaterials[newGridI] = mat
 
-                    // switch info 
-                    gridIndexes[gi] = atGridI
+                    // switch info
+                    gridIndexes[gi] = atI
                     gridMaterials[gi] = m_Dest
+                    indexFlags[atI] = indexFlags[i]
+                    indexPosX[atI] = ox
+                    indexPosY[atI] = oy
+                    indexVelX[atI] = indexVelX[i]
+                    indexVelY[atI] = indexVelY[i]
+                    indexGravity[atI] = indexGravity[i]
                 } else {
                     if (newX-oldX !== 0) {
                         indexPosX[i] = ox

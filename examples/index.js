@@ -12,6 +12,8 @@ const simulation = new Simulation(
         usesWebWorkers: false,
         autoStart: true,
         aimedFPS: 60,
+        //cameraCenterPos: null,
+        //zoom: 4
     },
     {
         autoSimulationSizing: false,//15
