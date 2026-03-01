@@ -242,7 +242,7 @@ class Simulation {
             this.saveStep()
             if (stepExtra) stepExtra()
             unit.step(
-                this._gridIndexes, this._gridMaterials, this._lastGridMaterials,
+                this._gridIndexes, this._gridMaterials,
                 this._indexCount, this._indexFlags, this._indexPosX, this._indexPosY, this._indexVelX, this._indexVelY, this._indexGravity,
                 this._sidePriority, this._mapGrid.mapWidth, this._mapGrid.mapHeight,
                 deltaTime
@@ -876,12 +876,13 @@ class Simulation {
                 y = (gridIndex/mapWidth)|0,
                 x = gridIndex-y*mapWidth
             
+            // TODO REFACTOR/PARAMETRIZE
             this._indexFlags[i] = 0
             this._indexPosX[i] = x
-            this._indexPosY[i] = y//+CDEUtils.random(0, .85, 3)
-            this._indexVelX[i] = 0//50*(CDEUtils.random(-2, 1)||1)//5
-            this._indexVelY[i] = 2//+CDEUtils.random(0, 1, 3)
-            this._indexGravity[i] = 90//+CDEUtils.random(-10, 20)
+            this._indexPosY[i] = y+CDEUtils.random(0, .85, 3)
+            this._indexVelX[i] = 0//2*(CDEUtils.random(-2, 1)||1)
+            this._indexVelY[i] = 2+CDEUtils.random(0, 1, 3)
+            this._indexGravity[i] = 90+CDEUtils.random(-10, 20)
             gridIndexes[gridIndex] = i
         }
     }
@@ -1172,6 +1173,7 @@ class Simulation {
 	get maxZoomThreshold() {return this._userSettings?.maxZoomThreshold}
 	get drawingDisabled() {return this._userSettings?.drawingDisabled}
 	get timerEnabled() {return this._physicsConfig?.timerEnabled}
+	get showSkips() {return this._physicsConfig?.showSkips}
     
 	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
 	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
@@ -1203,4 +1205,5 @@ class Simulation {
     set zoomOutIncrement(zoomOutIncrement) {this._userSettings.zoomOutIncrement = zoomOutIncrement}
     set drawingDisabled(drawingDisabled) {this._userSettings.drawingDisabled = drawingDisabled}
     set timerEnabled(timerEnabled) {this._physicsConfig.timerEnabled = timerEnabled}
+    set showSkips(showSkips) {this._physicsConfig.showSkips = showSkips}
 }

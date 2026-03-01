@@ -16,7 +16,7 @@ const simulation = new Simulation(
         //zoom: 4
     },
     {
-        autoSimulationSizing: false,//15
+        autoSimulationSizing: 15,
         showBorder: true,
         showGrid: true,
         visualEffectsEnabled: true,
@@ -103,7 +103,8 @@ function statusLoopCore() {
 function readyCB(simulation) {
     console.log("%cSIMULATION LOADED", "font-size:9.5px;color:#9c9c9c;")
 
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.WATER)
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
+    simulation.showSkips = true
 
     //simulation.placePixelAtCoords(22, 13)
 
@@ -117,6 +118,7 @@ function readyCB(simulation) {
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(1000, 1000)
+    //simulation.showGrid = false
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
     //simulation.timerEnabled = true
 }

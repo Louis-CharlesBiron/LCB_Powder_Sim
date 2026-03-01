@@ -76,9 +76,10 @@ const SETTINGS = {
     },
 
     DEFAULT_PHYSICS_CONFIG: {// (R?)
-        timerMaxLog: 18,
+        maxLogCount: 18,
         timerEnabled: false,
         timerName: ".",
+        showSkips: false,
 
         randomTableSize: 1<<16
     },
