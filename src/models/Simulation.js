@@ -874,15 +874,15 @@ class Simulation {
             const mapWidth = this._mapGrid.mapWidth,
                 i = this._indexCount[0]++,
                 y = (gridIndex/mapWidth)|0,
-                x = gridIndex-y*mapWidth
+                x = gridIndex-y*mapWidth,
+                matConfig = MATERIALS_CONFIG[material]
             
-            // TODO REFACTOR/PARAMETRIZE
-            this._indexFlags[i] = 0
-            this._indexPosX[i] = x
-            this._indexPosY[i] = y+CDEUtils.random(0, .85, 3)
-            this._indexVelX[i] = 0//2*(CDEUtils.random(-2, 1)||1)
-            this._indexVelY[i] = 2+CDEUtils.random(0, 1, 3)
-            this._indexGravity[i] = 90+CDEUtils.random(-10, 20)
+            this._indexFlags[i] = matConfig.flags
+            this._indexPosX[i] = x+(matConfig.hasPosXOffset ? CDEUtils.random(matConfig.posXOffsetMin, matConfig.posXOffsetMax, matConfig.posXOffsetDecimals) : 0)
+            this._indexPosY[i] = y+(matConfig.hasPosYOffset ? CDEUtils.random(matConfig.posYOffsetMin, matConfig.posYOffsetMax, matConfig.posYOffsetDecimals) : 0)
+            this._indexVelX[i] = matConfig.velX+(matConfig.hasVelXOffset ? CDEUtils.random(matConfig.velXOffsetMin, matConfig.velXOffsetMax, matConfig.velXOffsetDecimals) : 0)
+            this._indexVelY[i] = matConfig.velY+(matConfig.hasVelYOffset ? CDEUtils.random(matConfig.velYOffsetMin, matConfig.velYOffsetMax, matConfig.velYOffsetDecimals) : 0)
+            this._indexGravity[i] = matConfig.gravity+(matConfig.hasGravityOffset ? CDEUtils.random(matConfig.gravityOffsetMin, matConfig.gravityOffsetMax, matConfig.gravityOffsetDecimals) : 0)
             gridIndexes[gridIndex] = i
         }
     }

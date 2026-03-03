@@ -12,8 +12,7 @@ const SETTINGS = {
         LAVA: 1<<7,
         ELECTRICITY: 1<<8,
         COPPER: 1<<9,
-        TREE: 1<<10,
-        GAS: 1<<11,
+        GAS: 1<<10,
     },
 
     MATERIAL_GROUPS: {
@@ -76,7 +75,7 @@ const SETTINGS = {
     },
 
     DEFAULT_PHYSICS_CONFIG: {// (R?)
-        maxLogCount: 18,
+        maxLogCount: 35,//18,
         timerEnabled: false,
         timerName: ".",
         showSkips: false,

@@ -42,7 +42,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
     // DOC TODO
     function physicsStep(
-        gridIndexes, gridMaterials, lastGridMaterials,
+        gridIndexes, gridMaterials,
         indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity,
         sidePriority, mapWidth, mapHeight,
         deltaTime

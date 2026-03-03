@@ -29,7 +29,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
     // VARIABLES //
     // TIMER
-    let timerCount = 0,
+    let timerCount = 0, skipsCount = 0,
     // RANDOMNESS
     randomIndex = 0,
     // GLOBAL CACHES
@@ -181,6 +181,10 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             console.log("SKIPS :", skipped+"/"+total, "("+((skipped/total)*100).toFixed(1)+"%)", "\n -> 1:", skip1, "2:", skip2, "3:", skip3, "\nACTIVE:", (total-skipped)+"/"+total, "("+(((total-skipped)/total)*100).toFixed(1)+"%)", "\n -> p1:", pass1, "p2:", pass2, "p3:", pass3)
             skip1 = skip2 = skip3 = 0
             pass1 = pass2 = pass3 = 0
+            if (skipsCount++ > CONFIG.maxLogCount) {
+                skipsCount = 0
+                console.clear()
+            }
         }
         if (CONFIG.timerEnabled) console.timeEnd(CONFIG.timerName)
     }
