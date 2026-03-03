@@ -927,16 +927,8 @@ class Simulation {
      * Fills the entire map with a specific material.
      * @param {Simulation.MATERIALS?} material The material used (Defaults to the selected material)
      */
-    fill(material=this._selectedMaterial) {// TODO FIX
-        if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.fill(material))
-            return
-        }
-
-        const pixels = this._gridMaterials, lastPixels = this._lastGridMaterials, p_ll = pixels.length
-        //lastPixels.set(new Uint16Array(p_ll).subarray(0, lastPixels.length).fill(material+1))
-        //pixels.set(new Uint16Array(p_ll).fill(material))
-        if (!this._isRunning) this.renderPixels()
+    fill(material=this._selectedMaterial) {
+        this.fillArea([0,0], this.mapGrid.dimensions, material, Simulation.REPLACE_MODES.ALL)
     }
 
     /**
