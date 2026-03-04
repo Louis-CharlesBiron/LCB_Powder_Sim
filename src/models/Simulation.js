@@ -1050,43 +1050,6 @@ class Simulation {
                     }
                 }
             }
-            /*else if (exportType == Simulation.EXPORT_STATES.COMPACTED) {
-                console.log(exportType, saveWidth, saveHeight, pixelSize, data)
-
-                const d_ll = data.length, arraySize = saveWidth*saveHeight
-                let gridIndex = 0 
-                gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
-                gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize)
-                indexArrays = [
-                    new Simulation.#C_FLAGS_SMALL(arraySize),
-                    new Simulation.#C_PHYSICS_REGULAR(arraySize),
-                    new Simulation.#C_PHYSICS_REGULAR(arraySize),
-                    new Simulation.#C_PHYSICS_REGULAR(arraySize),
-                    new Simulation.#C_PHYSICS_REGULAR(arraySize),
-                    new Simulation.#C_PHYSICS_SMALL(arraySize)
-                ]
-                for (let i=0;i<d_ll;i++) {
-                    const group = data[i]
-                    if (group.includes(SETTINGS.EXPORT_STATIC_SEPARATOR)) {
-                        const groupInfo = group.split(SETTINGS.EXPORT_STATIC_SEPARATOR), count = +groupInfo[1], mat = +groupInfo[0]||Simulation.MATERIALS.AIR
-                        gridMaterials.set(new Simulation.#C_GRID_MATERIALS(count).fill(mat), gridIndex)
-                        gridIndexes.set(new Simulation.#C_GRID_INDEXES(count).fill(-1), gridIndex)
-                        gridIndex += count
-                    } else {
-                        //[material, index, flags, posX, posY, velX, velY, gravity]
-                        const [material, index, flags, posX, posY, velX, velY, gravity] = group.split(SETTINGS.EXPORT_DYAMIC_SEPARATOR)
-                        gridMaterials[gridIndex] = material
-                        gridIndexes[gridIndex] = index
-                        indexArrays[0][index] = flags
-                        indexArrays[1][index] = posX
-                        indexArrays[2][index] = posY
-                        indexArrays[3][index] = velX
-                        indexArrays[4][index] = velY
-                        indexArrays[5][index] = gravity
-                        gridIndex++
-                    }
-                }
-            }*/
             this.renderPixels()
         }
     }
@@ -1106,7 +1069,7 @@ class Simulation {
         const gridMaterials = this._gridMaterials, g_ll = gridMaterials.length
         let state = SETTINGS.EXPORT_STATES.COMPACTED, textResult = ""
 
-        if (disableCompacting) {// TODO
+        if (disableCompacting) {
             state = SETTINGS.EXPORT_STATES.RAW
             textResult += gridMaterials.toString()
         } else if (!disableCompacting) {
@@ -1120,23 +1083,6 @@ class Simulation {
             }
             textResult = textResult.toString()
         }
-        /*else { // TODO
-            let lastMaterial, atI = -1
-            textResult = []
-            for (let i=0;i<g_ll;i++) {
-                const pixelInfo = this.getPixelInfo(i)
-
-                if (typeof pixelInfo === "number") {
-                    if (lastMaterial === pixelInfo) textResult[atI][1]++
-                    else textResult[++atI] = [pixelInfo, 1]
-                    lastMaterial = pixelInfo
-                } else {
-                    lastMaterial = null
-                    textResult[++atI] = pixelInfo.join(SETTINGS.EXPORT_DYAMIC_SEPARATOR)
-                }
-            }
-            textResult = textResult.map(x=>typeof x === "string" ? x : x.join(SETTINGS.EXPORT_STATIC_SEPARATOR)).toString()
-        }*/
 
         return state+SETTINGS.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+SETTINGS.EXPORT_SEPARATOR+textResult
     }
