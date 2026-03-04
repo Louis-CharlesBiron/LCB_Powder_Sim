@@ -139,7 +139,7 @@ document.getElementById("saveButton").onclick=e=>exportValueInput.value = simula
 
 // LOAD
 const loadValueInput = document.getElementById("loadValueInput")
-document.getElementById("loadButton").onclick=e=>simulation.load((loadValueInput.value||exportValueInput.value), e.ctrlKey)
+document.getElementById("loadButton").onclick=e=>simulation.load((loadValueInput.value||exportValueInput.value), undefined, e.ctrlKey)
 loadValueInput.oncontextmenu=e=>{
     e.preventDefault()
     loadValueInput.value = ""

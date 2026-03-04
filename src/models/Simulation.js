@@ -527,8 +527,6 @@ class Simulation {
             MIGHT BE FIXED BY newSize
         */
 
-
-
         const a_ll = newIndexArrays.length, newSize = newWidth*newHeight
         for (let i=0;i<a_ll;i++) newIndexArrays[i].set(oldIndexArrays[i].subarray(0, newSize))
 
@@ -557,10 +555,10 @@ class Simulation {
                 }
 
 
-        //const gi_ll = gridIndexes.length
-        //let count = 0
-        //for (let i=0;i<gi_ll;i++) if (gridIndexes[i] !== -1) count++
-        //this._indexCount[0] = count
+        const gi_ll = gridIndexes.length
+        let count = 0
+        for (let i=0;i<gi_ll;i++) if (gridIndexes[i] !== -1) count++
+        this._indexCount[0] = count
 
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
     }
@@ -823,6 +821,8 @@ class Simulation {
      */
     placePixelAtCoords(x, y, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         const i = this._mapGrid.mapPosToIndexCoords(x, y)
+        if (i === -1) return
+
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material, replaceMode))
             return
@@ -850,8 +850,6 @@ class Simulation {
 
         const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC), gridIndexes = this._gridIndexes, oldIndex = gridIndexes[gridIndex]
         gridMaterials[gridIndex] = material
-
-        //console.log("PLACED", !!isStatic, gridIndex, material, oldIndex, oldMat)
 
         // DELETE IF DYNAMIC 
         if (oldIndex !== -1) {
@@ -1016,13 +1014,11 @@ class Simulation {
     }
 
     /**
-     * Fills the map with saved data.
-     * @param {Uint16Array | String} mapData The save data:
-     * - Either a Uint16Array containing the material value for each index
-     * - Or a string in the format created by the function exportAsText()
+     * Fills the map with saved data. DOC TODO
+     * @param {String} mapData The save data as a string in the format created by the function exportAsText()
      * @param {Boolean? | [width, height]?} useSaveSizes Whether to resize the map size and pixel size to the save's values (Also used internally to specify the save data dimensions when mapData is of Uint16Array type)
      */
-    load(mapData, useSaveSizes=null) {
+    load(mapData, replaceMode=Simulation.REPLACE_MODES.ALL, useSaveSizes=null) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_LOAD_WARN)) return
 
         if (!this.#simulationHasPixelsBuffer) {
@@ -1031,30 +1027,66 @@ class Simulation {
         }
 
         if (mapData) {
-            const gridMaterialsContainer = Simulation.#C_GRID_MATERIALS
+            const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x)
 
-            if (mapData instanceof gridMaterialsContainer) this.#updatePixelsFromSize(useSaveSizes[0], useSaveSizes[1], this._mapGrid.mapWidth, this._mapGrid.mapHeight, mapData)
-            else if (typeof mapData === "string") {
-                const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x)
-                let savePixels = null
-
-                if (useSaveSizes) {
-                    this.updateMapSize(saveWidth, saveHeight)
-                    this.updateMapPixelSize(pixelSize)
+            if (useSaveSizes) {
+                this.updateMapSize(saveWidth, saveHeight)
+                this.updateMapPixelSize(pixelSize)
+            }
+ 
+            let m_ll = data.length, gi = -1
+            if (exportType == Simulation.EXPORT_STATES.RAW) {
+                for (let i=0;i<m_ll;i++) {
+                    const y = ((gi++)/saveWidth)|0
+                    this.placePixelAtCoords(gi-y*saveWidth, y, +data[i], replaceMode)
                 }
-
-                if (exportType == Simulation.EXPORT_STATES.RAW) savePixels = new gridMaterialsContainer(data.map(x=>+x||Simulation.MATERIALS.AIR))
-                else if (exportType == Simulation.EXPORT_STATES.COMPACTED) {
-                    let m_ll = data.length, offset = 0 
-                    savePixels = new gridMaterialsContainer(saveWidth*saveHeight)
-                    for (let i=0;i<m_ll;i+=2) {
-                        const count = data[i+1], mat = +data[i]||Simulation.MATERIALS.AIR
-                        savePixels.set(new gridMaterialsContainer(count).fill(mat), offset)
-                        offset += +count
+            }
+            else if (exportType==Simulation.EXPORT_STATES.COMPACTED) {
+                for (let si=0;si<m_ll;si+=2) {
+                    const mat = +data[si], count = +data[si+1]
+                    for (let i=0;i<count;i++) {
+                        const y = ((gi++)/saveWidth)|0
+                        this.placePixelAtCoords(gi-y*saveWidth, y, mat, replaceMode)
                     }
                 }
-                this.#updatePixelsFromSize(saveWidth, saveHeight, this._mapGrid.mapWidth, this._mapGrid.mapHeight, savePixels)
             }
+            /*else if (exportType == Simulation.EXPORT_STATES.COMPACTED) {
+                console.log(exportType, saveWidth, saveHeight, pixelSize, data)
+
+                const d_ll = data.length, arraySize = saveWidth*saveHeight
+                let gridIndex = 0 
+                gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
+                gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize)
+                indexArrays = [
+                    new Simulation.#C_FLAGS_SMALL(arraySize),
+                    new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                    new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                    new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                    new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                    new Simulation.#C_PHYSICS_SMALL(arraySize)
+                ]
+                for (let i=0;i<d_ll;i++) {
+                    const group = data[i]
+                    if (group.includes(SETTINGS.EXPORT_STATIC_SEPARATOR)) {
+                        const groupInfo = group.split(SETTINGS.EXPORT_STATIC_SEPARATOR), count = +groupInfo[1], mat = +groupInfo[0]||Simulation.MATERIALS.AIR
+                        gridMaterials.set(new Simulation.#C_GRID_MATERIALS(count).fill(mat), gridIndex)
+                        gridIndexes.set(new Simulation.#C_GRID_INDEXES(count).fill(-1), gridIndex)
+                        gridIndex += count
+                    } else {
+                        //[material, index, flags, posX, posY, velX, velY, gravity]
+                        const [material, index, flags, posX, posY, velX, velY, gravity] = group.split(SETTINGS.EXPORT_DYAMIC_SEPARATOR)
+                        gridMaterials[gridIndex] = material
+                        gridIndexes[gridIndex] = index
+                        indexArrays[0][index] = flags
+                        indexArrays[1][index] = posX
+                        indexArrays[2][index] = posY
+                        indexArrays[3][index] = velX
+                        indexArrays[4][index] = velY
+                        indexArrays[5][index] = gravity
+                        gridIndex++
+                    }
+                }
+            }*/
             this.renderPixels()
         }
     }
@@ -1071,23 +1103,61 @@ class Simulation {
             return
         }
 
-        let pixels = this._gridMaterials, p_ll = pixels.length, state = Simulation.EXPORT_STATES.COMPACTED, textResult = ""
-        if (disableCompacting) {
-            state = Simulation.EXPORT_STATES.RAW
-            textResult += pixels.toString()
-        } else {
+        const gridMaterials = this._gridMaterials, g_ll = gridMaterials.length
+        let state = SETTINGS.EXPORT_STATES.COMPACTED, textResult = ""
+
+        if (disableCompacting) {// TODO
+            state = SETTINGS.EXPORT_STATES.RAW
+            textResult += gridMaterials.toString()
+        } else if (!disableCompacting) {
             let lastMaterial, atI = -1
             textResult = []
-            for (let i=0;i<p_ll;i++) {
-                const mat = pixels[i]
+            for (let i=0;i<g_ll;i++) {
+                const mat = gridMaterials[i]
                 if (lastMaterial === mat) textResult[atI][1]++
                 else textResult[++atI] = [mat, 1]
                 lastMaterial = mat
             }
             textResult = textResult.toString()
         }
+        /*else { // TODO
+            let lastMaterial, atI = -1
+            textResult = []
+            for (let i=0;i<g_ll;i++) {
+                const pixelInfo = this.getPixelInfo(i)
 
-        return state+Simulation.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+Simulation.EXPORT_SEPARATOR+textResult
+                if (typeof pixelInfo === "number") {
+                    if (lastMaterial === pixelInfo) textResult[atI][1]++
+                    else textResult[++atI] = [pixelInfo, 1]
+                    lastMaterial = pixelInfo
+                } else {
+                    lastMaterial = null
+                    textResult[++atI] = pixelInfo.join(SETTINGS.EXPORT_DYAMIC_SEPARATOR)
+                }
+            }
+            textResult = textResult.map(x=>typeof x === "string" ? x : x.join(SETTINGS.EXPORT_STATIC_SEPARATOR)).toString()
+        }*/
+
+        return state+SETTINGS.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+SETTINGS.EXPORT_SEPARATOR+textResult
+    }
+
+    // TODO DOC
+    getPixelInfo(gridIndex,) {
+        const material = this._gridMaterials[gridIndex],
+              index = this._gridIndexes[gridIndex]
+        
+        if (index !== -1) {
+            const flags = this._indexFlags[index],
+                posX = this._indexPosX[index],
+                posY = this._indexPosY[index],
+                velX = this._indexVelX[index],
+                velY = this._indexVelY[index],
+                gravity = this._indexGravity[index]
+
+            return [material, index, flags, posX, posY, velX, velY, gravity]
+        }
+
+        return material
     }
     /* SAVE / IMPORT / EXPORT -end */
 

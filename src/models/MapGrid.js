@@ -80,6 +80,7 @@ class MapGrid {
      * @returns The index of a pixel in the pixels array
      */
     mapPosToIndexCoords(x, y) {
+        if (y < 0 || y >= this._mapHeight || x < 0 || x >= this._mapWidth) return -1
         return y*this._mapWidth+x
     }
 
