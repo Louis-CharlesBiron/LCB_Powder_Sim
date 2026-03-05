@@ -3,6 +3,15 @@ class MapGrid {
     static DEFAULT_MAP_WIDTH = 3//50
     static DEFAULT_MAP_HEIGHT = 3//35
 
+    // GET / SET
+    static {
+        SimUtils.addGettersSetters(this, [
+            {exposedName:"pixelSize"},
+            {exposedName:"mapWidth"},
+            {exposedName:"mapHeight"},
+        ])
+    }
+
     #lastPixelSize = null
     constructor(pixelSize, mapWidth, mapHeight) {
         this._pixelSize = this.#lastPixelSize = pixelSize||MapGrid.DEFAULT_PIXEL_SIZE
@@ -98,15 +107,8 @@ class MapGrid {
     get globalDimensions() {return [this.globalWidth, this.globalHeight]}
     get arraySize() {return this._mapWidth*this._mapHeight}
     get displayDimensions() {return this._mapWidth+"x"+this._mapHeight}
+	get dimensions() {return [this._mapWidth, this._mapHeight]}
     get lastPixelSize() {return this.#lastPixelSize}
 
-    get pixelSize() {return this._pixelSize}
-	get mapWidth() {return this._mapWidth}
-	get mapHeight() {return this._mapHeight}
-	get dimensions() {return [this._mapWidth, this._mapHeight]}
-
-	set pixelSize(_pixelSize) {return this._pixelSize = _pixelSize}
-	set mapWidth(_mapWidth) {return this._mapWidth = _mapWidth}
-	set mapHeight(_mapHeight) {return this._mapHeight = _mapHeight}
-	set lastPixelSize(lps) {return this.#lastPixelSize = lps}
+	set lastPixelSize(lastPixelSize) {return this.#lastPixelSize = lastPixelSize}
 }

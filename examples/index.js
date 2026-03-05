@@ -84,7 +84,7 @@ function statusLoopCore() {
     if (isRunningStatus.textContent !== isRunningText) isRunningStatus.textContent = isRunningText
 
     // PHYSICS UNIT TYPE
-    const physicsUnitTypeText = simulation.usesWebWorkers ? "WORKER" : "LOCAL"
+    const physicsUnitTypeText = simulation.usingWebWorkers ? "WORKER" : "LOCAL"
     if (physicsUnitTypeStatus.textContent !== physicsUnitTypeText) physicsUnitTypeStatus.textContent = physicsUnitTypeText
 
     // TIMESTAMP

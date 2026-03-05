@@ -77,13 +77,12 @@ const SETTINGS = {
         drawingDisabled: false,
     },
 
-    DEFAULT_PHYSICS_CONFIG: {// (R?)
+    DEFAULT_PHYSICS_SETTINGS: {// (R?)
         maxLogCount: 35,//18,
         timerEnabled: false,
         timerName: ".",
         showSkips: false,
-
-        randomTableSize: 1<<16
+        $randomTableSize: 1<<16
     },
 
     DEFAULT_COLOR_SETTINGS: {// (R?)

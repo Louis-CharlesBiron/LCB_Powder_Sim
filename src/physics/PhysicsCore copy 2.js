@@ -19,7 +19,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     console.log("CONTEXT:", self.constructor.name)
     
     // CONSTANTS //
-    const RTSize = CONFIG.randomTableSize-1,
+    const RTSize = CONFIG.$randomTableSize-1,
         RANDOM_TABLE = createRandomTable(),
         LAST_BIT = 31,
 

@@ -32,13 +32,26 @@ class Simulation {
     // DEFAULTS
     static DEFAULT_WORLD_START_SETTINGS = SETTINGS.DEFAULT_WORLD_START_SETTINGS
     static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
-    static DEFAULT_PHYSICS_CONFIG = SETTINGS.DEFAULT_PHYSICS_CONFIG
+    static DEFAULT_PHYSICS_SETTINGS = SETTINGS.DEFAULT_PHYSICS_SETTINGS
     static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
     static DEFAULT_KEYBINDS = DEFAULT_KEYBINDS
     static DEFAULT_PRECISE_PLACE_KEY = TypingDevice.KEYS.SHIFT
+    // GET / SET
+    static {
+        SimUtils.addGettersSetters(this, [
+            ...Object.keys(SETTINGS.DEFAULT_USER_SETTINGS).map(exposedName=>({exposedName, path:["_userSettings", exposedName]})),
+            ...Object.keys(SETTINGS.DEFAULT_WORLD_START_SETTINGS).map(exposedName=>({exposedName, path:["_worldStartSettings", exposedName]})),
+            ...Object.keys(SETTINGS.DEFAULT_PHYSICS_SETTINGS).filter(x=>x[0]!=="$").map(exposedName=>({exposedName, path:["_physicsConfig", exposedName]})),
+            {exposedName:"loopExtra"},
+            {exposedName:"stepExtra"},
+            {exposedName:"isRunning"},
+            {exposedName:"mapGridRenderStyles"},
+            {exposedName:"mapBorderRenderStyles"},
+        ])
+    }
 
     #simulationHasPixelsBuffer = true // Whether the main thread has the pixel buffer when using webworkers
     #lastPlacedPos = null
@@ -71,7 +84,7 @@ class Simulation {
         this._indexVelX = new Simulation.#C_PHYSICS_REGULAR(arrSize)
         this._indexVelY = new Simulation.#C_PHYSICS_REGULAR(arrSize)
         this._indexGravity = new Simulation.#C_PHYSICS_SMALL(arrSize)
-        this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_CONFIG)
+        this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_SETTINGS)
 
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
@@ -113,7 +126,7 @@ class Simulation {
         this._CVS.setKeyUp(null, true)
         this._CVS.setKeyDown(null, true)
         this._CVS.onResizeCB=()=>{
-            const pixelSize = this.autoSimulationSizing
+            const pixelSize = this._userSettings.autoSimulationSizing
             if (pixelSize) this.autoFitSize(pixelSize)
         }
         this._CVS.start()
@@ -127,7 +140,7 @@ class Simulation {
         // INTERNAL LOAD CALLS
         this._initialized = Simulation.#INIT_STATES.READY
 
-        if (this.autoSimulationSizing) this.autoFitSize(this.autoSimulationSizing)
+        if (this._userSettings.autoSimulationSizing) this.autoFitSize(this._userSettings.autoSimulationSizing)
         if (CDEUtils.isFunction(readyCB)) readyCB(this)
 
         this._initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
@@ -145,7 +158,7 @@ class Simulation {
 
         if (loopExtra) loopExtra(deltaTime)
 
-        if (!this.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.DEFAULT_PRECISE_PLACE_KEY)) this.#placePixelWithMouse(mouse)
+        if (!this._userSettings.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.DEFAULT_PRECISE_PLACE_KEY)) this.#placePixelWithMouse(mouse)
 
         if (settings.showGrid) this.#drawMapGrid()
         if (settings.showBorder) this.#drawBorder()
@@ -253,12 +266,12 @@ class Simulation {
     /**
      * Saves a physics step (R?)
      */
-    saveStep(isExact=this.backStepSavingIsExact) {
+    saveStep(isExact=this._userSettings.backStepSavingIsExact) {
         if (this.backStepSavingEnabled) {
             const saves = this._backStepSaves, b_ll = saves.length, currentSave = this.exportAsText(isExact ? SETTINGS.EXPORT_STATES.EXACT : SETTINGS.EXPORT_STATES.COMPACTED)
             if (saves[b_ll-1] !== currentSave) {
                 saves.push(currentSave)
-                if ((b_ll+1) > this.backStepSavingCount) saves.shift()
+                if ((b_ll+1) > this._userSettings.backStepSavingCount) saves.shift()
             }
         }
     }
@@ -288,7 +301,7 @@ class Simulation {
         if (this._initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this._initialized = Simulation.#INIT_STATES.INITIALIZED)
         if (!this._isRunning || force) {
             this._isRunning = true
-            if (this.usesWebWorkers) this.#sendPixelsToWorker(Simulation.#WORKER_MESSAGE_TYPES.START_LOOP)
+            if (this.usingWebWorkers) this.#sendPixelsToWorker(Simulation.#WORKER_MESSAGE_TYPES.START_LOOP)
         }
     }
 
@@ -298,7 +311,7 @@ class Simulation {
     stop() {
         if (this._isRunning) {
             this._isRunning = false
-            if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.STOP_LOOP})
+            if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.STOP_LOOP})
         }
     }
     /* SIMULATION CONTROL -end */
@@ -313,7 +326,7 @@ class Simulation {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = +(usesWebWorkers&&!this.isFileServed)
-        if ((isWebWorker && this.usesWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
+        if ((isWebWorker && this.usingWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
 
 
         let instance = Simulation.#PHYSICS_UNIT_INSTANCES[isWebWorker]
@@ -411,7 +424,7 @@ class Simulation {
      * @returns The new priority
      */
     updateSidePriority(sidePriority) {
-        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
+        if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
         return this._sidePriority = sidePriority
     }
 
@@ -422,7 +435,7 @@ class Simulation {
      */
     getPixelAtMapPos(mapPos) {
         const i = this._mapGrid.mapPosToIndex(mapPos)
-        return this.usesWebWorkers ? this._lastGridMaterials[i] : this._gridMaterials[i]
+        return this.usingWebWorkers ? this._lastGridMaterials[i] : this._gridMaterials[i]
     }
 
     /**
@@ -531,7 +544,7 @@ class Simulation {
 
         this.#updateIndexCount
 
-        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
+        if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
     }
 
     #updateIndexCount() {
@@ -595,7 +608,7 @@ class Simulation {
     #sendPixelsToWorker(type) {// TODO TOFIX
         const pixels = this._gridMaterials//, pxStates = this._indexStates TODO
         this.saveStep()
-        if (this.usesWebWorkers) this._physicsUnit.postMessage({type, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
+        if (this.usingWebWorkers) this._physicsUnit.postMessage({type, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
         else this.#simulationHasPixelsBuffer = true
     }
 
@@ -697,7 +710,7 @@ class Simulation {
         if (this._isMouseWithinSimulation && mapPos) {
             const isRunning = this._isRunning, [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
 
-            if (this.smoothDrawingEnabled && dMax) for (let i=0;i<dMax;i++) {
+            if (this._userSettings.smoothDrawingEnabled && dMax) for (let i=0;i<dMax;i++) {
                 const prog = ((i+1)/dMax)
                 this.placePixelsWithBrush(ix+(dx*prog)|0, iy+(dy*prog)|0)
             } 
@@ -707,13 +720,13 @@ class Simulation {
             if (!isRunning) this.renderPixels()
         }
 
-        if (this.backStepSaveOnPlacement) this.saveStep()
+        if (this._userSettings.backStepSaveOnPlacement) this.saveStep()
     }
 
     // Zooms in/out towards the provided pos
     #zoomTowardsPos(pos,  zoomDirection) {
         const newZoom = this._CVS.zoom + (zoomDirection<0 ? this.zoomInIncrement : this.zoomOutIncrement)
-        if (newZoom > this.minZoomThreshold && newZoom < this.maxZoomThreshold) {
+        if (newZoom > this.minZoomThreshold && newZoom < this._userSettings.maxZoomThreshold) {
             this._CVS.zoomAtPos(pos, newZoom)
             return pos
         }  else return false
@@ -724,21 +737,21 @@ class Simulation {
         const CVS = this._CVS
 
         Canvas.preventNativeZoom((dir, isMouse)=>{
-            if (this.dragAndZoomCanvasEnabled && !isMouse) this.#zoomTowardsPos(CVS.getCenter(), dir)
+            if (this._userSettings.dragAndZoomCanvasEnabled && !isMouse) this.#zoomTowardsPos(CVS.getCenter(), dir)
         })
 
-        if (this.dragAndZoomCanvasEnabled) {
+        if (this._userSettings.dragAndZoomCanvasEnabled) {
             const frame = CVS.frame, mouse = CVS.mouse
             let isCameraMoving = false, lastDragPos = [0,0]
 
             frame.addEventListener("wheel", e=>{
-                if (this.dragAndZoomCanvasEnabled) {
+                if (this._userSettings.dragAndZoomCanvasEnabled) {
                     if (this.#zoomTowardsPos(mouse.rawPos, e.deltaY)) lastDragPos = [...mouse.rawPos]
                 }
             })
 
             frame.addEventListener("mousedown", e=>{
-                if (this.dragAndZoomCanvasEnabled) {
+                if (this._userSettings.dragAndZoomCanvasEnabled) {
                     if (e.button === Mouse.BUTTON_TYPES.RIGHT) {
                         isCameraMoving = true
                         lastDragPos = [e.clientX, e.clientY]
@@ -748,7 +761,7 @@ class Simulation {
             })
 
             frame.addEventListener("mousemove", e=>{
-                if (this.dragAndZoomCanvasEnabled && isCameraMoving) {
+                if (this._userSettings.dragAndZoomCanvasEnabled && isCameraMoving) {
                     const {clientX, clientY} = e, [vx, vy] = CVS.viewPos, dx = clientX-lastDragPos[0], dy = clientY-lastDragPos[1]
                     CVS.moveViewAt([vx+dx, vy+dy])
                     lastDragPos = [clientX, clientY]
@@ -756,7 +769,7 @@ class Simulation {
             })
 
             frame.addEventListener("mouseleave", e=>{
-                if (this.dragAndZoomCanvasEnabled && isCameraMoving) {
+                if (this._userSettings.dragAndZoomCanvasEnabled && isCameraMoving) {
                     const {clientX, clientY} = e
                     lastDragPos = [clientX, clientY]
                     isCameraMoving = false
@@ -1167,16 +1180,11 @@ class Simulation {
     get mouse() {return this._CVS.mouse}
     get keyboard() {return this._CVS.keyboard}
 	get mapGrid() {return this._mapGrid}
-	get loopExtra() {return this._loopExtra}
-	get stepExtra() {return this._stepExtra}
 	get lastStepTime() {return this._lastStepTime}
-	get mapGridRenderStyles() {return this._mapGridRenderStyles}
-	get mapBorderRenderStyles() {return this._mapBorderRenderStyles}
 	get offscreenCanvas() {return this._offscreenCanvas}
 	get imgMap() {return this._imgMap}
     get isMouseWithinSimulation() {return this._isMouseWithinSimulation}
     get sidePriority() {return this._sidePriority}
-    get isRunning() {return this._isRunning}
 	get backStepSaves() {return this._backStepSaves}
 	get selectedMaterial() {return this._selectedMaterial}
     get brushType() {return this._brushType}
@@ -1187,44 +1195,16 @@ class Simulation {
 	get colorSettings() {return this._colorSettings}
     get initialized() {return this._initialized}
 	get queuedBufferOperations() {return this._queuedBufferOperations}
-
     get aimedFPS() {return this._CVS.fpsLimit}
-    get backStepSaveOnPlacement() {return this._userSettings.backStepSaveOnPlacement}
-    get backStepSavingIsExact() {return this._userSettings.backStepSavingIsExact}
-    get backStepSavingCount() {return this._userSettings.backStepSavingCount}
-    get backStepSavingEnabled() {return Boolean(this.backStepSavingCount)}
+    get backStepSavingEnabled() {return Boolean(this._userSettings.backStepSavingCount)}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
-    get usesWebWorkers() {return (Boolean(this._physicsUnit) && !(this._physicsUnit instanceof LocalPhysicsUnit))}
+    get usingWebWorkers() {return (Boolean(this._physicsUnit) && !(this._physicsUnit instanceof LocalPhysicsUnit))}
     get isFileServed() {return location.href.startsWith("file")}
-	get showGrid() {return this._userSettings?.showGrid}
-	get showBorder() {return this._userSettings?.showBorder}
-	get smoothDrawingEnabled() {return this._userSettings?.smoothDrawingEnabled}
-	get visualEffectsEnabled() {return this._userSettings?.visualEffectsEnabled}
-	get warningsDisabled() {return this._userSettings?.warningsDisabled}
-	get dragAndZoomCanvasEnabled() {return this._userSettings?.dragAndZoomCanvasEnabled}
-	get autoSimulationSizing() {return this._userSettings?.autoSimulationSizing}
-	get zoomInIncrement() {return this._userSettings?.zoomInIncrement}
-	get zoomOutIncrement() {return this._userSettings?.zoomOutIncrement}
-	get minZoomThreshold() {return this._userSettings?.minZoomThreshold}
-	get maxZoomThreshold() {return this._userSettings?.maxZoomThreshold}
-	get drawingDisabled() {return this._userSettings?.drawingDisabled}
-	get timerEnabled() {return this._physicsConfig?.timerEnabled}
-	get showSkips() {return this._physicsConfig?.showSkips}
-    
-	set loopExtra(_loopExtra) {this._loopExtra = _loopExtra}
-	set stepExtra(stepExtra) {this._stepExtra = stepExtra}
-	set isRunning(isRunning) {this._isRunning = isRunning}
-	set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
+
+    set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
 	set brushType(brushType) {return this.updateBrushType(brushType)}
 	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
 	set replaceMode(replaceMode) {return this.updateReplaceMode(replaceMode)}
-	set mapGridRenderStyles(_mapGridRenderStyles) {this._mapGridRenderStyles = _mapGridRenderStyles}
-	set mapBorderRenderStyles(_mapBorderRenderStyles) {return this._mapBorderRenderStyles = _mapBorderRenderStyles}
-    set showGrid(showGrid) {this._userSettings.showGrid = showGrid}
-    set showBorder(showBorder) {this._userSettings.showBorder = showBorder}
-    set smoothDrawingEnabled(smoothDrawingEnabled) {this._userSettings.smoothDrawingEnabled = smoothDrawingEnabled}
-    set visualEffectsEnabled(visualEffectsEnabled) {this._userSettings.visualEffectsEnabled = visualEffectsEnabled}
-    set warningsDisabled(warningsDisabled) {this._userSettings.warningsDisabled = warningsDisabled}
     set aimedFPS(aimedFPS) {this._CVS.fpsLimit = aimedFPS}
     set autoSimulationSizing(autoSimulationSizing) {
         this._userSettings.autoSimulationSizing = autoSimulationSizing
@@ -1235,20 +1215,10 @@ class Simulation {
         if (!dragAndZoomCanvasEnabled) CVS.resetTransformations(true)
     }
     set backStepSavingEnabled(backStepSavingEnabled) {
-        if (backStepSavingEnabled) this.backStepSavingCount = SETTINGS.DEFAULT_USER_SETTINGS.backStepSavingCount
+        if (backStepSavingEnabled) this._userSettings.backStepSavingCount = SETTINGS.DEFAULT_USER_SETTINGS.backStepSavingCount
         else {
-            this.backStepSavingCount = 0
+            this._userSettings.backStepSavingCount = 0
             this._backStepSaves = []
         }
     }
-    set backStepSavingIsExact(backStepSavingIsExact) {this._userSettings.backStepSavingIsExact = backStepSavingIsExact}
-    set backStepSavingCount(backStepSavingCount) {this._userSettings.backStepSavingCount = backStepSavingCount}
-    set backStepSaveOnPlacement(backStepSaveOnPlacement) {this._userSettings.backStepSaveOnPlacement = backStepSaveOnPlacement}
-    set minZoomThreshold(minZoomThreshold) {this._userSettings.minZoomThreshold = minZoomThreshold}
-    set maxZoomThreshold(maxZoomThreshold) {this._userSettings.maxZoomThreshold = maxZoomThreshold}
-    set zoomInIncrement(zoomInIncrement) {this._userSettings.zoomInIncrement = zoomInIncrement}
-    set zoomOutIncrement(zoomOutIncrement) {this._userSettings.zoomOutIncrement = zoomOutIncrement}
-    set drawingDisabled(drawingDisabled) {this._userSettings.drawingDisabled = drawingDisabled}
-    set timerEnabled(timerEnabled) {this._physicsConfig.timerEnabled = timerEnabled}
-    set showSkips(showSkips) {this._physicsConfig.showSkips = showSkips}
 }

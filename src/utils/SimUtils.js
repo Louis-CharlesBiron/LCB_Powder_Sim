@@ -10,4 +10,25 @@ class SimUtils {
         if (inputSettings) Object.entries(inputSettings).forEach(([key, value])=>newSettings[key] = value)
         return newSettings
     }
+
+    // DOC TODO
+    static addGettersSetters(targetClass, attributes) {
+        attributes.forEach(({exposedName, path})=>{
+            path ??= "_"+exposedName
+            const isPathArray = Array.isArray(path)
+            Object.defineProperty(targetClass.prototype, exposedName, {
+                set(value) {
+                    if (isPathArray) {
+                        const directPath = path[path.length-1], prop = path.slice(0, path.length-1).reduce((a,b)=>a[b], this)
+                        prop[directPath] = value
+                    }
+                    else this[path] = value
+                },
+                get() {
+                    return isPathArray ? path.reduce((a,b)=>a[b], this) : this[path]
+                }
+            })
+        })
+    }
+
 }

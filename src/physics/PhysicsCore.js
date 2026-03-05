@@ -17,7 +17,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     console.log("CONTEXT:", self.constructor.name)
     
     // CONSTANTS //
-    const RTSize = CONFIG.randomTableSize-1,
+    const RTSize = CONFIG.$randomTableSize-1,
         RANDOM_TABLE = createRandomTable(),
         BIT32 = 31,
 
@@ -396,8 +396,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             }
         }
     }
-
-
 
 
     const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
