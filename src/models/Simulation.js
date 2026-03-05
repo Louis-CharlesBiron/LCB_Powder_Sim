@@ -36,7 +36,6 @@ class Simulation {
     static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
-    static DEFAULT_BACK_STEP_SAVING_COUNT = SETTINGS.DEFAULT_BACK_STEP_SAVING_COUNT
     static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
     static DEFAULT_KEYBINDS = DEFAULT_KEYBINDS
     static DEFAULT_PRECISE_PLACE_KEY = TypingDevice.KEYS.SHIFT
@@ -74,7 +73,6 @@ class Simulation {
         this._indexGravity = new Simulation.#C_PHYSICS_SMALL(arrSize)
         this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_CONFIG)
 
-        this._backStepSavingMaxCount = Simulation.DEFAULT_BACK_STEP_SAVING_COUNT
         this._backStepSaves = []
         this._isMouseWithinSimulation = true
         this._isRunning = false
@@ -147,7 +145,7 @@ class Simulation {
 
         if (loopExtra) loopExtra(deltaTime)
 
-        if (!this.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.DEFAULT_PRECISE_PLACE_KEY)) this.#placePixelFromMouse(mouse)
+        if (!this.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.DEFAULT_PRECISE_PLACE_KEY)) this.#placePixelWithMouse(mouse)
 
         if (settings.showGrid) this.#drawMapGrid()
         if (settings.showBorder) this.#drawBorder()
@@ -239,8 +237,8 @@ class Simulation {
         const T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit
         if (this.useLocalPhysics && this.#simulationHasPixelsBuffer) {
             const stepExtra = this._stepExtra
-            this.saveStep()
             if (stepExtra) stepExtra()
+            this.saveStep()
             unit.step(
                 this._gridIndexes, this._gridMaterials,
                 this._indexCount, this._indexFlags, this._indexPosX, this._indexPosY, this._indexVelX, this._indexVelY, this._indexGravity,
@@ -253,9 +251,22 @@ class Simulation {
     }
 
     /**
+     * Saves a physics step (R?)
+     */
+    saveStep(isExact=this.backStepSavingIsExact) {
+        if (this.backStepSavingEnabled) {
+            const saves = this._backStepSaves, b_ll = saves.length, currentSave = this.exportAsText(isExact ? SETTINGS.EXPORT_STATES.EXACT : SETTINGS.EXPORT_STATES.COMPACTED)
+            if (saves[b_ll-1] !== currentSave) {
+                saves.push(currentSave)
+                if ((b_ll+1) > this.backStepSavingCount) saves.shift()
+            }
+        }
+    }
+
+    /**
      * Displays the previous physics step saved (R?)
      */
-    backStep() {
+    backStep() {// TODO TOFIX
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.backStep())
             return
@@ -263,44 +274,9 @@ class Simulation {
 
         const saves = this._backStepSaves, b_ll = saves.length
         if (b_ll) {
-            let lastSave = saves[b_ll-1]
-            const lastSaveArray = lastSave[0], l_ll = lastSaveArray.length, currentSave = this.#getGridMaterialsCopy()
-            
-            let hasChanges = l_ll !== currentSave.length
-            for (let i=0;i<l_ll;i++) {
-                if (lastSaveArray[i] !== currentSave[i]) {
-                    hasChanges = true
-                    break
-                }
-            }
-
-            if (!hasChanges) lastSave = saves[b_ll-2]
-
-            if (lastSave) this.load(lastSave[0], lastSave[1])
+            const lastSave = saves[b_ll-1]
+            if (lastSave) this.load(lastSave)
             saves.pop()
-        }
-    }
-
-    /**
-     * Saves a physics step (R?)
-     */
-    saveStep() {
-        if (this.backStepSavingEnabled) {
-            const saves = this._backStepSaves, b_ll = saves.length, lastSave = saves[b_ll-1]?.[0], l_ll = lastSave?.length, currentSave = this.#getGridMaterialsCopy()
-
-            if (lastSave) {
-                let hasChanges = l_ll !== currentSave.length
-                for (let i=0;i<l_ll;i++) {
-                    if (lastSave[i] !== currentSave[i]) {
-                        hasChanges = true
-                        break
-                    }
-                }
-                if (!hasChanges) return
-            }
-            
-            saves.push([currentSave, this._mapGrid.dimensions])
-            if ((b_ll+1) > this._backStepSavingMaxCount) saves.shift()
         }
     }
     
@@ -333,7 +309,7 @@ class Simulation {
      * Updates whether the physics calculations are offloaded to a worker thread (R?)
      * @param {Boolean} usesWebWorkers Whether an other thread is used. (Defaults to true)
      */
-    updatePhysicsUnitType(usesWebWorkers=true) {
+    updatePhysicsUnitType(usesWebWorkers=true) {// TODO TOFIX TOCHECK
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = +(usesWebWorkers&&!this.isFileServed)
@@ -377,7 +353,7 @@ class Simulation {
      * Updates the map pixel size
      * @param {Number?} pixelSize The new map pixel size
      */
-    updateMapPixelSize(pixelSize=MapGrid.DEFAULT_PIXEL_SIZE) {
+    updateMapPixelSize(pixelSize=MapGrid.DEFAULT_PIXEL_SIZE) {// TODO TOFIX or OPTIMIZE/ERROR HANDLING
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
 
         if (!this.#simulationHasPixelsBuffer) {
@@ -404,7 +380,7 @@ class Simulation {
      * @param {Number?} width The new width of the map, in local pixels
      * @param {Number?} height The new height of the map, in local pixels
      */
-    updateMapSize(width, height) {
+    updateMapSize(width, height) {// TODO TOFIX or OPTIMIZE/ERROR HANDLING
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
 
         if (!this.#simulationHasPixelsBuffer) {
@@ -501,7 +477,7 @@ class Simulation {
      * @param {Number} newHeight The new/updated height of the map
      * @param {Uint16Array} // DOC TODO and optimize
      */
-    #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldGridIndexes, oldGridMaterials, oldIndexArrays) {
+    #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldGridIndexes, oldGridMaterials, oldIndexArrays) {// TODO TOFIX
         const arraySize = this._mapGrid.arraySize, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight,
             gridIndexes = this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1),
             gridMaterials = this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR),    
@@ -538,8 +514,7 @@ class Simulation {
         }
 
         // TODO FINISH
-        if (newWidth < oldWidth) 
-            for (let x=newWidth;x<oldWidth;x++) 
+        if (newWidth < oldWidth) for (let x=newWidth;x<oldWidth;x++) 
                 for (let y=0;y<oldHeight;y++) {
                     const delGi = y*oldWidth+x, delI = oldGridIndexes[delGi]
                     if (delI !== -1) {
@@ -554,13 +529,16 @@ class Simulation {
                     }
                 }
 
+        this.#updateIndexCount
 
-        const gi_ll = gridIndexes.length
+        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
+    }
+
+    #updateIndexCount() {
+        const gridIndexes = this._gridIndexes, gi_ll = gridIndexes.length
         let count = 0
         for (let i=0;i<gi_ll;i++) if (gridIndexes[i] !== -1) count++
         this._indexCount[0] = count
-
-        if (this.usesWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
     }
 
     /**
@@ -586,7 +564,7 @@ class Simulation {
 
     /* WEB WORKER CONTROL */
     // Listener for web worker messages (R?)
-    #physicsUnitMessage(e) {
+    #physicsUnitMessage(e) {// TODO TOFIX
         const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES, stepExtra = this._stepExtra
 
         if (type & Simulation.#WORKER_MESSAGE_GROUPS.GIVES_PIXELS_TO_MAIN) {
@@ -614,7 +592,7 @@ class Simulation {
      * Sends a command of a certain type to the worker, needing pixels (R?)
      * @param {Simulation.#WORKER_MESSAGE_TYPES} type The worker message type
      */
-    #sendPixelsToWorker(type) {
+    #sendPixelsToWorker(type) {// TODO TOFIX
         const pixels = this._gridMaterials//, pxStates = this._indexStates TODO
         this.saveStep()
         if (this.usesWebWorkers) this._physicsUnit.postMessage({type, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
@@ -639,7 +617,7 @@ class Simulation {
             const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
             for (let x=0;x<size;x++) {
                 const xx = x*4
-                pxRow[xx]   = r
+                pxRow[xx] = r
                 pxRow[xx+1] = g
                 pxRow[xx+2] = b
                 pxRow[xx+3] = adjustedA
@@ -701,7 +679,7 @@ class Simulation {
 
     // mouseDown listener, allows the mouse to place pixels
     #mouseDown(mouse) {
-        if (!mouse.rightClicked) this.#placePixelFromMouse(mouse)
+        if (!mouse.rightClicked) this.#placePixelWithMouse(mouse)
     }
 
     // Runs when the mouse leaves the simulation's bounding box
@@ -714,7 +692,7 @@ class Simulation {
      * Places the selected material at the mouse position on the map, based on the selected brushType
      * @param {Mouse} mouse A CVS Mouse object
      */
-    #placePixelFromMouse(mouse) {
+    #placePixelWithMouse(mouse) {
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
         if (this._isMouseWithinSimulation && mapPos) {
             const isRunning = this._isRunning, [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
@@ -728,6 +706,8 @@ class Simulation {
             this.#lastPlacedPos = mapPos
             if (!isRunning) this.renderPixels()
         }
+
+        if (this.backStepSaveOnPlacement) this.saveStep()
     }
 
     // Zooms in/out towards the provided pos
@@ -775,7 +755,7 @@ class Simulation {
                 }
             })
 
-                frame.addEventListener("mouseleave", e=>{
+            frame.addEventListener("mouseleave", e=>{
                 if (this.dragAndZoomCanvasEnabled && isCameraMoving) {
                     const {clientX, clientY} = e
                     lastDragPos = [clientX, clientY]
@@ -980,6 +960,7 @@ class Simulation {
         return gridMaterialsCopy
     }
 
+    // TODO DOC
     #getGridIndexesCopy() {
         const arraySize = this._mapGrid.arraySize, gridIndexesCopy = new Simulation.#C_GRID_INDEXES(arraySize)
         gridIndexesCopy.set(this._gridIndexes.subarray(0, arraySize))
@@ -1018,18 +999,18 @@ class Simulation {
      * @param {String} mapData The save data as a string in the format created by the function exportAsText()
      * @param {Boolean? | [width, height]?} useSaveSizes Whether to resize the map size and pixel size to the save's values (Also used internally to specify the save data dimensions when mapData is of Uint16Array type)
      */
-    load(mapData, replaceMode=Simulation.REPLACE_MODES.ALL, useSaveSizes=null) {
+    load(mapData, useSaveSizes=null, replaceMode=Simulation.REPLACE_MODES.ALL) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_LOAD_WARN)) return
 
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>this.load(mapData, useSaveSizes))
+            this._queuedBufferOperations.push(()=>this.load(mapData, useSaveSizes, replaceMode))
             return
         }
 
         if (mapData) {
-            const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x)
+            const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x), isExact = exportType == Simulation.EXPORT_STATES.EXACT
 
-            if (useSaveSizes) {
+            if (useSaveSizes || isExact) {
                 this.updateMapSize(saveWidth, saveHeight)
                 this.updateMapPixelSize(pixelSize)
             }
@@ -1050,31 +1031,63 @@ class Simulation {
                     }
                 }
             }
+            else if (isExact) {
+                //console.log(exportType, saveWidth, saveHeight, pixelSize, data)
+                const d_ll = data.length, arraySize = saveWidth*saveHeight
+                let gridIndex = 0 
+                this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
+                this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize)
+                this._indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize),
+                this._indexPosX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                this._indexPosY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                this._indexVelX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                this._indexVelY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+                this._indexGravity = new Simulation.#C_PHYSICS_SMALL(arraySize)
+                for (let i=0;i<d_ll;i++) {
+                    const group = data[i]
+                    if (group.includes(SETTINGS.EXPORT_STATIC_SEPARATOR)) {
+                        const groupInfo = group.split(SETTINGS.EXPORT_STATIC_SEPARATOR), count = +groupInfo[1], mat = +groupInfo[0]||Simulation.MATERIALS.AIR
+                        this._gridMaterials.set(new Simulation.#C_GRID_MATERIALS(count).fill(mat), gridIndex)
+                        this._gridIndexes.set(new Simulation.#C_GRID_INDEXES(count).fill(-1), gridIndex)
+                        gridIndex += count
+                    } else {
+                        //[material, index, flags, posX, posY, velX, velY, gravity]
+                        const [material, index, flags, posX, posY, velX, velY, gravity] = group.split(SETTINGS.EXPORT_DYAMIC_SEPARATOR)
+                        this._gridMaterials[gridIndex] = material
+                        this._gridIndexes[gridIndex] = index
+                        this._indexFlags[index] = flags
+                        this._indexPosX[index] = posX
+                        this._indexPosY[index] = posY
+                        this._indexVelX[index] = velX
+                        this._indexVelY[index] = velY
+                        this._indexGravity[index] = gravity
+                        gridIndex++
+                    }
+                }
+                this.#updateIndexCount()
+            }
+
             this.renderPixels()
         }
     }
 
     /**
      * Exports/saves the current pixels array as text
-     * @param {Boolean} disableCompacting Whether to disable the text compacting (not recommended for large maps)
+     * @param {EXPORT_STATES} state Whether to disable the text compacting (not recommended for large maps)// DOC TODO
      * @param {Function?} callback If using web workers, use this callback to retrieve the return value (stringValue)=>{...}
      * @returns A string representing the current map
      */
-    exportAsText(disableCompacting, callback) {
+    exportAsText(state=SETTINGS.EXPORT_STATES.COMPACTED, callback) {
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>callback&&callback(this.exportAsText(disableCompacting)))
+            this._queuedBufferOperations.push(()=>callback&&callback(this.exportAsText(state)))
             return
         }
 
         const gridMaterials = this._gridMaterials, g_ll = gridMaterials.length
-        let state = SETTINGS.EXPORT_STATES.COMPACTED, textResult = ""
+        let textResult = [], lastMaterial, atI = -1
 
-        if (disableCompacting) {
-            state = SETTINGS.EXPORT_STATES.RAW
-            textResult += gridMaterials.toString()
-        } else if (!disableCompacting) {
-            let lastMaterial, atI = -1
-            textResult = []
+        if (state === SETTINGS.EXPORT_STATES.RAW) textResult = gridMaterials.toString()
+        else if (state === SETTINGS.EXPORT_STATES.COMPACTED) {
             for (let i=0;i<g_ll;i++) {
                 const mat = gridMaterials[i]
                 if (lastMaterial === mat) textResult[atI][1]++
@@ -1083,14 +1096,28 @@ class Simulation {
             }
             textResult = textResult.toString()
         }
+        else if (state === SETTINGS.EXPORT_STATES.EXACT) {
+            for (let i=0;i<g_ll;i++) {
+                const pixelInfo = this.getPixelInfo(i)
+                if (typeof pixelInfo === "number") {
+                    if (lastMaterial === pixelInfo) textResult[atI][1]++
+                    else textResult[++atI] = [pixelInfo, 1]
+                    lastMaterial = pixelInfo
+                } else {
+                    textResult[++atI] = pixelInfo.join(SETTINGS.EXPORT_DYAMIC_SEPARATOR)
+                    lastMaterial = null
+                }
+            }
+            textResult = textResult.map(x=>typeof x === "string" ? x : x.join(SETTINGS.EXPORT_STATIC_SEPARATOR)).toString()
+        }
+        else return null
 
         return state+SETTINGS.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+SETTINGS.EXPORT_SEPARATOR+textResult
     }
 
     // TODO DOC
-    getPixelInfo(gridIndex,) {
-        const material = this._gridMaterials[gridIndex],
-              index = this._gridIndexes[gridIndex]
+    getPixelInfo(gridIndex) {
+        const material = this._gridMaterials[gridIndex], index = this._gridIndexes[gridIndex]
         
         if (index !== -1) {
             const flags = this._indexFlags[index],
@@ -1102,7 +1129,6 @@ class Simulation {
 
             return [material, index, flags, posX, posY, velX, velY, gravity]
         }
-
         return material
     }
     /* SAVE / IMPORT / EXPORT -end */
@@ -1151,7 +1177,6 @@ class Simulation {
     get isMouseWithinSimulation() {return this._isMouseWithinSimulation}
     get sidePriority() {return this._sidePriority}
     get isRunning() {return this._isRunning}
-	get backStepSavingMaxCount() {return this._backStepSavingMaxCount}
 	get backStepSaves() {return this._backStepSaves}
 	get selectedMaterial() {return this._selectedMaterial}
     get brushType() {return this._brushType}
@@ -1164,7 +1189,10 @@ class Simulation {
 	get queuedBufferOperations() {return this._queuedBufferOperations}
 
     get aimedFPS() {return this._CVS.fpsLimit}
-    get backStepSavingEnabled() {return Boolean(this._backStepSavingMaxCount)}
+    get backStepSaveOnPlacement() {return this._userSettings.backStepSaveOnPlacement}
+    get backStepSavingIsExact() {return this._userSettings.backStepSavingIsExact}
+    get backStepSavingCount() {return this._userSettings.backStepSavingCount}
+    get backStepSavingEnabled() {return Boolean(this.backStepSavingCount)}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
     get usesWebWorkers() {return (Boolean(this._physicsUnit) && !(this._physicsUnit instanceof LocalPhysicsUnit))}
     get isFileServed() {return location.href.startsWith("file")}
@@ -1190,7 +1218,6 @@ class Simulation {
 	set brushType(brushType) {return this.updateBrushType(brushType)}
 	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
 	set replaceMode(replaceMode) {return this.updateReplaceMode(replaceMode)}
-	set backStepSavingMaxCount(_backStepSavingMaxCount) {this._backStepSavingMaxCount = _backStepSavingMaxCount}
 	set mapGridRenderStyles(_mapGridRenderStyles) {this._mapGridRenderStyles = _mapGridRenderStyles}
 	set mapBorderRenderStyles(_mapBorderRenderStyles) {return this._mapBorderRenderStyles = _mapBorderRenderStyles}
     set showGrid(showGrid) {this._userSettings.showGrid = showGrid}
@@ -1207,6 +1234,16 @@ class Simulation {
         this._userSettings.dragAndZoomCanvasEnabled = dragAndZoomCanvasEnabled
         if (!dragAndZoomCanvasEnabled) CVS.resetTransformations(true)
     }
+    set backStepSavingEnabled(backStepSavingEnabled) {
+        if (backStepSavingEnabled) this.backStepSavingCount = SETTINGS.DEFAULT_USER_SETTINGS.backStepSavingCount
+        else {
+            this.backStepSavingCount = 0
+            this._backStepSaves = []
+        }
+    }
+    set backStepSavingIsExact(backStepSavingIsExact) {this._userSettings.backStepSavingIsExact = backStepSavingIsExact}
+    set backStepSavingCount(backStepSavingCount) {this._userSettings.backStepSavingCount = backStepSavingCount}
+    set backStepSaveOnPlacement(backStepSaveOnPlacement) {this._userSettings.backStepSaveOnPlacement = backStepSaveOnPlacement}
     set minZoomThreshold(minZoomThreshold) {this._userSettings.minZoomThreshold = minZoomThreshold}
     set maxZoomThreshold(maxZoomThreshold) {this._userSettings.maxZoomThreshold = maxZoomThreshold}
     set zoomInIncrement(zoomInIncrement) {this._userSettings.zoomInIncrement = zoomInIncrement}

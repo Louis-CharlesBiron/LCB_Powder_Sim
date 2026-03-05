@@ -425,8 +425,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         return num < min ? min : num > max ? max : num
     }
 
-
-
     // DOC TODO
     function handleTimerPre() {
         if (timerCount++ > CONFIG.maxLogCount) {

@@ -60,6 +60,9 @@ const SETTINGS = {
     },
 
     DEFAULT_USER_SETTINGS: {// (R?)
+        backStepSavingCount: 100,
+        backStepSaveOnPlacement: true,
+        backStepSavingIsExact: false,
         autoSimulationSizing: null,
         dragAndZoomCanvasEnabled: true,
         minZoomThreshold: .1,
@@ -107,15 +110,14 @@ const SETTINGS = {
     SIDE_PRIORITIES: {
         RANDOM:0,
         LEFT:1,
-        RIGHT:2,
-        MAP_DEPENDANT:3
+        RIGHT:2
     },
     SIDE_PRIORITY_NAMES: [],
-
-    DEFAULT_BACK_STEP_SAVING_COUNT: 500,
-
-    EXPORT_STATES: {RAW:0, COMPACTED:1},
+    
+    EXPORT_STATES: {RAW:0, COMPACTED:1, EXACT:2},
     EXPORT_SEPARATOR: "x",
+    EXPORT_DYAMIC_SEPARATOR: "'",
+    EXPORT_STATIC_SEPARATOR: "X",
 
     BRUSH_TYPES: {
         PIXEL:1<<0,

@@ -135,11 +135,11 @@ document.getElementById("clearButton").onclick=()=>simulation.clear()
 
 // SAVE
 const exportValueInput = document.getElementById("exportValueInput")
-document.getElementById("saveButton").onclick=e=>exportValueInput.value = simulation.exportAsText(e.ctrlKey, saveValue=>exportValueInput.value=saveValue)
+document.getElementById("saveButton").onclick=e=>exportValueInput.value = simulation.exportAsText(e.ctrlKey ? SETTINGS.EXPORT_STATES.RAW : SETTINGS.EXPORT_STATES.COMPACTED, saveValue=>exportValueInput.value=saveValue)
 
 // LOAD
 const loadValueInput = document.getElementById("loadValueInput")
-document.getElementById("loadButton").onclick=e=>simulation.load((loadValueInput.value||exportValueInput.value), undefined, e.ctrlKey)
+document.getElementById("loadButton").onclick=e=>simulation.load((loadValueInput.value||exportValueInput.value), e.ctrlKey)
 loadValueInput.oncontextmenu=e=>{
     e.preventDefault()
     loadValueInput.value = ""
