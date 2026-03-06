@@ -24,6 +24,39 @@ const simulation = new Simulation(
     }
 )
 
+
+
+// READY FUNCTION
+function readyCB(simulation) {
+    console.log("%cSIMULATION LOADED", "font-size:9.5px;color:#9c9c9c;")
+
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
+    //simulation.updateSidePriority(1)
+    //simulation.showSkips = true
+
+    //simulation.placePixelAtCoords(22, 13)
+
+    simulation.updateMapSize(20, 20)
+    simulation.updateMapPixelSize(25)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+
+    //simulation.updateMapSize(300, 200)
+    //simulation.updateMapPixelSize(3)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+    
+    //simulation.updateMapSize(231, 149)
+    //simulation.updateMapPixelSize(4)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+
+    //simulation.updateMapPixelSize(1)
+    //simulation.updateMapSize(500, 500)
+    //simulation.showGrid = false
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
+    //simulation.timerEnabled = true
+}
+
+
+
 // FPS / SPS DISPLAY
 const fpsDisplay = document.getElementById("fpsDisplay"), fpsStepDisplay = document.getElementById("fpsStepDisplay"),
       fpsCounter = new FPSCounter(), stepFpsCounter = new FPSCounter()
@@ -48,8 +81,9 @@ const mousePosStatus = document.getElementById("mousePosStatus"),
       sidePriorityStatus = document.getElementById("sidePriorityStatus"),
       isRunningStatus = document.getElementById("isRunningStatus"),
       physicsUnitTypeStatus = document.getElementById("physicsUnitTypeStatus"),
-      timeStampStatus = document.getElementById("timeStampStatus")
-      zoomStatus = document.getElementById("zoomStatus")
+      timeStampStatus = document.getElementById("timeStampStatus"),
+      zoomStatus = document.getElementById("zoomStatus"),
+      particleStatus = document.getElementById("particleStatus")
 
 let STATUS_REFRESH_RATE = 1000/10
 function statusLoopCore() {
@@ -61,6 +95,20 @@ function statusLoopCore() {
     if (simulation.isMouseWithinSimulation && mapPos) {
         const mouseMaterialText = "("+Simulation.MATERIAL_NAMES[simulation.getPixelAtMapPos(mapPos)]+")"
         if (mouseMaterialStatus.textContent !== mouseMaterialText) mouseMaterialStatus.textContent = mouseMaterialText
+    }
+
+    // MOUSE PARTICLE INFO
+    if (simulation.isMouseWithinSimulation && mapPos) {
+        const particleInfo = simulation.getPixelInfo(simulation.mapGrid.mapPosToIndex(mapPos))
+        console.log(particleInfo)
+        particleStatus.textContent = Array.isArray(particleInfo) ? `----------
+            Mat: ${particleInfo[0]}
+            Index: ${particleInfo[1]}
+            Flags: ${particleInfo[2]}
+            Pos: [${particleInfo[3].toFixed(2)}, ${particleInfo[4].toFixed(2)}]
+            Vel: [${particleInfo[5].toFixed(2)}, ${particleInfo[6].toFixed(2)}]
+            Gravity: ${particleInfo[7]}
+        ----------`.trim() : ""
     }
     
     // SELECTED MATERIAL
@@ -99,30 +147,6 @@ function statusLoopCore() {
 }statusLoopCore()
 
 
-
-// READY FUNCTION
-function readyCB(simulation) {
-    console.log("%cSIMULATION LOADED", "font-size:9.5px;color:#9c9c9c;")
-
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
-    //simulation.showSkips = true
-
-    //simulation.placePixelAtCoords(22, 13)
-
-    //simulation.updateMapSize(300, 200)
-    //simulation.updateMapPixelSize(3)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
-    
-    //simulation.updateMapSize(231, 149)
-    //simulation.updateMapPixelSize(4)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
-
-    //simulation.updateMapPixelSize(1)
-    //simulation.updateMapSize(500, 500)
-    //simulation.showGrid = false
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
-    //simulation.timerEnabled = true
-}
 
 document.oncontextmenu=e=>e.preventDefault()
 

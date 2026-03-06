@@ -60,12 +60,15 @@ const MATERIALS_CONFIG = []
     // MATERIALS CONFIGS
     MATERIALS_CONFIG[SETTINGS.MATERIALS.SAND] = {
         hasVelXOffset: false,
+
+        velX: -60,
     }
 
     MATERIALS_CONFIG[SETTINGS.MATERIALS.WATER] = {
-        hasGravityOffset: false,
         hasVelXOffset: false,
-        gravity: 60
+        gravity: 60,
+
+        velX: -60,
     }
     
 

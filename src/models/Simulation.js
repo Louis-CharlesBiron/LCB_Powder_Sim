@@ -377,7 +377,7 @@ class Simulation {
         const map = this._mapGrid
         if (pixelSize !== map.pixelSize) {
             map.pixelSize = pixelSize
-            this.#commonSizeUpdate(true)
+            this.#commonSizeUpdate(()=>this.#updateCachedMapPixelsRows())
         }
     }
 
@@ -400,20 +400,19 @@ class Simulation {
             height = map.mapHeight = height||map.mapHeight
             width = map.mapWidth = width||map.mapWidth
             
-            this.#commonSizeUpdate()
-            this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldGridIndexes, oldGridMaterials, oldIndexArrays)
+            this.#commonSizeUpdate(()=>this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldGridIndexes, oldGridMaterials, oldIndexArrays))
         }
     }
 
     // DOC TODO
-    #commonSizeUpdate(isPixelSizeUpdate) {
+    #commonSizeUpdate(beforeRenderCallback) {
         const map = this._mapGrid, globalWidth = map.globalDimensions[0], globalHeight = map.globalDimensions[1]
         this._imgMap = this.ctx.createImageData(globalWidth, globalHeight)
         this._offscreenCanvas.width = globalWidth
         this._offscreenCanvas.height = globalHeight
         this.#updateCachedGridDisplays()
         this.#updateMouseListeners()
-        if (isPixelSizeUpdate != null) this.#updateCachedMapPixelsRows()
+        if (CDEUtils.isFunction(beforeRenderCallback)) beforeRenderCallback()
         this.renderPixels()
     }
 
