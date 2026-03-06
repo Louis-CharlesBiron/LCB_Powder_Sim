@@ -836,16 +836,13 @@ class Simulation {
         }
 
         const gridMaterials = this._gridMaterials, oldMat = gridMaterials[gridIndex]
-        if (!oldMat || material === oldMat) return
+        if (!oldMat || material === oldMat || (replaceMode !== Simulation.REPLACE_MODES.ALL && !(oldMat & replaceMode))) return
 
-        if (replaceMode !== Simulation.REPLACE_MODES.ALL && !(oldMat & replaceMode)) return
-
-        const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC), gridIndexes = this._gridIndexes, oldIndex = gridIndexes[gridIndex]
-        gridMaterials[gridIndex] = material
+        const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC), gridIndexes = this._gridIndexes, oldIndex = gridIndexes[gridIndex], indexCount = this._indexCount
 
         // DELETE IF DYNAMIC 
         if (oldIndex !== -1) {
-            const i = --this._indexCount[0]
+            const i = --indexCount[0]
             if (oldIndex !== i) {
                 this._indexFlags[oldIndex] = this._indexFlags[i]
                 this._indexPosX[oldIndex] = this._indexPosX[i]
@@ -860,13 +857,14 @@ class Simulation {
         }
 
         // INIT IF DYNAMIC
-        if (!isStatic) {
+        if (!isStatic && indexCount[0] < this._userSettings.maxDynamicMaterialCount) {
             const mapWidth = this._mapGrid.mapWidth,
-                i = this._indexCount[0]++,
+                i = indexCount[0]++,
                 y = (gridIndex/mapWidth)|0,
                 x = gridIndex-y*mapWidth,
                 matConfig = MATERIALS_CONFIG[material]
             
+            gridMaterials[gridIndex] = material
             this._indexFlags[i] = matConfig.flags
             this._indexPosX[i] = x+(matConfig.hasPosXOffset ? CDEUtils.random(matConfig.posXOffsetMin, matConfig.posXOffsetMax, matConfig.posXOffsetDecimals) : 0)
             this._indexPosY[i] = y+(matConfig.hasPosYOffset ? CDEUtils.random(matConfig.posYOffsetMin, matConfig.posYOffsetMax, matConfig.posYOffsetDecimals) : 0)
@@ -875,6 +873,7 @@ class Simulation {
             this._indexGravity[i] = matConfig.gravity+(matConfig.hasGravityOffset ? CDEUtils.random(matConfig.gravityOffsetMin, matConfig.gravityOffsetMax, matConfig.gravityOffsetDecimals) : 0)
             gridIndexes[gridIndex] = i
         }
+        else if (isStatic) gridMaterials[gridIndex] = material
     }
 
     /**

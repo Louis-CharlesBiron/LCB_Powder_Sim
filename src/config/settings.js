@@ -60,6 +60,7 @@ const SETTINGS = {
     },
 
     DEFAULT_USER_SETTINGS: {// (R?)
+        maxDynamicMaterialCount: Infinity,
         backStepSavingCount: 100,
         backStepSaveOnPlacement: true,
         backStepSavingIsExact: false,

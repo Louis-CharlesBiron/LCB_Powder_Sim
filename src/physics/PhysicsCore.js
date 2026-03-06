@@ -245,9 +245,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
 
 
-    // indexFlags, indexVelX indexVelY, indexGravity
-    // dx, dy
-    // deltaTime, i
     function applyMovements(i, deltaTime, particle, cache) {
         const indexFlags = particle.indexFlags
         let velX = cache.velX, velY = cache.velY
@@ -271,9 +268,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         cache.dy += velY*deltaTime
     }
 
-    // gridMaterials, indexFlags, indexVelY
-    // newX, newY
-    // i, mat, absGdy, dirGdy, oldY, transpierceableMain
     function checkCollisionsY(i, mat, gdy, oldY, transpierceableMain, particle, cache) {
         const gridMaterials = particle.gridMaterials,
             indexVelY = particle.indexVelY,
@@ -305,9 +299,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         }
     }
     
-    // gridMaterials, indexFlags, indexVelX
-    // newX, newY, velX
-    // i, gi, absGdx, dirGdx, oldX, transpierceableMain
     function checkCollisionsX(i, gi, gdx, oldX, transpierceableMain, particle, cache) {
         const gridMaterials = particle.gridMaterials,
             gridIndexes = particle.gridIndexes,
@@ -350,9 +341,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         }
     }
 
-    // particle
-    // newX, newY
-    // i, gi, mat, oldX, oldY, ox, oy, transpierceableMain
     function updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache) {
         const gridMaterials = particle.gridMaterials,
             gridIndexes = particle.gridIndexes,
@@ -397,7 +385,9 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         }
     }
 
+    // UTILS //
 
+    // DOC TODO
     const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
     function safeTrunc(num) {
         FLOAT32_TRUNC_ARR[0] = num
@@ -405,20 +395,24 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         return FLOAT32_TRUNC_ARR[0]
     }
 
+    // DOC TODO
     function abs(num) {
        return (num^(num>>BIT32))-(num>>BIT32)
     }
     
+    // DOC TODO
     function getAdjacencyCoords(x, y) {
         return y*MAP_WIDTH+clamp(x)
     }
 
+    // DOC TODO
     function getSideSelectionPriority() {
         if (SP_LEFT) return true
         if (SP_RIGHT) return false
         if (SP_RANDOM) return RANDOM_TABLE[randomIndex++&RTSize] < .5
     }
 
+    // DOC TODO
     function clamp(num, min=0, max=MAP_WIDTH-1) {
         return num < min ? min : num > max ? max : num
     }
