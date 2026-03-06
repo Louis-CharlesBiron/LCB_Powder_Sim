@@ -54,10 +54,12 @@ const MATERIALS_CONFIG = []
         gravityOffsetDecimals:null,
         hasGravityOffset:null,
     }
+    Object.values(SETTINGS.MATERIALS).forEach(mat=>MATERIALS_CONFIG[mat] = {})
+    
 
+    // MATERIALS CONFIGS
     MATERIALS_CONFIG[SETTINGS.MATERIALS.SAND] = {
         hasVelXOffset: false,
-
     }
 
     MATERIALS_CONFIG[SETTINGS.MATERIALS.WATER] = {
@@ -66,6 +68,10 @@ const MATERIALS_CONFIG = []
         gravity: 60
     }
     
+
+
+
+
 
     const getDecimals = (...nums)=>Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
     MATERIALS_CONFIG.forEach((config, i)=>{

@@ -374,10 +374,10 @@ class Simulation {
             return
         }
 
-        const map = this._mapGrid, oldPixelSize = map.pixelSize
+        const map = this._mapGrid
         if (pixelSize !== map.pixelSize) {
             map.pixelSize = pixelSize
-            this.#commonSizeUpdate(oldPixelSize)
+            this.#commonSizeUpdate(true)
         }
     }
 
@@ -400,36 +400,21 @@ class Simulation {
             height = map.mapHeight = height||map.mapHeight
             width = map.mapWidth = width||map.mapWidth
             
-            const updated = this.#commonSizeUpdate(null, oldWidth, oldHeight)
-            if (updated) this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldGridIndexes, oldGridMaterials, oldIndexArrays)
+            this.#commonSizeUpdate()
+            this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldGridIndexes, oldGridMaterials, oldIndexArrays)
         }
     }
 
-    #commonSizeUpdate(oldPixelSize, oldWidth, oldHeight) {
+    // DOC TODO
+    #commonSizeUpdate(isPixelSizeUpdate) {
         const map = this._mapGrid, globalWidth = map.globalDimensions[0], globalHeight = map.globalDimensions[1]
-        let updated = false
-
-        try {
-            this._imgMap = this.ctx.createImageData(globalWidth, globalHeight)
-            this._offscreenCanvas.width = globalWidth
-            this._offscreenCanvas.height = globalHeight
-            this.#updateCachedGridDisplays()
-            this.#updateMouseListeners()
-            if (oldPixelSize != null) this.#updateCachedMapPixelsRows()
-            this.renderPixels()
-
-            updated = true
-        } catch(e) {
-            console.error(SETTINGS.OUT_OF_MEMORY_WARN(map))
-        }
-
-        if (!updated) {
-            if (oldPixelSize != null) map.pixelSize = oldPixelSize
-            if (oldWidth != null) map.width = oldWidth
-            if (oldHeight != null) map.height = oldHeight
-        }
-
-        return updated
+        this._imgMap = this.ctx.createImageData(globalWidth, globalHeight)
+        this._offscreenCanvas.width = globalWidth
+        this._offscreenCanvas.height = globalHeight
+        this.#updateCachedGridDisplays()
+        this.#updateMouseListeners()
+        if (isPixelSizeUpdate != null) this.#updateCachedMapPixelsRows()
+        this.renderPixels()
     }
 
     /**
