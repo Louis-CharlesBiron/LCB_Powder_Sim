@@ -279,7 +279,7 @@ class Simulation {
     /**
      * Displays the previous physics step saved (R?)
      */
-    backStep() {// TODO TOFIX
+    backStep() {
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.backStep())
             return
@@ -374,17 +374,10 @@ class Simulation {
             return
         }
 
-        const map = this._mapGrid
+        const map = this._mapGrid, oldPixelSize = map.pixelSize
         if (pixelSize !== map.pixelSize) {
             map.pixelSize = pixelSize
-            this._imgMap = this.ctx.createImageData(...map.globalDimensions)
-            this._offscreenCanvas.width = map.globalDimensions[0]
-            this._offscreenCanvas.height = map.globalDimensions[1]
-            this.#updateCachedMapPixelsRows()
-            this.#updateCachedGridDisplays()
-            this.renderPixels()
-
-            this.#updateMouseListeners()
+            this.#commonSizeUpdate(oldPixelSize)
         }
     }
 
@@ -406,16 +399,37 @@ class Simulation {
             const oldGridIndexes = this.#getGridIndexesCopy(), oldGridMaterials = this.#getGridMaterialsCopy(), oldIndexArrays = this.#getIndexArraysCopy()
             height = map.mapHeight = height||map.mapHeight
             width = map.mapWidth = width||map.mapWidth
-            this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldGridIndexes, oldGridMaterials, oldIndexArrays)
-            this.#updateCachedGridDisplays()
+            
+            const updated = this.#commonSizeUpdate(null, oldWidth, oldHeight)
+            if (updated) this.#updatePixelsFromSize(oldWidth, oldHeight, width, height, oldGridIndexes, oldGridMaterials, oldIndexArrays)
+        }
+    }
 
-            this._imgMap = this.ctx.createImageData(...map.globalDimensions)
-            this._offscreenCanvas.width = map.globalDimensions[0]
-            this._offscreenCanvas.height = map.globalDimensions[1]
+    #commonSizeUpdate(oldPixelSize, oldWidth, oldHeight) {
+        const map = this._mapGrid, globalWidth = map.globalDimensions[0], globalHeight = map.globalDimensions[1]
+        let updated = false
+
+        try {
+            this._imgMap = this.ctx.createImageData(globalWidth, globalHeight)
+            this._offscreenCanvas.width = globalWidth
+            this._offscreenCanvas.height = globalHeight
+            this.#updateCachedGridDisplays()
+            this.#updateMouseListeners()
+            if (oldPixelSize != null) this.#updateCachedMapPixelsRows()
             this.renderPixels()
 
-            this.#updateMouseListeners()
+            updated = true
+        } catch(e) {
+            console.error(SETTINGS.OUT_OF_MEMORY_WARN(map))
         }
+
+        if (!updated) {
+            if (oldPixelSize != null) map.pixelSize = oldPixelSize
+            if (oldWidth != null) map.width = oldWidth
+            if (oldHeight != null) map.height = oldHeight
+        }
+
+        return updated
     }
 
     /**
@@ -491,7 +505,7 @@ class Simulation {
      * @param {Uint16Array} // DOC TODO and optimize
      */
     #updatePixelsFromSize(oldWidth, oldHeight, newWidth, newHeight, oldGridIndexes, oldGridMaterials, oldIndexArrays) {// TODO TOFIX
-        const arraySize = this._mapGrid.arraySize, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight,
+        const arraySize = newWidth*newHeight, smallestWidth = oldWidth<newWidth?oldWidth:newWidth, smallestHeight = oldHeight<newHeight?oldHeight:newHeight,
             gridIndexes = this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1),
             gridMaterials = this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR),    
             newIndexArrays = [
@@ -542,7 +556,7 @@ class Simulation {
                     }
                 }
 
-        this.#updateIndexCount
+        this.#updateIndexCount()//
 
         if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
     }

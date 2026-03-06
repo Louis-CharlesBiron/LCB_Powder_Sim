@@ -168,6 +168,7 @@ const SETTINGS = {
     NOT_INITIALIZED_MAP_SIZE_WARN:`Tried updating map size with 'updateMapSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update map size on launch.`,
     NOT_INITIALIZED_PIXEL_SIZE_WARN:`Tried updating pixel size with 'updateMapPixelSize()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update pixel size on launch.`,
     NOT_INITIALIZED_PHYSICS_TYPE_WARN:`Tried updating physics unit type with 'updatePhysicsUnitType()' while simulation is not yet initialized.\n Use the 'readyCB' callback to update physics unit type on launch.`,
+    OUT_OF_MEMORY_WARN:mapGrid=>`The map size[${mapGrid.dimensions.join("x")}], or pixelSize[${mapGrid.pixelSize}], is too big. Try lowering the pixelSize, the width or height.`,
 
     DEFAULT_MAP_RESOLUTIONS: {
         HIGH: 2,
