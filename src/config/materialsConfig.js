@@ -60,24 +60,22 @@ const MATERIALS_CONFIG = []
     // MATERIALS CONFIGS
     MATERIALS_CONFIG[SETTINGS.MATERIALS.SAND] = {
         //hasVelXOffset: false,
-        velX: 0,
-        velXOffsetMin:-100,
-        velXOffsetMax:100,
+        velX: -0,
+        //velXOffsetMin:-200,
+        //velXOffsetMax:200,
+        //velYOffsetMin:-200,
+        //velYOffsetMax:200,
     }
 
     MATERIALS_CONFIG[SETTINGS.MATERIALS.WATER] = {
         //hasVelXOffset: false,
         gravity: 60,
 
-        //velX: 0,
-        //velXOffsetMin:-100,
-        //velXOffsetMax:100,
+        //velXOffsetMin:-200,
+        //velXOffsetMax:200,
+        //velYOffsetMin:-200,
+        //velYOffsetMax:200,
     }
-    
-
-
-
-
 
     const getDecimals = (...nums)=>Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
     MATERIALS_CONFIG.forEach((config, i)=>{

@@ -33,29 +33,28 @@ function readyCB(simulation) {
     if (!(simulation instanceof Simulation)) return;
 
     simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
-    simulation.backStepSavingIsExact = true
-
+    //simulation.backStepSavingIsExact = true
 
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
 
     //simulation.placePixelAtCoords(22, 13)
 
-    //simulation.updateMapSize(20, 20)
-    //simulation.updateMapPixelSize(25)
+    simulation.updateMapSize(20, 20)
+    simulation.updateMapPixelSize(25)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
-    simulation.updateMapSize(300, 200)
-    simulation.updateMapPixelSize(3)
-    simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+    //simulation.updateMapSize(300, 200)
+    //simulation.updateMapPixelSize(3)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
     
     //simulation.updateMapSize(231, 149)
     //simulation.updateMapPixelSize(4)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+    simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
-    //simulation.updateMapPixelSize(1)
-    //simulation.updateMapSize(500, 500)
-    //simulation.showGrid = false
+    simulation.updateMapPixelSize(2)
+    simulation.updateMapSize(700, 300)
+    simulation.showGrid = false
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
     //simulation.timerEnabled = true
 }
