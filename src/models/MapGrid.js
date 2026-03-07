@@ -1,7 +1,15 @@
 class MapGrid {
     static DEFAULT_PIXEL_SIZE = 18
-    static DEFAULT_MAP_WIDTH = 50
-    static DEFAULT_MAP_HEIGHT = 35
+    static DEFAULT_MAP_WIDTH = 3//50 TODO CLEANUP
+    static DEFAULT_MAP_HEIGHT = 3//35
+    // GET / SET
+    static {
+        SimUtils.addGettersSetters(this, [
+            {exposedName:"pixelSize"},
+            {exposedName:"mapWidth"},
+            {exposedName:"mapHeight"},
+        ])
+    }
 
     #lastPixelSize = null
     constructor(pixelSize, mapWidth, mapHeight) {
@@ -65,7 +73,7 @@ class MapGrid {
     }
 
     /**
-     * Converts a local map position to an index
+     * Converts a local map position to a grid index
      * @param {[x,y]} mapPos The local map position
      * @returns The index of a pixel in the pixels array
      */
@@ -74,12 +82,13 @@ class MapGrid {
     } 
 
     /**
-     * Converts a local map position to an index
+     * Converts a local map position to a grid index
      * @param {Number} x The X value of the pixel on the map
      * @param {Number} y The Y value of the pixel on the map
      * @returns The index of a pixel in the pixels array
      */
     mapPosToIndexCoords(x, y) {
+        if (y < 0 || y >= this._mapHeight || x < 0 || x >= this._mapWidth) return -1
         return y*this._mapWidth+x
     }
 
@@ -97,15 +106,8 @@ class MapGrid {
     get globalDimensions() {return [this.globalWidth, this.globalHeight]}
     get arraySize() {return this._mapWidth*this._mapHeight}
     get displayDimensions() {return this._mapWidth+"x"+this._mapHeight}
+	get dimensions() {return [this._mapWidth, this._mapHeight]}
     get lastPixelSize() {return this.#lastPixelSize}
 
-    get pixelSize() {return this._pixelSize}
-	get mapWidth() {return this._mapWidth}
-	get mapHeight() {return this._mapHeight}
-	get dimensions() {return [this._mapWidth, this._mapHeight]}
-
-	set pixelSize(_pixelSize) {return this._pixelSize = _pixelSize}
-	set mapWidth(_mapWidth) {return this._mapWidth = _mapWidth}
-	set mapHeight(_mapHeight) {return this._mapHeight = _mapHeight}
-	set lastPixelSize(lps) {return this.#lastPixelSize = lps}
+	set lastPixelSize(lastPixelSize) {return this.#lastPixelSize = lastPixelSize}
 }

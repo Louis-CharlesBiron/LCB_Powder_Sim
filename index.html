@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LCB Powder Simulation</title>
-  <link rel="stylesheet" href="/examples/index.css">
+  <link rel="stylesheet" href="./examples/index.css">
 </head>
   <body>
 
@@ -57,27 +57,28 @@
       <span id="sidePriorityStatus"></span>
       <span id="isRunningStatus"></span>
       <span id="physicsUnitTypeStatus"></span>
+      <span id="timeStampStatus"></span>
       <span id="zoomStatus"></span>
+      <span id="particleStatus"></span>
     </div>
 
 
     <script src="./src/engine/canvasDotEffect.js"></script>
-    <script src="./src/simulation/settings.js"></script>
-    <script src="./src/simulation/defaultKeybinds.js"></script>
+    <script src="./src/utils/SimUtils.js"></script>
+    <script src="./src/config/settings.js"></script>
+    <script src="./src/config/materialsConfig.js"></script>
+    <script src="./src/config/defaultKeybinds.js"></script>
     <script src="./src/physics/PhysicsCore.js"></script>
+    <!-- <script src="./src/physics/PhysicsCore copy 2.js"></script> -->
     <script src="./src/physics/LocalPhysicsUnit.js"></script>
     <script src="./src/models/MapGrid.js"></script>
     <script src="./src/models/Simulation.js"></script>
 
     <!-- <script src="deployements/codeBuilds/umd/lcbPS.min.js"></script> -->
-
     <!-- <script src="deployements/codeBuilds/umd/raw/lcbPS.js"></script> -->
-
     <!-- <script type="module" src="deployements/codeBuilds/esm/raw/lcb-ps.js"></script>-->
-
     <!-- <script type="module" src="deployements/codeBuilds/esm/raw/lcb-ps.js"></script> -->
 
-    
     <script src="./examples/utils.js"></script>
     <script src="./examples/index.js"></script>
   </body>

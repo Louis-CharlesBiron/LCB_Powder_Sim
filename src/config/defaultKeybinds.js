@@ -22,22 +22,29 @@ const DEFAULT_KEYBINDS = {
     STEP: {
         defaultFunction: "step",
         keys:[TypingDevice.KEYS.ARROW_RIGHT],
-        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.NORMAL
     },
     BACK_STEP: {
         defaultFunction: "backStep",
         keys:[TypingDevice.KEYS.ARROW_LEFT],
-        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.NORMAL
+    },
+    BACK_STEP_ONCE: {
+        defaultFunction: "backStep",
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.Z],
+        triggerType: TypingDevice.TRIGGER_TYPES.NORMAL,
+        preventDefault: true
     },
     STEP_FAST: {
         defaultFunction: "step",
         keys:[TypingDevice.KEYS.ARROW_UP],
-        triggerType: TypingDevice.TRIGGER_TYPES.FAST_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
     },
     BACK_STEP_FAST: {
         defaultFunction: "backStep",
         keys:[TypingDevice.KEYS.ARROW_DOWN],
-        triggerType: TypingDevice.TRIGGER_TYPES.FAST_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
     },
 
     START: {
@@ -218,7 +225,7 @@ const DEFAULT_KEYBINDS = {
         defaultFunction: "updateBrushType",
         defaultParams: [SETTINGS.BRUSH_TYPES.X55],
         requiredKeys: [TypingDevice.KEYS.CONTROL],
-        keys:[TypingDevice.KEYS.DIGIT_8, TypingDevice.KEYS.NUMPAD_9],
+        keys:[TypingDevice.KEYS.DIGIT_8, TypingDevice.KEYS.NUMPAD_8],
         triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
         preventDefault: true
     },
@@ -226,7 +233,7 @@ const DEFAULT_KEYBINDS = {
         defaultFunction: "updateBrushType",
         defaultParams: [SETTINGS.BRUSH_TYPES.X99],
         requiredKeys: [TypingDevice.KEYS.CONTROL],
-        keys:[TypingDevice.KEYS.DIGIT_0, TypingDevice.KEYS.NUMPAD_0],
+        keys:[TypingDevice.KEYS.DIGIT_9, TypingDevice.KEYS.NUMPAD_9],
         triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
         preventDefault: true
     },
