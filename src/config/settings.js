@@ -86,25 +86,6 @@ const SETTINGS = {
         $randomTableSize: 1<<16
     },
 
-    DEFAULT_COLOR_SETTINGS: {// (R?)
-        grid: [240,248,255,.2],
-        border: [240,248,255,1],
-
-        VOID:[0,0,0,0],
-        AIR:[0,0,0,0],
-        SAND:[235,235,158,1],
-        WATER:[0,15,242,.7],
-        STONE:[100,100,100,1],
-        GRAVEL:[188,188,188,1], 
-        INVERTED_WATER:[55,75,180,.75],
-        CONTAMINANT:[30,95,65,.75],
-        LAVA:[255,132,0,.88],
-        ELECTRICITY:[255,235,0,.9],
-        COPPER:[121,65,52,1],
-        TREE:[98,65,46,1],
-        GAS:[255,255,228,.5],
-    },
-
     D: {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7},
 
     SIDE_PRIORITIES: {

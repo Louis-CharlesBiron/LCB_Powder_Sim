@@ -31,4 +31,10 @@ class SimUtils {
         })
     }
 
+    // DOC TODO
+    static getMaxDecimals(...nums) {
+        return Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
+    }
+
+
 }

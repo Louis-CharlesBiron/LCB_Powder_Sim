@@ -23,7 +23,7 @@
 const MATERIALS_CONFIG = []
 
 ;(()=>{
-    const DEFAULTS_MATERIAL_CONFIG = {
+    const DEFAULT_MATERIAL_CONFIG = {
         flags: 0,
 
         posXOffsetMin: 0,
@@ -77,29 +77,28 @@ const MATERIALS_CONFIG = []
         //velYOffsetMax:200,
     }
 
-    const getDecimals = (...nums)=>Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
     MATERIALS_CONFIG.forEach((config, i)=>{
-        const adjustedConfig = SimUtils.getAdjustedSettings(config, DEFAULTS_MATERIAL_CONFIG)
+        const adjustedConfig = SimUtils.getAdjustedSettings(config, DEFAULT_MATERIAL_CONFIG)
 
-        adjustedConfig.hasPosXOffset ??= adjustedConfig.posXOffsetMin&&adjustedConfig.posXOffsetMax
+        adjustedConfig.hasPosXOffset ??= Boolean(adjustedConfig.posXOffsetMin&&adjustedConfig.posXOffsetMax)
         adjustedConfig.posXOffsetMin -= 1
-        adjustedConfig.posXOffsetDecimals ??= getDecimals(adjustedConfig.posXOffsetMin, adjustedConfig.posXOffsetMax)
+        adjustedConfig.posXOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedConfig.posXOffsetMin, adjustedConfig.posXOffsetMax)
 
-        adjustedConfig.hasPosYOffset ??= adjustedConfig.posYOffsetMin&&adjustedConfig.posYOffsetMax
+        adjustedConfig.hasPosYOffset ??= Boolean(adjustedConfig.posYOffsetMin&&adjustedConfig.posYOffsetMax)
         adjustedConfig.posYOffsetMin -= 1
-        adjustedConfig.posYOffsetDecimals ??= getDecimals(adjustedConfig.posYOffsetMin, adjustedConfig.posYOffsetMax)
+        adjustedConfig.posYOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedConfig.posYOffsetMin, adjustedConfig.posYOffsetMax)
 
-        adjustedConfig.hasVelXOffset ??= adjustedConfig.velXOffsetMin&&adjustedConfig.velXOffsetMax
+        adjustedConfig.hasVelXOffset ??= Boolean(adjustedConfig.velXOffsetMin&&adjustedConfig.velXOffsetMax)
         adjustedConfig.velXOffsetMin -= 1
-        adjustedConfig.velXOffsetDecimals ??= getDecimals(adjustedConfig.velXOffsetMin, adjustedConfig.velXOffsetMax)
+        adjustedConfig.velXOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedConfig.velXOffsetMin, adjustedConfig.velXOffsetMax)
 
-        adjustedConfig.hasVelYOffset ??= adjustedConfig.velYOffsetMin&&adjustedConfig.velYOffsetMax
+        adjustedConfig.hasVelYOffset ??= Boolean(adjustedConfig.velYOffsetMin&&adjustedConfig.velYOffsetMax)
         adjustedConfig.velYOffsetMin -= 1
-        adjustedConfig.velYOffsetDecimals ??= getDecimals(adjustedConfig.velYOffsetMin, adjustedConfig.velYOffsetMax)
+        adjustedConfig.velYOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedConfig.velYOffsetMin, adjustedConfig.velYOffsetMax)
 
-        adjustedConfig.hasGravityOffset ??= adjustedConfig.gravityOffsetMin&&adjustedConfig.gravityOffsetMax
+        adjustedConfig.hasGravityOffset ??= Boolean(adjustedConfig.gravityOffsetMin&&adjustedConfig.gravityOffsetMax)
         adjustedConfig.gravityOffsetMin -= 1
-        adjustedConfig.gravityOffsetDecimals ??= getDecimals(adjustedConfig.gravityOffsetMin, adjustedConfig.gravityOffsetMax)
+        adjustedConfig.gravityOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedConfig.gravityOffsetMin, adjustedConfig.gravityOffsetMax)
 
         MATERIALS_CONFIG[i] = adjustedConfig
     })

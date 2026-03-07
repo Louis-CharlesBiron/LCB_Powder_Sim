@@ -33,7 +33,7 @@ class Simulation {
     static DEFAULT_WORLD_START_SETTINGS = SETTINGS.DEFAULT_WORLD_START_SETTINGS
     static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
     static DEFAULT_PHYSICS_SETTINGS = SETTINGS.DEFAULT_PHYSICS_SETTINGS
-    static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
+    static DEFAULT_COLOR_SETTINGS = DEFAULT_COLOR_SETTINGS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
@@ -623,15 +623,25 @@ class Simulation {
     /* CACHE UPADTES */
     // Updates the cached pixels row used for drawing optimizations
     #updateCachedMapPixelsRows() {
-        const colors = Object.entries(this._colorSettings).filter(x=>x[0].toUpperCase()===x[0]).map(x=>x[1]), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
-        for (let i=0,ii=0;ii<c_ll;i?i*=2:i=1,ii++) {
-            const pxRow = new Uint8ClampedArray(size), [r,g,b,a] = colors[ii], adjustedA = a*255
+        //const colors = Object.entries(this._colorSettings).filter(x=>x[0].toUpperCase()===x[0]).map(x=>x[1]), c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
+        const colors = this._colorSettings.materials, c_ll = colors.length, size = this._mapGrid.pixelSize*4, R = Simulation.#CACHED_MATERIALS_ROWS
+        console.log(this._colorSettings.materials)
+
+        for (let i=0;i<c_ll;i?i*=2:i=1) {
+            const pxRow = new Uint8ClampedArray(size), colorConfig = colors[i], [br,bg,bb,ba] = colorConfig.base,
+                r = br+(colorConfig.hasRedOffset ? CDEUtils.random(colorConfig.redOffsetMin, colorConfig.redOffsetMax, colorConfig.redOffsetDecimals) : 0),
+                g = bg, 
+                b = bb,
+                a = ba*255
+
+            //const [r,g,b,a] = colorConfig.base, adjustedA = a*255
+            console.log(colorConfig.hasRedOffset, colorConfig.redOffsetMin, colorConfig.redOffsetMax, colorConfig.redOffsetDecimals, "|", br, r)
             for (let x=0;x<size;x++) {
                 const xx = x*4
                 pxRow[xx] = r
                 pxRow[xx+1] = g
                 pxRow[xx+2] = b
-                pxRow[xx+3] = adjustedA
+                pxRow[xx+3] = a
             }
             R[i] = pxRow
         }
