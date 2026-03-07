@@ -30,19 +30,24 @@ const simulation = new Simulation(
 function readyCB(simulation) {
     console.log("%cSIMULATION LOADED", "font-size:9.5px;color:#9c9c9c;")
 
+    if (!(simulation instanceof Simulation)) return;
+
     simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
+    simulation.backStepSavingIsExact = true
+
+
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
 
     //simulation.placePixelAtCoords(22, 13)
 
-    simulation.updateMapSize(20, 20)
-    simulation.updateMapPixelSize(25)
+    //simulation.updateMapSize(20, 20)
+    //simulation.updateMapPixelSize(25)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
-    //simulation.updateMapSize(300, 200)
-    //simulation.updateMapPixelSize(3)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+    simulation.updateMapSize(300, 200)
+    simulation.updateMapPixelSize(3)
+    simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
     
     //simulation.updateMapSize(231, 149)
     //simulation.updateMapPixelSize(4)
@@ -70,6 +75,10 @@ simulation.loopExtra=()=>{
     const fpsStepValue = fpsStepDisplay.textContent = " | "+stepFps+" step/s"
     if (fpsStepDisplay.textContent !== fpsStepValue) fpsStepDisplay.textContent = fpsStepValue
     if (stepFps>0) stepFps--
+
+    // TODO REFACTOR + OPTIMIZE
+    const mapPos = simulation.mapGrid.getLocalMapPixel(simulation.CVS.mouse.pos), pixelSize = simulation.mapGrid.pixelSize
+    if (simulation.isMouseWithinSimulation && mapPos) simulation.render.stroke(Render.getPositionsRect([mapPos[0]*pixelSize, mapPos[1]*pixelSize], [mapPos[0]*pixelSize+pixelSize, mapPos[1]*pixelSize+pixelSize]), [255,0,0,1])
 }
 
 // STATUS DISPLAY
@@ -87,9 +96,11 @@ const mousePosStatus = document.getElementById("mousePosStatus"),
 
 let STATUS_REFRESH_RATE = 1000/10
 function statusLoopCore() {
+    const map = simulation.mapGrid
+
     // MOUSE MAP POS | MOUSE MAP INDEX | MOUSE ABSOLUTE POS 
-    const mapPos = simulation.mapGrid.getLocalMapPixel(simulation.CVS.mouse.pos)
-    mousePosStatus.textContent = (mapPos||"")+" | "+(mapPos?simulation.mapGrid.mapPosToIndex(mapPos):"")+" | "+simulation.CVS.mouse.pos
+    const mapPos = map.getLocalMapPixel(simulation.CVS.mouse.pos)
+    mousePosStatus.textContent = (mapPos||"")+" | "+(mapPos?map.mapPosToIndex(mapPos):"")+" | "+simulation.CVS.mouse.pos
 
     // MOUSE MATERIAL
     if (simulation.isMouseWithinSimulation && mapPos) {
@@ -99,8 +110,8 @@ function statusLoopCore() {
 
     // MOUSE PARTICLE INFO
     if (simulation.isMouseWithinSimulation && mapPos) {
-        const particleInfo = simulation.getPixelInfo(simulation.mapGrid.mapPosToIndex(mapPos))
-        console.log(particleInfo)
+        const particleInfo = simulation.getPixelInfo(map.mapPosToIndex(mapPos))
+
         particleStatus.textContent = Array.isArray(particleInfo) ? `----------
             Mat: ${particleInfo[0]}
             Index: ${particleInfo[1]}
@@ -120,7 +131,7 @@ function statusLoopCore() {
     if (brushTypeStatus.textContent !== brushTypeText) brushTypeStatus.textContent = brushTypeText
 
     // MAP DIMENSIONS
-    const mapDimensionsText = simulation.mapGrid.displayDimensions+" | "+simulation.mapGrid.pixelSize+" | ("+simulation.mapGrid.mapWidth*simulation.mapGrid.mapHeight+")"
+    const mapDimensionsText = map.displayDimensions+" | "+map.pixelSize+" | ("+map.mapWidth*map.mapHeight+")"
     if (mapDimensionsStatus.textContent !== mapDimensionsText) mapDimensionsStatus.textContent = mapDimensionsText
 
     // SIDE PRIORITY

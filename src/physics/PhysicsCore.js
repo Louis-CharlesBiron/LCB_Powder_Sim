@@ -14,7 +14,7 @@ const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,
 
 // DOC TODO
 function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
-    console.log("CONTEXT:", self.constructor.name)
+    console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
     
     // CONSTANTS //
     const RTSize = CONFIG.$randomTableSize-1,
@@ -69,8 +69,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         SP_LEFT = sidePriority===LEFT
         SP_RIGHT = sidePriority===RIGHT
         MAP_WIDTH = mapWidth 
-        MAP_HEIGHT = mapHeight 
-        WIDTH2 = mapWidth>>1
 
         particle.gridIndexes = gridIndexes,
         particle.gridMaterials = gridMaterials,
@@ -86,8 +84,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
         let countIndex = 0, count = indexCount[0]
         for (;countIndex<count;countIndex++) {
-            const ox = indexPosX[countIndex], oy = indexPosY[countIndex], oldX = ox|0, oldY = oy|0, gi = oldY*mapWidth+oldX, 
-                mat = gridMaterials[gi], i = gridIndexes[gi]
+            const ox = indexPosX[countIndex], oy = indexPosY[countIndex], oldX = ox|0, oldY = oy|0, gi = oldY*mapWidth+oldX, mat = gridMaterials[gi], i = gridIndexes[gi]
 
             let transpierceableMain = REG_TRANSPIERCEABLE, transpierceableSec = GASES
             cache.dx = 0
@@ -121,30 +118,17 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 // R  - GO THROUGH GASES
                 // L  - GO THROUGH GASES
                 transpierceableMain = GASES
-
-                // IF COLLSION BOTTOM
                 if (indexFlags[i]&COLLISION_BOTTOM) {
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
-
-                    // SKIP IF CONTAINED
                     if (mat & DOWN_MAIN_CONTAINED_SKIPABLE && (m_B^mat|m_BR^mat|m_BL^mat|m_R^mat|m_L^mat) === 0 && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
-
-                    // CHECK MAIN DIRECTIONS
                     applyWaterPhysics(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    // TODO JUST UPDATE GRID THEN AND THERE ?
                 } 
             }
             else if (mat === GRAVEL) {
                 // B - GO THROUGH TRANSPIERCEABLE
-                
-                // IF COLLSION BOTTOM
                 if (indexFlags[i]&COLLISION_BOTTOM) {
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)]
-
-                    // SKIP IF CONTAINED
                     if (mat & DOWN_MAIN_CONTAINED_SKIPABLE && m_B&mat  && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
-
-                    // CHECK MAIN DIRECTIONS
                     applyGravelPhysics(i, m_B, transpierceableMain, indexFlags)
                 } 
             }
@@ -152,7 +136,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             // APPLY MOVEMENTS
             applyMovements(i, deltaTime, particle, cache)
             const dx = cache.dx, dy = cache.dy
-
             if (!(dy || dx)) {skip2++;continue}pass2++
 
             // MOVE
@@ -160,22 +143,19 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             if (dy) indexPosY[i] += safeTrunc(dy)
 
             const newX = (ox+dx)|0, newY = indexPosY[i]|0, gdx = newX-oldX, gdy = newY-oldY, hasNoGdx = gdx === 0, hasNoGdy = gdy === 0
-
-            // NO GRID MOVEMENT -> skip
             if (hasNoGdy && hasNoGdx) {skip3++;continue}pass3++
             cache.newX = newX
             cache.newY = newY
 
-            // CHECK FOR COLLISION Y
-            if (!hasNoGdy) checkCollisionsY(i, mat, gdy, oldY, transpierceableMain, particle, cache)
-
-            // CHECK FOR COLLISION X
-            if (!hasNoGdy) checkCollisionsX(i, gi, gdx, oldX, transpierceableMain, particle, cache)
+            // CHECK FOR COLLISION X/Y
+            if (!hasNoGdy) checkCollisionsY(i, mat, gdy, oldX, oldY, transpierceableMain, particle, cache)
+            if (!hasNoGdx) checkCollisionsX(i, gi, gdx, oldX, transpierceableMain, particle, cache)
             
             // UPDATE GRID
             updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache)
         }
 
+        // PERF
         if (CONFIG.showSkips && count) {
             const skipped = skip1+skip2+skip3, total = count||1
             console.log("SKIPS :", skipped+"/"+total, "("+((skipped/total)*100).toFixed(1)+"%)", "\n -> 1:", skip1, "2:", skip2, "3:", skip3, "\nACTIVE:", (total-skipped)+"/"+total, "("+(((total-skipped)/total)*100).toFixed(1)+"%)", "\n -> p1:", pass1, "p2:", pass2, "p3:", pass3)
@@ -244,7 +224,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
     }
 
-
     function applyMovements(i, deltaTime, particle, cache) {
         const indexFlags = particle.indexFlags
         let velX = cache.velX, velY = cache.velY
@@ -254,10 +233,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             // ADD VERTICAL FORCES
             velY = particle.indexVelY[i] += particle.indexGravity[i]*deltaTime
         } else {
-            const indexVelX = particle.indexVelX
-
             // DECELERATE X VEL WHEN ON GROUND
-            const rate = GROUND_VELX_DECELERATION_RATE*deltaTime
+            const indexVelX = particle.indexVelX, rate = GROUND_VELX_DECELERATION_RATE*deltaTime
             if (velX > 0) velX = indexVelX[i] = velX > rate ? velX-rate : 0
             else velX =  indexVelX[i] = velX < -rate ? velX+rate : 0
         }
@@ -268,18 +245,17 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         cache.dy += velY*deltaTime
     }
 
-    function checkCollisionsY(i, mat, gdy, oldY, transpierceableMain, particle, cache) {
+    function checkCollisionsY(i, mat, gdy, oldX, oldY, transpierceableMain, particle, cache) {
         const gridMaterials = particle.gridMaterials,
             indexVelY = particle.indexVelY,
             indexPosY = particle.indexPosY,
-            indexFlags = particle.indexFlags,
-            newX = cache.newX
+            indexFlags = particle.indexFlags
 
         const absGdy = abs(gdy), dirGdy = 1|(gdy>>BIT32)
 
         if (absGdy > 1) {// check collision at oldY..newY
             for (let colY=oldY+dirGdy,colI=0; colI<absGdy; colI++,colY+=dirGdy) {
-                const gi_Dest = getAdjacencyCoords(newX, colY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
+                const gi_Dest = getAdjacencyCoords(oldX, colY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
                 if (hasCollision) {
                     cache.newY = (indexPosY[i] = colY-dirGdy)|0
                     indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
@@ -289,7 +265,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 }
             }
         } else {// check collision at destination pos
-            const gi_Dest = getAdjacencyCoords(newX, cache.newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
+            const gi_Dest = getAdjacencyCoords(oldX, cache.newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
             if (hasCollision) {
                 cache.newY = (indexPosY[i] = oldY)|0
                 indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
@@ -313,12 +289,10 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
         if (absGdx > 1) {// check collision at oldX..newX
             for (let colX=oldX+dirGdx,colI=0; colI<absGdx; colI++,colX+=dirGdx) {
-                const gi_Dest = getAdjacencyCoords(colX, newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
+                const gi_Dest = getAdjacencyCoords(colX, 0), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
                 if (hasCollision) {
                     const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
-                    //console.log(i, [newX, newY], "2col x", gi_Dest, gi, "2VEL:", velX, "->", indexVelX[gridIndexes[gi_Dest]], "|", gi_Dest === gi, velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD)
                     if (m_Dest & STATIC || gi_Dest === gi || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD) {
-                        //console.log("RESET VEL2", i)
                         indexVelX[i] = 0
                         indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
                     }
@@ -327,12 +301,9 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             }
         } else {// check collision at destination pos
             const gi_Dest = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
-            //console.log("CHEK COL", gi, gi_Dest, hasCollision)
             if (hasCollision) {
                 const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
-                //console.log(i, [newX, newY], "col x", gi_Dest, gi, "VEL:", velX, "->", indexVelX[gridIndexes[gi_Dest]], "|", gi_Dest === gi, velDiff > COLLISION_VELOCITY_DIFFERENCE_THRESHOLD)
                 if (m_Dest & STATIC || gi_Dest === gi || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD) {
-                    //console.log("RESET VEL", i)
                     indexVelX[i] = 0
                     indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
                 }
@@ -354,7 +325,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             newY = cache.newY
 
         const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & transpierceableMain
-
         // SWITCH ONLY IF DEST IS TRANSPIERCEABLE
         if (m_Dest !== 0) {
             const atI = gridIndexes[newGridI]

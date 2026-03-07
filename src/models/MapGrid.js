@@ -1,8 +1,7 @@
 class MapGrid {
     static DEFAULT_PIXEL_SIZE = 18
-    static DEFAULT_MAP_WIDTH = 3//50
+    static DEFAULT_MAP_WIDTH = 3//50 TODO CLEANUP
     static DEFAULT_MAP_HEIGHT = 3//35
-
     // GET / SET
     static {
         SimUtils.addGettersSetters(this, [
@@ -74,7 +73,7 @@ class MapGrid {
     }
 
     /**
-     * Converts a local map position to an index
+     * Converts a local map position to a grid index
      * @param {[x,y]} mapPos The local map position
      * @returns The index of a pixel in the pixels array
      */
@@ -83,7 +82,7 @@ class MapGrid {
     } 
 
     /**
-     * Converts a local map position to an index
+     * Converts a local map position to a grid index
      * @param {Number} x The X value of the pixel on the map
      * @param {Number} y The Y value of the pixel on the map
      * @returns The index of a pixel in the pixels array

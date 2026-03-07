@@ -156,8 +156,6 @@ class Simulation {
     #main(deltaTime) {
         const mouse = this.mouse, settings = this._userSettings, loopExtra = this._loopExtra
 
-        if (loopExtra) loopExtra(deltaTime)
-
         if (!this._userSettings.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.DEFAULT_PRECISE_PLACE_KEY)) this.#placePixelWithMouse(mouse)
 
         if (settings.showGrid) this.#drawMapGrid()
@@ -168,6 +166,8 @@ class Simulation {
         this._offscreenCtx.putImageData(this._imgMap, 0, 0)
         this.ctx.drawImage(this._offscreenCanvas, 0, 0)
         if (settings.visualEffectsEnabled) this.#drawVisualEffects()
+
+        if (loopExtra) loopExtra(deltaTime)
     }
 
     /**
