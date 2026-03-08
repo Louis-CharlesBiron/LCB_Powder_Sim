@@ -1,29 +1,7 @@
-//MATERIALS: {// 0-15
-//    AIR: 1<<0,
-//    SAND: 1<<1,
-//    WATER: 1<<2,
-//    STONE: 1<<3,
-//    GRAVEL: 1<<4,
-//    INVERTED_WATER: 1<<5,
-//    CONTAMINANT: 1<<6,
-//    LAVA: 1<<7,
-//    ELECTRICITY: 1<<8,
-//    COPPER: 1<<9,
-//    GAS: 1<<10,
-//},
-
-//this._indexFlags[i] = 0
-//this._indexPosX[i] = x
-//this._indexPosY[i] = y+CDEUtils.random(0, .85, 3)
-//this._indexVelX[i] = 0//2*(CDEUtils.random(-2, 1)||1)
-//this._indexVelY[i] = 2+CDEUtils.random(0, 1, 3)
-//this._indexGravity[i] = 90+CDEUtils.random(-10, 20)
-
-
-const MATERIALS_CONFIG = []
+const MATERIALS_SETTINGS = []
 
 ;(()=>{
-    const DEFAULTS_MATERIAL_CONFIG = {
+    const DEFAULT_MATERIAL_SETTINGS = {
         flags: 0,
 
         posXOffsetMin: 0,
@@ -54,11 +32,13 @@ const MATERIALS_CONFIG = []
         gravityOffsetDecimals:null,
         hasGravityOffset:null,
     }
-    Object.values(SETTINGS.MATERIALS).forEach(mat=>MATERIALS_CONFIG[mat] = {})
+    Object.values(SETTINGS.MATERIALS).forEach(mat=>MATERIALS_SETTINGS[mat] = {})
     
 
+
     // MATERIALS CONFIGS
-    MATERIALS_CONFIG[SETTINGS.MATERIALS.SAND] = {
+
+    MATERIALS_SETTINGS[SETTINGS.MATERIALS.SAND] = {
         //hasVelXOffset: false,
         velX: -0,
         //velXOffsetMin:-200,
@@ -67,40 +47,41 @@ const MATERIALS_CONFIG = []
         //velYOffsetMax:200,
     }
 
-    MATERIALS_CONFIG[SETTINGS.MATERIALS.WATER] = {
-        //hasVelXOffset: false,
+    MATERIALS_SETTINGS[SETTINGS.MATERIALS.WATER] = {
         gravity: 60,
 
+        //hasVelXOffset: false,
         //velXOffsetMin:-200,
         //velXOffsetMax:200,
         //velYOffsetMin:-200,
         //velYOffsetMax:200,
     }
 
-    const getDecimals = (...nums)=>Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
-    MATERIALS_CONFIG.forEach((config, i)=>{
-        const adjustedConfig = SimUtils.getAdjustedSettings(config, DEFAULTS_MATERIAL_CONFIG)
 
-        adjustedConfig.hasPosXOffset ??= adjustedConfig.posXOffsetMin&&adjustedConfig.posXOffsetMax
-        adjustedConfig.posXOffsetMin -= 1
-        adjustedConfig.posXOffsetDecimals ??= getDecimals(adjustedConfig.posXOffsetMin, adjustedConfig.posXOffsetMax)
 
-        adjustedConfig.hasPosYOffset ??= adjustedConfig.posYOffsetMin&&adjustedConfig.posYOffsetMax
-        adjustedConfig.posYOffsetMin -= 1
-        adjustedConfig.posYOffsetDecimals ??= getDecimals(adjustedConfig.posYOffsetMin, adjustedConfig.posYOffsetMax)
+    MATERIALS_SETTINGS.forEach((config, i)=>{
+        const adjustedSettings = SimUtils.getAdjustedSettings(config, DEFAULT_MATERIAL_SETTINGS)
 
-        adjustedConfig.hasVelXOffset ??= adjustedConfig.velXOffsetMin&&adjustedConfig.velXOffsetMax
-        adjustedConfig.velXOffsetMin -= 1
-        adjustedConfig.velXOffsetDecimals ??= getDecimals(adjustedConfig.velXOffsetMin, adjustedConfig.velXOffsetMax)
+        adjustedSettings.hasPosXOffset ??= adjustedSettings.posXOffsetMin&&adjustedSettings.posXOffsetMax
+        adjustedSettings.posXOffsetMin -= 1
+        adjustedSettings.posXOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.posXOffsetMin, adjustedSettings.posXOffsetMax)
 
-        adjustedConfig.hasVelYOffset ??= adjustedConfig.velYOffsetMin&&adjustedConfig.velYOffsetMax
-        adjustedConfig.velYOffsetMin -= 1
-        adjustedConfig.velYOffsetDecimals ??= getDecimals(adjustedConfig.velYOffsetMin, adjustedConfig.velYOffsetMax)
+        adjustedSettings.hasPosYOffset ??= adjustedSettings.posYOffsetMin&&adjustedSettings.posYOffsetMax
+        adjustedSettings.posYOffsetMin -= 1
+        adjustedSettings.posYOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.posYOffsetMin, adjustedSettings.posYOffsetMax)
 
-        adjustedConfig.hasGravityOffset ??= adjustedConfig.gravityOffsetMin&&adjustedConfig.gravityOffsetMax
-        adjustedConfig.gravityOffsetMin -= 1
-        adjustedConfig.gravityOffsetDecimals ??= getDecimals(adjustedConfig.gravityOffsetMin, adjustedConfig.gravityOffsetMax)
+        adjustedSettings.hasVelXOffset ??= adjustedSettings.velXOffsetMin&&adjustedSettings.velXOffsetMax
+        adjustedSettings.velXOffsetMin -= 1
+        adjustedSettings.velXOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.velXOffsetMin, adjustedSettings.velXOffsetMax)
 
-        MATERIALS_CONFIG[i] = adjustedConfig
+        adjustedSettings.hasVelYOffset ??= adjustedSettings.velYOffsetMin&&adjustedSettings.velYOffsetMax
+        adjustedSettings.velYOffsetMin -= 1
+        adjustedSettings.velYOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.velYOffsetMin, adjustedSettings.velYOffsetMax)
+
+        adjustedSettings.hasGravityOffset ??= adjustedSettings.gravityOffsetMin&&adjustedSettings.gravityOffsetMax
+        adjustedSettings.gravityOffsetMin -= 1
+        adjustedSettings.gravityOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.gravityOffsetMin, adjustedSettings.gravityOffsetMax)
+
+        MATERIALS_SETTINGS[i] = adjustedSettings
     })
 })()

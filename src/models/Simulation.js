@@ -16,8 +16,8 @@ class Simulation {
     static #BRUSH_GROUPS = SETTINGS.BRUSH_GROUPS
     static WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
     static #WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES
-    static #WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS
     static PHYSICS_UNIT_TYPE = SETTINGS.PHYSICS_UNIT_TYPE
+    static #WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS
     static #INIT_STATES = SETTINGS.INITIALIZED_STATES
     // CACHES
     static #CACHED_MATERIALS_ROWS = []
@@ -73,12 +73,11 @@ class Simulation {
         this._mapGrid = new MapGrid(this._worldStartSettings.mapPixelSize, this._worldStartSettings.mapWidth, this._worldStartSettings.mapHeight)
         
         const arrSize = this._mapGrid.arraySize
-        this._gridIndexes = new Simulation.#C_GRID_INDEXES(arrSize).fill(-1)// index represents map pos, value! represents _indexStates index (static AND dynamic, but static is -1)
-        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arrSize).fill(Simulation.MATERIALS.AIR)// index represents map pos, value! represents materials (static AND dynamic) | (like old _pixels) 
-        this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arrSize)// index represents last map pos, value! represents last materials (static AND dynamic) (like old _lastPixels)
-        this._indexCount = [0] // represents the contiguous number of indexes
-        // index represents NOTHING, value represents phycics attribute (ONLY dynamic) //
-        this._indexFlags = new Simulation.#C_FLAGS_SMALL(arrSize) // (Whether already updated in the current step, ...)
+        this._gridIndexes = new Simulation.#C_GRID_INDEXES(arrSize).fill(-1)
+        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arrSize).fill(Simulation.MATERIALS.AIR)
+        this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arrSize)
+        this._indexCount = [0]
+        this._indexFlags = new Simulation.#C_FLAGS_SMALL(arrSize)
         this._indexPosX = new Simulation.#C_PHYSICS_REGULAR(arrSize)
         this._indexPosY = new Simulation.#C_PHYSICS_REGULAR(arrSize)
         this._indexVelX = new Simulation.#C_PHYSICS_REGULAR(arrSize)
@@ -861,7 +860,7 @@ class Simulation {
                 i = indexCount[0]++,
                 y = (gridIndex/mapWidth)|0,
                 x = gridIndex-y*mapWidth,
-                matConfig = MATERIALS_CONFIG[material]
+                matConfig = MATERIALS_SETTINGS[material]
             
             gridMaterials[gridIndex] = material
             this._indexFlags[i] = matConfig.flags

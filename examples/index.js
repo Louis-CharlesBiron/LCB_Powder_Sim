@@ -30,7 +30,7 @@ const simulation = new Simulation(
 function readyCB(simulation) {
     console.log("%cSIMULATION LOADED", "font-size:9.5px;color:#9c9c9c;")
 
-    if (!(simulation instanceof Simulation)) return;
+    if (!(simulation instanceof Simulation)) return
 
     simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
     //simulation.backStepSavingIsExact = true
