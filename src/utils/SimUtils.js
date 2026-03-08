@@ -14,20 +14,23 @@ class SimUtils {
     // DOC TODO
     static addGettersSetters(targetClass, attributes) {
         attributes.forEach(({exposedName, path})=>{
-            path ??= "_"+exposedName
-            const isPathArray = Array.isArray(path)
-            Object.defineProperty(targetClass.prototype, exposedName, {
-                set(value) {
-                    if (isPathArray) {
-                        const directPath = path[path.length-1], prop = path.slice(0, path.length-1).reduce((a,b)=>a[b], this)
-                        prop[directPath] = value
-                    }
-                    else this[path] = value
-                },
-                get() {
-                    return isPathArray ? path.reduce((a,b)=>a[b], this) : this[path]
-                }
-            })
+            if (!Object.getOwnPropertyDescriptor(targetClass.prototype, exposedName)) {
+                path ??= "_"+exposedName
+                const isPathArray = Array.isArray(path)
+                Object.defineProperty(targetClass.prototype, exposedName, {
+                    set(value) {
+                        if (isPathArray) {
+                            const directPath = path[path.length-1], prop = path.slice(0, path.length-1).reduce((a,b)=>a[b], this)
+                            prop[directPath] = value
+                        }
+                        else this[path] = value
+                    },
+                    get() {
+                        return isPathArray ? path.reduce((a,b)=>a[b], this) : this[path]
+                    },
+                    configurable: true
+                })
+            }
         })
     }
 

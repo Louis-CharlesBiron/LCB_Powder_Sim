@@ -20,7 +20,6 @@ const simulation = new Simulation(
         showBorder: true,
         showGrid: true,
         visualEffectsEnabled: true,
-        mapWidth: 1
     }
 )
 
@@ -42,6 +41,7 @@ function readyCB(simulation) {
 
     simulation.updateMapSize(20, 20)
     simulation.updateMapPixelSize(25)
+    simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
     //simulation.updateMapSize(300, 200)
@@ -50,11 +50,11 @@ function readyCB(simulation) {
     
     //simulation.updateMapSize(231, 149)
     //simulation.updateMapPixelSize(4)
-    simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
-    simulation.updateMapPixelSize(2)
-    simulation.updateMapSize(700, 300)
-    simulation.showGrid = false
+    //simulation.updateMapPixelSize(2)
+    //simulation.updateMapSize(700, 300)
+    //simulation.showGrid = false
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
     //simulation.timerEnabled = true
 }
@@ -74,10 +74,6 @@ simulation.loopExtra=()=>{
     const fpsStepValue = fpsStepDisplay.textContent = " | "+stepFps+" step/s"
     if (fpsStepDisplay.textContent !== fpsStepValue) fpsStepDisplay.textContent = fpsStepValue
     if (stepFps>0) stepFps--
-
-    // TODO REFACTOR + OPTIMIZE
-    const mapPos = simulation.mapGrid.getLocalMapPixel(simulation.CVS.mouse.pos), pixelSize = simulation.mapGrid.pixelSize
-    if (simulation.isMouseWithinSimulation && mapPos) simulation.render.stroke(Render.getPositionsRect([mapPos[0]*pixelSize, mapPos[1]*pixelSize], [mapPos[0]*pixelSize+pixelSize, mapPos[1]*pixelSize+pixelSize]), [255,0,0,1])
 }
 
 // STATUS DISPLAY

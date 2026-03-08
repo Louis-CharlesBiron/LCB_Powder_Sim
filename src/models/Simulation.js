@@ -31,9 +31,9 @@ class Simulation {
     static #C_PHYSICS_SMALL = (typeof Float16Array === "undefined" ? Float32Array : Float16Array)
     // DEFAULTS
     static DEFAULT_WORLD_START_SETTINGS = SETTINGS.DEFAULT_WORLD_START_SETTINGS
-    static DEFAULT_USER_SETTINGS = SETTINGS.DEFAULT_USER_SETTINGS
+    static DEFAULT_USER_SETTINGS = DEFAULT_USER_SETTINGS
     static DEFAULT_PHYSICS_SETTINGS = SETTINGS.DEFAULT_PHYSICS_SETTINGS
-    static DEFAULT_COLOR_SETTINGS = SETTINGS.DEFAULT_COLOR_SETTINGS
+    static DEFAULT_COLOR_SETTINGS = DEFAULT_COLOR_SETTINGS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
@@ -42,9 +42,9 @@ class Simulation {
     // GET / SET
     static {
         SimUtils.addGettersSetters(this, [
-            ...Object.keys(SETTINGS.DEFAULT_USER_SETTINGS).map(exposedName=>({exposedName, path:["_userSettings", exposedName]})),
-            ...Object.keys(SETTINGS.DEFAULT_WORLD_START_SETTINGS).map(exposedName=>({exposedName, path:["_worldStartSettings", exposedName]})),
-            ...Object.keys(SETTINGS.DEFAULT_PHYSICS_SETTINGS).filter(x=>x[0]!=="$").map(exposedName=>({exposedName, path:["_physicsConfig", exposedName]})),
+            ...Object.keys(Simulation.DEFAULT_USER_SETTINGS).map(exposedName=>({exposedName, path:["_userSettings", exposedName]})),
+            ...Object.keys(Simulation.DEFAULT_WORLD_START_SETTINGS).map(exposedName=>({exposedName, path:["_worldStartSettings", exposedName]})),
+            ...Object.keys(Simulation.DEFAULT_PHYSICS_SETTINGS).filter(x=>x[0]!=="$").map(exposedName=>({exposedName, path:["_physicsConfig", exposedName]})),
             {exposedName:"loopExtra"},
             {exposedName:"stepExtra"},
             {exposedName:"isRunning"},
@@ -153,20 +153,52 @@ class Simulation {
      * @param {Number} deltaTime The deltaTime
      */
     #main(deltaTime) {
-        const mouse = this.mouse, settings = this._userSettings, loopExtra = this._loopExtra
+        const mouse = this.mouse, userSettings = this._userSettings, loopExtra = this._loopExtra
+
+        if (loopExtra) loopExtra(deltaTime)
 
         if (!this._userSettings.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.DEFAULT_PRECISE_PLACE_KEY)) this.#placePixelWithMouse(mouse)
 
-        if (settings.showGrid) this.#drawMapGrid()
-        if (settings.showBorder) this.#drawBorder()
+        if (userSettings.showGrid) this.#drawMapGrid()
+        if (userSettings.showBorder) this.#drawBorder()
 
         if (this._isRunning && this.useLocalPhysics) this.step(deltaTime)
 
         this._offscreenCtx.putImageData(this._imgMap, 0, 0)
         this.ctx.drawImage(this._offscreenCanvas, 0, 0)
-        if (settings.visualEffectsEnabled) this.#drawVisualEffects()
+        if (userSettings.visualEffectsEnabled) this.#drawVisualEffects()
 
-        if (loopExtra) loopExtra(deltaTime)
+        if (userSettings.showBrush) this.#drawBrush()
+    }
+
+    // DOC TODO
+    #drawBrush() {
+        if (this.mouse.valid) {
+            const localCenterPos = this._mapGrid.getLocalMapPixel(this.mouse.pos)
+            if (localCenterPos) {
+                const brush = this._brushType, size = this._mapGrid.pixelSize, ps25 = size*.25, brushColor = this._colorSettings.brush, BT = Simulation.BRUSH_TYPES,
+                      x = localCenterPos[0]*size, y = localCenterPos[1]*size
+
+                if (brush&Simulation.#BRUSH_GROUPS.X || brush === BT.PIXEL) {// SQUARE
+                    const side = (((Simulation.#BRUSHES_X_VALUES[brush&Simulation.#BRUSH_GROUPS.X]||1)/2)|0)*size
+                    this.render.stroke(Render.getPositionsRect([x-side, y-side], [x+side+size, y+side+size]), brushColor)
+                }
+                else if (brush === BT.LINE3) this.render.stroke(Render.getPositionsRect([x, y-size], [x+size, y+size*2]), brushColor)
+                else if (brush === BT.ROW3) this.render.stroke(Render.getPositionsRect([x-size, y], [x+size*2, y+size]), brushColor)
+                else if (brush === BT.VERTICAL_CROSS) {
+                    const ps2 = size*2, path = Render.composePath([[x-size, y], [x, y], [x, y-size], [x+size, y-size], [x+size, y], [x+ps2, y], [x+ps2, y+size], [x+size, y+size], [x+size, y+ps2], [x, y+ps2], [x, y+size], [x-size, y+size], [x-size, y]])
+                    this.render.stroke(path, brushColor)
+                }
+                else if (brush === BT.BIG_DOT) {
+                    const ps2 = size*2, ps3 = size*3, path = Render.composePath([[x-ps2, y], [x-size, y], [x-size, y-size], [x, y-size], [x, y-ps2], [x+size, y-ps2], [x+size, y-size], [x+ps2, y-size], [x+ps2, y], [x+ps3, y], [x+ps3, y+size], [x+ps2, y+size], [x+ps2, y+ps2], [x+size, y+ps2], [x+size, y+ps3], [x, y+ps3], [x, y+ps2], [x-size, y+ps2], [x-size, y+size], [x-ps2, y+size], [x-ps2, y]])
+                    this.render.stroke(path, brushColor)
+                }
+
+                this.render.stroke(Render.getPositionsRect([x+ps25, y+ps25], [x+ps25*3, y+ps25*3]), this._colorSettings.brushInner)
+            }
+        }
+        
+        
     }
 
     /**
@@ -1216,5 +1248,10 @@ class Simulation {
             this._userSettings.backStepSavingCount = 0
             this._backStepSaves = []
         }
+    }
+    set showCursor(showCursor) {
+        if (showCursor) this.CVS.setCursorStyle(showCursor||Canvas.CURSOR_STYLES.DEFAULT)
+        else this.CVS.setCursorStyle(Canvas.CURSOR_STYLES.NONE)
+        this._userSettings.showCursor = showCursor
     }
 }
