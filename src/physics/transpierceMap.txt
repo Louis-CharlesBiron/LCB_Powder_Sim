@@ -1,0 +1,21 @@
+===== SAND =====
+B  - TRANSPIERCEABLE
+BR - GASES
+BL - GASES
+
+===== WATER =====
+B  - GASES
+BR - GASES
+BL - GASES
+R  - GASES
+L  - GASES
+
+===== GRAVEL =====
+B - GO THROUGH TRANSPIERCEABLE
+
+===== INVERTED_WATER =====
+T  - GASES
+TR - GASES
+TL - GASES
+R  - GASES
+L  - GASES

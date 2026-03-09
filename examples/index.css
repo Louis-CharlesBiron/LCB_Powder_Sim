@@ -35,10 +35,12 @@ html, body {
     flex-direction: column;
     text-align: end;
     white-space: pre;
+    align-items: flex-end;
 }
 
-.status > span {
-    background-color: rgba(0, 0, 0, 0.7);
+.status span {
+    background-color: rgba(0, 0, 0, 0.5);
+    width: fit-content;
 }
 
 .controls {

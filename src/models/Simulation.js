@@ -275,7 +275,7 @@ class Simulation {
 
     /* SIMULATION CONTROL */
     /**
-     * Runs and displays one physics step (R?)
+     * Runs and displays one physics step
      */
     step(deltaTime=this.CVS.deltaTime) {
         const T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit
@@ -295,7 +295,7 @@ class Simulation {
     }
 
     /**
-     * Saves a physics step (R?)
+     * Saves a physics step
      */
     saveStep(isExact=this._userSettings.backStepSavingIsExact) {
         if (this.backStepSavingEnabled) {
@@ -308,7 +308,7 @@ class Simulation {
     }
 
     /**
-     * Displays the previous physics step saved (R?)
+     * Displays the previous physics step saved
      */
     backStep() {
         if (!this.#simulationHasPixelsBuffer) {
@@ -449,11 +449,11 @@ class Simulation {
 
     // DOC TODO
     updateMaterialSettings(material, settings) {
-        MaterialSettings.updateMaterialSettings(material, settings||{})
+        MaterialSettings.updateMaterialSettings(material, SimUtils.getAdjustedSettings(settings, MaterialSettings.MATERIALS_SETTINGS[material]||{}))
     }
 
     /**
-     * Updates the side prioritised first by the physics. (R?)
+     * Updates the side prioritised first by the physics.
      * @param {Simulation.SIDE_PRIORITIES} sidePriority The side priority value
      * @returns The new priority
      */
@@ -690,7 +690,7 @@ class Simulation {
 
     /* USER INPUT */
     /**
-     * Creates functional keybinds (R?)
+     * Creates functional keybinds (R?) TODO IMPROVE
      * @param {Object} keybinds The keybinds to set (Defaults to Simulation.DEFAULT_KEYBINDS)
      */
     setKeyBinds(keybinds=Simulation.DEFAULT_KEYBINDS) {
@@ -1205,6 +1205,18 @@ class Simulation {
         this.updateMapSize(1000, 1000)
         this.fill(Simulation.MATERIALS.WATER)
     }
+
+    TEST_CRAZY() {
+        Object.values(Simulation.MATERIALS).forEach(mat=>{
+            this.updateMaterialSettings(mat, {
+                velXOffsetMin:-200,
+                velXOffsetMax:200,
+                velYOffsetMin:-200,
+                velYOffsetMax:200,
+            })
+        })
+    }
+
     /* TEMP PERFORMANCE BENCHES -end */
 
     get CVS() {return this._CVS}

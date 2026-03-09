@@ -31,15 +31,15 @@ function readyCB(simulation) {
 
     if (!(simulation instanceof Simulation)) return
 
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.INVERTED_WATER)
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
     //simulation.showGrid = false
     //simulation.timerEnabled = true
 
 
-    //simulation.updateMapSize(20, 20)
-    //simulation.updateMapPixelSize(25)
+    //simulation.updateMapSize(23, 15)
+    //simulation.updateMapPixelSize(40)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
 
     //simulation.updateMapSize(300, 200)
@@ -55,6 +55,9 @@ function readyCB(simulation) {
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(1920, 818)
+
+
+    //simulation.updateMaterialSettings(2, {velXOffsetMin:-200,velXOffsetMax:200,velYOffsetMin:-200,velYOffsetMax:200,})
 }
 
 
@@ -105,14 +108,16 @@ function statusLoopCore() {
     if (simulation.isMouseWithinSimulation && mapPos) {
         const particleInfo = simulation.getPixelInfo(map.mapPosToIndex(mapPos))
 
-        particleStatus.textContent = Array.isArray(particleInfo) ? `----------
-            Mat: ${particleInfo[0]}
-            Index: ${particleInfo[1]}
-            Flags: ${particleInfo[2]}
-            Pos: [${particleInfo[3].toFixed(2)}, ${particleInfo[4].toFixed(2)}]
-            Vel: [${particleInfo[5].toFixed(2)}, ${particleInfo[6].toFixed(2)}]
-            Gravity: ${particleInfo[7]}
-        ----------`.trim() : ""
+        particleStatus.innerHTML = Array.isArray(particleInfo) ? `
+        <span>----------</span>
+        <span>Mat: ${particleInfo[0]}</span>
+        <span>Index: ${particleInfo[1]}</span>
+        <span>Flags: ${particleInfo[2]}</span>
+        <span>Pos: [${particleInfo[3].toFixed(2)}, ${particleInfo[4].toFixed(2)}]</span>
+        <span>Vel: [${particleInfo[5].toFixed(2)}, ${particleInfo[6].toFixed(2)}]</span>
+        <span>Gravity: ${particleInfo[7]}</span>
+        <span>----------</span>
+        `.trim() : ""
     }
     
     // SELECTED MATERIAL
