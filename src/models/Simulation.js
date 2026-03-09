@@ -30,12 +30,12 @@ class Simulation {
     static #C_PHYSICS_REGULAR = Float32Array
     static #C_PHYSICS_SMALL = (typeof Float16Array === "undefined" ? Float32Array : Float16Array)
     // DEFAULTS
+    static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
+    static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_WORLD_START_SETTINGS = DEFAULT_WORLD_START_SETTINGS
     static DEFAULT_USER_SETTINGS = DEFAULT_USER_SETTINGS
     static DEFAULT_PHYSICS_SETTINGS = DEFAULT_PHYSICS_SETTINGS
     static DEFAULT_COLOR_SETTINGS = DEFAULT_COLOR_SETTINGS
-    static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
-    static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
     static DEFAULT_KEYBINDS = DEFAULT_KEYBINDS
     static DEFAULT_PRECISE_PLACE_KEY = TypingDevice.KEYS.SHIFT
@@ -445,6 +445,11 @@ class Simulation {
         this.#updateMouseListeners()
         if (CDEUtils.isFunction(beforeRenderCallback)) beforeRenderCallback()
         this.renderPixels()
+    }
+
+    // DOC TODO
+    updateMaterialSettings(material, settings) {
+        MaterialSettings.updateMaterialSettings(material, settings||{})
     }
 
     /**
@@ -859,7 +864,7 @@ class Simulation {
      * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    placePixelAtIndex(gridIndex, material=this._selectedMaterial, replaceMode=this._replaceMode) {
+    placePixelAtIndex(gridIndex, material=this._selectedMaterial, replaceMode=this._replaceMode) {// TODO OPTIMIZE
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.placePixelAtIndex(gridIndex, material, replaceMode))
             return
@@ -888,19 +893,19 @@ class Simulation {
 
         // INIT IF DYNAMIC
         if (!isStatic && indexCount[0] < this._userSettings.maxDynamicMaterialCount) {
-            const mapWidth = this._mapGrid.mapWidth,
+            const mapWidth = this._mapGrid.mapWidth, random = CDEUtils.random,
                 i = indexCount[0]++,
                 y = (gridIndex/mapWidth)|0,
                 x = gridIndex-y*mapWidth,
-                matConfig = MATERIALS_SETTINGS[material]
-            
+                materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]
+
             gridMaterials[gridIndex] = material
-            this._indexFlags[i] = matConfig.flags
-            this._indexPosX[i] = x+(matConfig.hasPosXOffset ? CDEUtils.random(matConfig.posXOffsetMin, matConfig.posXOffsetMax, matConfig.posXOffsetDecimals) : 0)
-            this._indexPosY[i] = y+(matConfig.hasPosYOffset ? CDEUtils.random(matConfig.posYOffsetMin, matConfig.posYOffsetMax, matConfig.posYOffsetDecimals) : 0)
-            this._indexVelX[i] = matConfig.velX+(matConfig.hasVelXOffset ? CDEUtils.random(matConfig.velXOffsetMin, matConfig.velXOffsetMax, matConfig.velXOffsetDecimals) : 0)
-            this._indexVelY[i] = matConfig.velY+(matConfig.hasVelYOffset ? CDEUtils.random(matConfig.velYOffsetMin, matConfig.velYOffsetMax, matConfig.velYOffsetDecimals) : 0)
-            this._indexGravity[i] = matConfig.gravity+(matConfig.hasGravityOffset ? CDEUtils.random(matConfig.gravityOffsetMin, matConfig.gravityOffsetMax, matConfig.gravityOffsetDecimals) : 0)
+            this._indexFlags[i] = materialSettings.flags
+            this._indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+            this._indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+            this._indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+            this._indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+            this._indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
             gridIndexes[gridIndex] = i
         }
         else if (isStatic) gridMaterials[gridIndex] = material
@@ -1243,7 +1248,7 @@ class Simulation {
         if (!dragAndZoomCanvasEnabled) CVS.resetTransformations(true)
     }
     set backStepSavingEnabled(backStepSavingEnabled) {
-        if (backStepSavingEnabled) this._userSettings.backStepSavingCount = SETTINGS.DEFAULT_USER_SETTINGS.backStepSavingCount
+        if (backStepSavingEnabled) this._userSettings.backStepSavingCount = Simulation.DEFAULT_USER_SETTINGS.backStepSavingCount
         else {
             this._userSettings.backStepSavingCount = 0
             this._backStepSaves = []

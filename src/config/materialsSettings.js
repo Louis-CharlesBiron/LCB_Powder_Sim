@@ -1,7 +1,6 @@
-const MATERIALS_SETTINGS = []
-
-;(()=>{
-    const DEFAULT_MATERIAL_SETTINGS = {
+class MaterialSettings {
+    static MATERIALS_SETTINGS = []
+    static #DEFAULT_MATERIAL_SETTINGS = {
         flags: 0,
 
         posXOffsetMin: 0,
@@ -32,31 +31,33 @@ const MATERIALS_SETTINGS = []
         gravityOffsetDecimals:null,
         hasGravityOffset:null,
     }
-    Object.values(SETTINGS.MATERIALS).forEach(mat=>MATERIALS_SETTINGS[mat] = {})
-    
 
-    
     // MATERIALS CONFIGS //
-    MATERIALS_SETTINGS[SETTINGS.MATERIALS.SAND] = {
-        //velXOffsetMin:-200,
-        //velXOffsetMax:200,
-        //velYOffsetMin:-200,
-        //velYOffsetMax:200,
+    static {
+        MaterialSettings.MATERIALS_SETTINGS[SETTINGS.MATERIALS.SAND] = {
+            //velXOffsetMin:-200,
+            //velXOffsetMax:200,
+            //velYOffsetMin:-200,
+            //velYOffsetMax:200,
+        }
+
+        MaterialSettings.MATERIALS_SETTINGS[SETTINGS.MATERIALS.WATER] = {
+            gravity: 60,
+
+            //velXOffsetMin:-200,
+            //velXOffsetMax:200,
+            //velYOffsetMin:-200,
+            //velYOffsetMax:200,
+        }
+        
+
+
+        Object.values(SETTINGS.MATERIALS).forEach(material=>MaterialSettings.MATERIALS_SETTINGS[material] = {})
+        MaterialSettings.MATERIALS_SETTINGS.forEach((settings, material)=>MaterialSettings.updateMaterialSettings(material, settings))
     }
-
-    MATERIALS_SETTINGS[SETTINGS.MATERIALS.WATER] = {
-        gravity: 60,
-
-        //velXOffsetMin:-200,
-        //velXOffsetMax:200,
-        //velYOffsetMin:-200,
-        //velYOffsetMax:200,
-    }
-
-
-
-    MATERIALS_SETTINGS.forEach((config, i)=>{
-        const adjustedSettings = SimUtils.getAdjustedSettings(config, DEFAULT_MATERIAL_SETTINGS)
+    
+    static updateMaterialSettings(material, settings) {
+        const adjustedSettings = SimUtils.getAdjustedSettings(settings, MaterialSettings.#DEFAULT_MATERIAL_SETTINGS)
 
         adjustedSettings.hasPosXOffset ??= adjustedSettings.posXOffsetMin&&adjustedSettings.posXOffsetMax
         adjustedSettings.posXOffsetMin -= 1
@@ -78,6 +79,6 @@ const MATERIALS_SETTINGS = []
         adjustedSettings.gravityOffsetMin -= 1
         adjustedSettings.gravityOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.gravityOffsetMin, adjustedSettings.gravityOffsetMax)
 
-        MATERIALS_SETTINGS[i] = adjustedSettings
-    })
-})()
+        MaterialSettings.MATERIALS_SETTINGS[material] = adjustedSettings
+    }
+}
