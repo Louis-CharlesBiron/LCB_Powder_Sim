@@ -35,12 +35,9 @@ const MATERIALS_SETTINGS = []
     Object.values(SETTINGS.MATERIALS).forEach(mat=>MATERIALS_SETTINGS[mat] = {})
     
 
-
-    // MATERIALS CONFIGS
-
+    
+    // MATERIALS CONFIGS //
     MATERIALS_SETTINGS[SETTINGS.MATERIALS.SAND] = {
-        //hasVelXOffset: false,
-        velX: -0,
         //velXOffsetMin:-200,
         //velXOffsetMax:200,
         //velYOffsetMin:-200,
@@ -50,7 +47,6 @@ const MATERIALS_SETTINGS = []
     MATERIALS_SETTINGS[SETTINGS.MATERIALS.WATER] = {
         gravity: 60,
 
-        //hasVelXOffset: false,
         //velXOffsetMin:-200,
         //velXOffsetMax:200,
         //velYOffsetMin:-200,

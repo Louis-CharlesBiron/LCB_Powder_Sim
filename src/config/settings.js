@@ -47,26 +47,6 @@ const SETTINGS = {
         }
     },
 
-    DEFAULT_WORLD_START_SETTINGS: {// (R?)
-        autoStart: true,
-        usesWebWorkers: true,
-        aimedFPS: 60,
-        zoom: null,
-
-        cameraCenterPos: undefined,
-        mapWidth: null,
-        mapHeight: null,
-        mapPixelSize: null,
-    },
-
-    DEFAULT_PHYSICS_SETTINGS: {// (R?)
-        maxLogCount: 35,//18,
-        timerEnabled: false,
-        timerName: ".",
-        showSkips: false,
-        $randomTableSize: 1<<16
-    },
-
     D: {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7},
 
     SIDE_PRIORITIES: {

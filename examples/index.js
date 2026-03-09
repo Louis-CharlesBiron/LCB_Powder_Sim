@@ -16,7 +16,7 @@ const simulation = new Simulation(
         //zoom: 4
     },
     {
-        autoSimulationSizing: 15,
+        //autoSimulationSizing: 15,
         showBorder: true,
         showGrid: true,
         visualEffectsEnabled: true,
@@ -32,31 +32,29 @@ function readyCB(simulation) {
     if (!(simulation instanceof Simulation)) return
 
     simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
-    //simulation.backStepSavingIsExact = true
-
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
+    //simulation.showGrid = false
+    //simulation.timerEnabled = true
 
-    //simulation.placePixelAtCoords(22, 13)
 
-    simulation.updateMapSize(20, 20)
-    simulation.updateMapPixelSize(25)
-    simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+    //simulation.updateMapSize(20, 20)
+    //simulation.updateMapPixelSize(25)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
 
     //simulation.updateMapSize(300, 200)
     //simulation.updateMapPixelSize(3)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
     
     //simulation.updateMapSize(231, 149)
     //simulation.updateMapPixelSize(4)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
     //simulation.updateMapPixelSize(2)
-    //simulation.updateMapSize(700, 300)
-    //simulation.showGrid = false
+    //simulation.updateMapSize(600, 600)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
-    //simulation.timerEnabled = true
+
+    //simulation.updateMapPixelSize(1)
+    //simulation.updateMapSize(1920, 818)
 }
 
 
@@ -126,7 +124,7 @@ function statusLoopCore() {
     if (brushTypeStatus.textContent !== brushTypeText) brushTypeStatus.textContent = brushTypeText
 
     // MAP DIMENSIONS
-    const mapDimensionsText = map.displayDimensions+" | "+map.pixelSize+" | ("+map.mapWidth*map.mapHeight+")"
+    const mapDimensionsText = map.displayDimensions+" | "+map.pixelSize+" | ("+simulation._indexCount[0]+"/"+(map.mapWidth*map.mapHeight)+")"
     if (mapDimensionsStatus.textContent !== mapDimensionsText) mapDimensionsStatus.textContent = mapDimensionsText
 
     // SIDE PRIORITY
