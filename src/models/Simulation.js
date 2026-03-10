@@ -893,7 +893,7 @@ class Simulation {
 
         // INIT IF DYNAMIC
         if (!isStatic && indexCount[0] < this._userSettings.maxDynamicMaterialCount) {
-            const mapWidth = this._mapGrid.mapWidth, random = CDEUtils.random,
+            const mapWidth = this._mapGrid.mapWidth, random = SimUtils.random,
                 i = indexCount[0]++,
                 y = (gridIndex/mapWidth)|0,
                 x = gridIndex-y*mapWidth,

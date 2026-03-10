@@ -67,24 +67,19 @@ class MaterialSettings {
     static updateMaterialSettings(material, settings) {
         const adjustedSettings = SimUtils.getAdjustedSettings(settings, MaterialSettings.#DEFAULT_MATERIAL_SETTINGS)
 
-        adjustedSettings.hasPosXOffset ??= Boolean(adjustedSettings.posXOffsetMin&&adjustedSettings.posXOffsetMax)
-        if (adjustedSettings.hasPosXOffset) adjustedSettings.posXOffsetMin -= 1
+        adjustedSettings.hasPosXOffset ??= Boolean(adjustedSettings.posXOffsetMin||adjustedSettings.posXOffsetMax)
         adjustedSettings.posXOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.posXOffsetMin, adjustedSettings.posXOffsetMax)
 
-        adjustedSettings.hasPosYOffset ??= Boolean(adjustedSettings.posYOffsetMin&&adjustedSettings.posYOffsetMax)
-        if (adjustedSettings.hasPosYOffset) adjustedSettings.posYOffsetMin -= 1
+        adjustedSettings.hasPosYOffset ??= Boolean(adjustedSettings.posYOffsetMin||adjustedSettings.posYOffsetMax)
         adjustedSettings.posYOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.posYOffsetMin, adjustedSettings.posYOffsetMax)
 
-        adjustedSettings.hasVelXOffset ??= Boolean(adjustedSettings.velXOffsetMin&&adjustedSettings.velXOffsetMax)
-        if (adjustedSettings.hasVelXOffset) adjustedSettings.velXOffsetMin -= 1
+        adjustedSettings.hasVelXOffset ??= Boolean(adjustedSettings.velXOffsetMin||adjustedSettings.velXOffsetMax)
         adjustedSettings.velXOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.velXOffsetMin, adjustedSettings.velXOffsetMax)
 
-        adjustedSettings.hasVelYOffset ??= Boolean(adjustedSettings.velYOffsetMin&&adjustedSettings.velYOffsetMax)
-        if (adjustedSettings.hasVelYOffset) adjustedSettings.velYOffsetMin -= 1
+        adjustedSettings.hasVelYOffset ??= Boolean(adjustedSettings.velYOffsetMin||adjustedSettings.velYOffsetMax)
         adjustedSettings.velYOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.velYOffsetMin, adjustedSettings.velYOffsetMax)
 
-        adjustedSettings.hasGravityOffset ??= Boolean(adjustedSettings.gravityOffsetMin&&adjustedSettings.gravityOffsetMax)
-        if (adjustedSettings.hasGravityOffset) adjustedSettings.gravityOffsetMin -= 1
+        adjustedSettings.hasGravityOffset ??= Boolean(adjustedSettings.gravityOffsetMin||adjustedSettings.gravityOffsetMax)
         adjustedSettings.gravityOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.gravityOffsetMin, adjustedSettings.gravityOffsetMax)
 
         MaterialSettings.MATERIALS_SETTINGS[material] = adjustedSettings

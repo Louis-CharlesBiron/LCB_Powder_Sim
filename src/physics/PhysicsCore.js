@@ -96,7 +96,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             cache.velX = indexVelX[i]
             cache.velY = indexVelY[i]
 
-            if (i==null || i == -1) console.log("gi:", gi, [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
+            console.log("countIndex", countIndex, "i", i)
+            if (i==null || i == -1) console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
 
 
 
@@ -281,9 +282,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
     // DOC TODO (R?)
     function applyContaminantBehavior(gi, m_B, m_R, m_L, m_T, i_B, i_R, i_L, i_T, particle) {
-        const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexGravity = particle.indexGravity, indexFlags = particle.indexFlags,
-            contaminantSettings = MaterialSettings.MATERIALS_SETTINGS[CONTAMINANT]
-
         // TODO MAKE WORK FOR INVERTED WATER TOO2
 
 
@@ -426,7 +424,9 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             if (atI !== -1) {
                 indexPosX[atI] = ox
                 indexPosY[atI] = oy
+                console.log("moved grid, i:",i, "gi",gi, "newGi:",newGridI, SETTINGS.MATERIAL_NAMES[mat], atI, [ox, oy])
             }
+
         } else {
             if (newX-oldX !== 0) {
                 console.log(i, "-------CANCEL-X", ": changes ->", newX-oldX, newY-oldY, "|", [indexPosX[i], indexPosY[i]], [ox, oy], "go", [newX, newY])
@@ -440,48 +440,48 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
 
     // DOC TODO
-        function placePixelAtIndex(gridIndex, material, particle) {// TODO OPTIMIZE
-            const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount, 
-                indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity,
-                isStatic = (material & STATIC), oldIndex = gridIndexes[gridIndex]
-        
-            // DELETE IF DYNAMIC 
-            if (oldIndex !== -1) {
-                const i = --indexCount[0]
-                if (oldIndex !== i) {
-                    indexFlags[oldIndex] = indexFlags[i]
-                    indexPosX[oldIndex] = indexPosX[i]
-                    indexPosY[oldIndex] = indexPosY[i]
-                    indexVelX[oldIndex] = indexVelX[i]
-                    indexVelY[oldIndex] = indexVelY[i]
-                    indexGravity[oldIndex] = indexGravity[i]
-                    const newGridIndex = (indexPosY[oldIndex]|0)*MAP_WIDTH+(indexPosX[oldIndex]|0)
-                    gridIndexes[newGridIndex] = oldIndex
-                }
-                gridIndexes[gridIndex] = -1
-
-                
-            } else console.log("NO") //TODO
-        
-            // INIT IF DYNAMIC
-            if (!isStatic/* && indexCount[0] < this._userSettings.maxDynamicMaterialCount*/) {// TODO
-                const random = SimUtils.random,
-                    i = indexCount[0]++,
-                    y = (gridIndex/MAP_WIDTH)|0,
-                    x = gridIndex-y*MAP_WIDTH,
-                    materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]// TODO
-            
-                gridMaterials[gridIndex] = material
-                indexFlags[i] = materialSettings.flags
-                indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
-                indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
-                indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
-                indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
-                indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
-                gridIndexes[gridIndex] = i
+    function placePixelAtIndex(gridIndex, material, particle) {// TODO OPTIMIZE
+        const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount, 
+            indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity,
+            isStatic = (material & STATIC), oldIndex = gridIndexes[gridIndex]
+    
+        // DELETE IF DYNAMIC 
+        if (oldIndex !== -1) {
+            const i = --indexCount[0]
+            if (oldIndex !== i) {
+                indexFlags[oldIndex] = indexFlags[i]
+                indexPosX[oldIndex] = indexPosX[i]
+                indexPosY[oldIndex] = indexPosY[i]
+                indexVelX[oldIndex] = indexVelX[i]
+                indexVelY[oldIndex] = indexVelY[i]
+                indexGravity[oldIndex] = indexGravity[i]
+                const newGridIndex = (indexPosY[oldIndex]|0)*MAP_WIDTH+(indexPosX[oldIndex]|0)
+                gridIndexes[newGridIndex] = oldIndex
             }
-            else if (isStatic) gridMaterials[gridIndex] = material
+            gridIndexes[gridIndex] = -1
         }
+    
+        // INIT IF DYNAMIC
+        if (!isStatic/* && indexCount[0] < this._userSettings.maxDynamicMaterialCount*/) {// TODO
+            const random = SimUtils.random,
+                i = indexCount[0]++,
+                y = (gridIndex/MAP_WIDTH)|0,
+                x = gridIndex-y*MAP_WIDTH,
+                materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]// TODO
+        
+            gridMaterials[gridIndex] = material
+            indexFlags[i] = materialSettings.flags
+            indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+            indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+            indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+            indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+            indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
+            gridIndexes[gridIndex] = i
+
+            console.log("Created", SETTINGS.MATERIAL_NAMES[material], [indexPosX[i], indexPosY[i]], "| gi:", gridIndex, "i:", i, "|")
+        }
+        else if (isStatic) gridMaterials[gridIndex] = material
+    }
 
     // UTILS //
 
