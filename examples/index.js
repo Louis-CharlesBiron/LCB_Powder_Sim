@@ -31,15 +31,18 @@ function readyCB(simulation) {
 
     if (!(simulation instanceof Simulation)) return
 
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.INVERTED_WATER)
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.CONTAMINANT)
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
     //simulation.showGrid = false
     //simulation.timerEnabled = true
 
+    
+    
 
-    //simulation.updateMapSize(23, 15)
-    //simulation.updateMapPixelSize(40)
+
+    simulation.updateMapSize(23, 15)
+    simulation.updateMapPixelSize(40)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
 
     //simulation.updateMapSize(300, 200)
@@ -49,13 +52,16 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(4)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
-    //simulation.updateMapPixelSize(2)
-    //simulation.updateMapSize(600, 600)
+    //simulation.updateMapPixelSize(1)
+    //simulation.updateMapSize(975, 600)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(1920, 818)
+    //simulation.showGrid = false
 
+    //simulation.updateMapSize(5, 5)
+    //simulation.updateMapPixelSize(100)
 
     //simulation.updateMaterialSettings(2, {velXOffsetMin:-200,velXOffsetMax:200,velYOffsetMin:-200,velYOffsetMax:200,})
 }

@@ -34,21 +34,28 @@ class MaterialSettings {
 
     // MATERIALS CONFIGS //
     static {
-        MaterialSettings.MATERIALS_SETTINGS[SETTINGS.MATERIALS.SAND] = {}
+        const {SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, GAS} = SETTINGS.MATERIALS
 
-        MaterialSettings.MATERIALS_SETTINGS[SETTINGS.MATERIALS.WATER] = {
+        MaterialSettings.MATERIALS_SETTINGS[SAND] = {}
+
+        MaterialSettings.MATERIALS_SETTINGS[WATER] = {
             gravity: 60,
         }
 
-        MaterialSettings.MATERIALS_SETTINGS[SETTINGS.MATERIALS.GRAVEL] = {
+        MaterialSettings.MATERIALS_SETTINGS[GRAVEL] = {
             gravity: 160,
         }
         
-        MaterialSettings.MATERIALS_SETTINGS[SETTINGS.MATERIALS.INVERTED_WATER] = {
+        MaterialSettings.MATERIALS_SETTINGS[INVERTED_WATER] = {
             gravity: -90,
             velY:-3,
             velYOffsetMin:-2,
             velYOffsetMax:-4,
+        }
+
+        MaterialSettings.MATERIALS_SETTINGS[CONTAMINANT] = {
+            gravity: 30,
+            hasGravityOffset: false
         }
 
 

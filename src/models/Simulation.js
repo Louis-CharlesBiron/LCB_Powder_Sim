@@ -1061,10 +1061,10 @@ class Simulation {
                 this.updateMapPixelSize(pixelSize)
             }
  
-            let m_ll = data.length, gi = -1
+            let m_ll = data.length-1, gi = -1
             if (exportType == Simulation.EXPORT_STATES.RAW) {
                 for (let i=0;i<m_ll;i++) {
-                    const y = ((gi++)/saveWidth)|0
+                    const y = ((++gi)/saveWidth)|0
                     this.placePixelAtCoords(gi-y*saveWidth, y, +data[i], replaceMode)
                 }
             }
@@ -1072,7 +1072,7 @@ class Simulation {
                 for (let si=0;si<m_ll;si+=2) {
                     const mat = +data[si], count = +data[si+1]
                     for (let i=0;i<count;i++) {
-                        const y = ((gi++)/saveWidth)|0
+                        const y = ((++gi)/saveWidth)|0
                         this.placePixelAtCoords(gi-y*saveWidth, y, mat, replaceMode)
                     }
                 }

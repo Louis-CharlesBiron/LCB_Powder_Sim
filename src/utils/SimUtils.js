@@ -38,4 +38,20 @@ class SimUtils {
     static getMaxDecimals(...nums) {
         return Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
     }
+
+    
+    /**
+     * Returns a random number within the min and max range
+     * @param {Number} min: the minimal possible value (included)
+     * @param {Number} max: the maximal possible value (included)
+     * @param {Number?} decimals: the decimal point. (Defaults to 0 (integers))
+     * @returns the generated number
+     */
+    static random(min, max, decimals=0) {
+        max+=(decimals?0:1)
+        if (decimals) {
+            const precision = 10**decimals
+            return Math.round((Math.random()*(max-min)+min)*precision)/precision
+        } else return (Math.random()*(max-min)+min)>>0
+    }
 }

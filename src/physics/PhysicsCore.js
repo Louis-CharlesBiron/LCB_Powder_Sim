@@ -53,6 +53,9 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         newX: null,
         newY: null,
     }
+    // CONFIG
+    const CONTAMINATION_CHANCE = 1-CONFIG.contaminationChance
+
 
 
     // DOC TODO
@@ -70,13 +73,14 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         SP_RIGHT = sidePriority===RIGHT
         MAP_WIDTH = mapWidth 
 
-        particle.gridIndexes = gridIndexes,
-        particle.gridMaterials = gridMaterials,
-        particle.indexFlags = indexFlags,
-        particle.indexPosX = indexPosX,
-        particle.indexPosY = indexPosY,
-        particle.indexVelX = indexVelX,
-        particle.indexVelY = indexVelY,
+        particle.indexCount = indexCount
+        particle.gridIndexes = gridIndexes
+        particle.gridMaterials = gridMaterials
+        particle.indexFlags = indexFlags
+        particle.indexPosX = indexPosX
+        particle.indexPosY = indexPosY
+        particle.indexVelX = indexVelX
+        particle.indexVelY = indexVelY
         particle.indexGravity = indexGravity
 
         // SKIPS (PERF)
@@ -92,7 +96,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             cache.velX = indexVelX[i]
             cache.velY = indexVelY[i]
 
-            if (i==null || i == -1) console.log("gi:",gi, [oldX, oldY], "i:", i, "|", countIndex)//DEBUG
+            if (i==null || i == -1) console.log("gi:", gi, [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
 
 
 
@@ -105,7 +109,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                     if ((m_B^mat) === 0 && ((m_BR^mat|m_BL^mat) === 0 || (m_R^mat|m_L^mat) === 0) && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
 
                     // CHECK MAIN DIRECTIONS
-                    applySandPhysics(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
+                    applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
                     // TODO JUST UPDATE GRID THEN AND THERE ?
                 } 
             }
@@ -114,14 +118,14 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 if (flags&COLLISION_BOTTOM) {
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
                     if ((m_B^mat|m_BR^mat|m_BL^mat|m_R^mat|m_L^mat) === 0 && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
-                    applyWaterPhysics(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
+                    applyWaterBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
                 } 
             }
             else if (mat === GRAVEL) {
                 if (flags&COLLISION_BOTTOM) {
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)]
                     if (m_B&mat && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
-                    applyGravelPhysics(i, m_B, transpierceableMain, indexFlags)
+                    applyGravelBehavior(i, m_B, transpierceableMain, indexFlags)
                 } 
             }
             else if (mat === INVERTED_WATER) {// TODO, give water a 5% chance to travel through it a block
@@ -129,11 +133,29 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 if (flags&COLLISION_TOP) {
                     const m_T = gridMaterials[getAdjacencyCoords(oldX, oldY-1)], m_TR = gridMaterials[getAdjacencyCoords(oldX+1, oldY-1)], m_TL = gridMaterials[getAdjacencyCoords(oldX-1, oldY-1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)]
                     if ((m_T^mat|m_TR^mat|m_TL^mat|m_R^mat|m_L^mat) === 0 && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
-                    applyInvertedWaterPhysics(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache)
+                    applyInvertedWaterBehavior(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache)
                 } 
             }
+            else if (mat === CONTAMINANT) {
+                transpierceableMain = GASES
+                if (flags&COLLISION_BOTTOM) {
+                    const i_B = getAdjacencyCoords(oldX, oldY+1), m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)], 
+                          i_R = getAdjacencyCoords(oldX+1, oldY), m_R = gridMaterials[i_R],
+                          i_L = getAdjacencyCoords(oldX-1, oldY), m_L = gridMaterials[i_L],
+                          i_T = getAdjacencyCoords(oldX, oldY-1), m_T = gridMaterials[i_T],
+                          m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)],
+                          m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)],
+                          velocitySkip = abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD,
+                          waterContainementSkip = (m_B^mat|m_BR^mat|m_BL^mat|m_R^mat|m_L^mat) === 0
 
+                    // TODO stricter check, like if contained by not contaminable
+                    if (waterContainementSkip && (m_T^mat) === 0 && velocitySkip) {skip1++;continue}pass1++
+                    applyContaminantBehavior(gi, m_B, m_R, m_L, m_T, i_B, i_R, i_L, i_T, particle)
 
+                    if (waterContainementSkip && velocitySkip) {skip1++;continue}pass1++
+                    applyWaterBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
+                } 
+            }
 
             // APPLY MOVEMENTS
             applyMovements(i, deltaTime, particle, cache)
@@ -172,7 +194,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
 
     // DOC TODO (R?)
-    function applySandPhysics(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
+    function applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
         else {
             // GO SIDES
@@ -191,7 +213,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
 
     // DOC TODO (R?)
-    function applyWaterPhysics(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
+    function applyWaterBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
         else {
             // GO SIDES
@@ -222,12 +244,12 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
     
     // DOC TODO (R?)
-    function applyGravelPhysics(i, m_B, transpierceableMain, indexFlags) {
+    function applyGravelBehavior(i, m_B, transpierceableMain, indexFlags) {
         if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
     }
 
     // DOC TODO (R?)
-    function applyInvertedWaterPhysics(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache) {
+    function applyInvertedWaterBehavior(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_T & transpierceableMain) indexFlags[i] ^= COLLISION_TOP
         else {
             // GO SIDES
@@ -254,6 +276,44 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 else if (rightEmpty) cache.dx += 1
                 else if (leftEmpty) cache.dx -= 1
             }
+        }
+    }
+
+    // DOC TODO (R?)
+    function applyContaminantBehavior(gi, m_B, m_R, m_L, m_T, i_B, i_R, i_L, i_T, particle) {
+        const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexGravity = particle.indexGravity, indexFlags = particle.indexFlags,
+            contaminantSettings = MaterialSettings.MATERIALS_SETTINGS[CONTAMINANT]
+
+        // TODO MAKE WORK FOR INVERTED WATER TOO2
+
+
+        if (m_B&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
+            if (particle.gridIndexes[i_B] == -1) {// TODO
+                console.log("YO", i_B, m_B)
+            }
+            else 
+            placePixelAtIndex(i_B, CONTAMINANT, particle)
+        }
+        if (m_R&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
+                        if (particle.gridIndexes[i_R] == -1) {// TODO
+                console.log("YO", i_R, m_R)
+            }
+            else 
+            placePixelAtIndex(i_R, CONTAMINANT, particle)
+        }
+        if (m_L&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
+                        if (particle.gridIndexes[i_L] == -1) {// TODO
+                console.log("YO", i_L, m_L)
+            }
+            else 
+            placePixelAtIndex(i_L, CONTAMINANT, particle)
+        }
+        if (m_T&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
+                        if (particle.gridIndexes[i_T] == -1) {// TODO
+                console.log("YO", i_T, m_T)
+            }
+            else 
+            placePixelAtIndex(i_T, CONTAMINANT, particle)
         }
     }
 
@@ -347,12 +407,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     function updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache) {
         const gridMaterials = particle.gridMaterials,
             gridIndexes = particle.gridIndexes,
-            //indexFlags = particle.indexFlags,
-            //indexVelX = particle.indexVelX,
-            //indexVelY = particle.indexVelY,
             indexPosX = particle.indexPosX,
             indexPosY = particle.indexPosY,
-            //indexGravity = particle.indexGravity,
             newX = cache.newX,
             newY = cache.newY
 
@@ -368,12 +424,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             gridIndexes[gi] = atI
             gridMaterials[gi] = m_Dest
             if (atI !== -1) {
-                //indexFlags[atI] = indexFlags[i]
                 indexPosX[atI] = ox
                 indexPosY[atI] = oy
-                //indexVelX[atI] = indexVelX[i]
-                //indexVelY[atI] = indexVelY[i]
-                //indexGravity[atI] = indexGravity[i]
             }
         } else {
             if (newX-oldX !== 0) {
@@ -386,6 +438,50 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             }
         }
     }
+
+    // DOC TODO
+        function placePixelAtIndex(gridIndex, material, particle) {// TODO OPTIMIZE
+            const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount, 
+                indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity,
+                isStatic = (material & STATIC), oldIndex = gridIndexes[gridIndex]
+        
+            // DELETE IF DYNAMIC 
+            if (oldIndex !== -1) {
+                const i = --indexCount[0]
+                if (oldIndex !== i) {
+                    indexFlags[oldIndex] = indexFlags[i]
+                    indexPosX[oldIndex] = indexPosX[i]
+                    indexPosY[oldIndex] = indexPosY[i]
+                    indexVelX[oldIndex] = indexVelX[i]
+                    indexVelY[oldIndex] = indexVelY[i]
+                    indexGravity[oldIndex] = indexGravity[i]
+                    const newGridIndex = (indexPosY[oldIndex]|0)*MAP_WIDTH+(indexPosX[oldIndex]|0)
+                    gridIndexes[newGridIndex] = oldIndex
+                }
+                gridIndexes[gridIndex] = -1
+
+                
+            } else console.log("NO") //TODO
+        
+            // INIT IF DYNAMIC
+            if (!isStatic/* && indexCount[0] < this._userSettings.maxDynamicMaterialCount*/) {// TODO
+                const random = SimUtils.random,
+                    i = indexCount[0]++,
+                    y = (gridIndex/MAP_WIDTH)|0,
+                    x = gridIndex-y*MAP_WIDTH,
+                    materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]// TODO
+            
+                gridMaterials[gridIndex] = material
+                indexFlags[i] = materialSettings.flags
+                indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+                indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+                indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+                indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+                indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
+                gridIndexes[gridIndex] = i
+            }
+            else if (isStatic) gridMaterials[gridIndex] = material
+        }
 
     // UTILS //
 

@@ -11,7 +11,7 @@ R  - GASES
 L  - GASES
 
 ===== GRAVEL =====
-B - GO THROUGH TRANSPIERCEABLE
+B - TRANSPIERCEABLE
 
 ===== INVERTED_WATER =====
 T  - GASES
@@ -19,3 +19,18 @@ TR - GASES
 TL - GASES
 R  - GASES
 L  - GASES
+
+===== CONTAMINANT =====
+B  - GASES
+BR - GASES
+BL - GASES
+R  - GASES
+L  - GASES
+
+
+
+
+
+
+
+
