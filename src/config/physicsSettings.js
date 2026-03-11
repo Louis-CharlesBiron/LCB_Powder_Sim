@@ -4,5 +4,5 @@ const DEFAULT_PHYSICS_SETTINGS = {
     timerName: ".",
     showSkips: false,
     $randomTableSize: 1<<16,
-    contaminationChance: .1
+    contaminationChance: 1//.1
 }

@@ -7,6 +7,8 @@ const FLAGS = {
     COLLISION_Y: (1<<3)|(1<<0),
 }
 
+let a
+
 const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,
     Y_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,
     X_VELOCITY_SKIP_THRESHOLD = 5,
@@ -36,6 +38,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     SP_RANDOM = null, SP_LEFT = null, SP_RIGHT = null, MAP_WIDTH = null,
     // PARAMS
     particle = {
+        indexCount: null,
         gridIndexes: null,
         gridMaterials: null,
         indexFlags: null,
@@ -55,6 +58,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
     // CONFIG
     const CONTAMINATION_CHANCE = 1-CONFIG.contaminationChance
+
+    let TEST_QUEUE = []//new Int32Array()
 
 
 
@@ -96,7 +101,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             cache.velX = indexVelX[i]
             cache.velY = indexVelY[i]
 
-            console.log("countIndex", countIndex, "i", i)
+            //console.log("countIndex", countIndex, "i", i)
             if (i==null || i == -1) console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
 
 
@@ -179,6 +184,15 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             // UPDATE GRID
             updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache)
         }
+
+        if (TEST_QUEUE.filter(Boolean).length) console.log(TEST_QUEUE)
+        for (let i=0;i<TEST_QUEUE.length;i++) {
+            const newMat = TEST_QUEUE[i]
+            if (!newMat) continue
+            placePixelAtIndex(i, newMat, particle)
+            TEST_QUEUE[i] = undefined
+        }
+
 
         // PERF
         if (CONFIG.showSkips && count) {
@@ -286,32 +300,20 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
 
         if (m_B&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
-            if (particle.gridIndexes[i_B] == -1) {// TODO
-                console.log("YO", i_B, m_B)
-            }
-            else 
-            placePixelAtIndex(i_B, CONTAMINANT, particle)
+            //placePixelAtIndex(i_B, CONTAMINANT, particle)
+            TEST_QUEUE[i_B] = CONTAMINANT
         }
         if (m_R&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
-                        if (particle.gridIndexes[i_R] == -1) {// TODO
-                console.log("YO", i_R, m_R)
-            }
-            else 
-            placePixelAtIndex(i_R, CONTAMINANT, particle)
+            //placePixelAtIndex(i_R, CONTAMINANT, particle)
+            TEST_QUEUE[i_R] = CONTAMINANT
         }
         if (m_L&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
-                        if (particle.gridIndexes[i_L] == -1) {// TODO
-                console.log("YO", i_L, m_L)
-            }
-            else 
-            placePixelAtIndex(i_L, CONTAMINANT, particle)
+            //placePixelAtIndex(i_L, CONTAMINANT, particle)
+            TEST_QUEUE[i_L] = CONTAMINANT
         }
         if (m_T&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
-                        if (particle.gridIndexes[i_T] == -1) {// TODO
-                console.log("YO", i_T, m_T)
-            }
-            else 
-            placePixelAtIndex(i_T, CONTAMINANT, particle)
+            //placePixelAtIndex(i_T, CONTAMINANT, particle)
+            TEST_QUEUE[i_T] = CONTAMINANT
         }
     }
 
@@ -443,22 +445,24 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     function placePixelAtIndex(gridIndex, material, particle) {// TODO OPTIMIZE
         const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount, 
             indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity,
-            isStatic = (material & STATIC), oldIndex = gridIndexes[gridIndex]
+            isStatic = (material & STATIC), oldAtIndex = gridIndexes[gridIndex]
     
         // DELETE IF DYNAMIC 
-        if (oldIndex !== -1) {
+        if (oldAtIndex !== -1) {
             const i = --indexCount[0]
-            if (oldIndex !== i) {
-                indexFlags[oldIndex] = indexFlags[i]
-                indexPosX[oldIndex] = indexPosX[i]
-                indexPosY[oldIndex] = indexPosY[i]
-                indexVelX[oldIndex] = indexVelX[i]
-                indexVelY[oldIndex] = indexVelY[i]
-                indexGravity[oldIndex] = indexGravity[i]
-                const newGridIndex = (indexPosY[oldIndex]|0)*MAP_WIDTH+(indexPosX[oldIndex]|0)
-                gridIndexes[newGridIndex] = oldIndex
-            }
             gridIndexes[gridIndex] = -1
+
+            if (oldAtIndex !== i) {
+                indexFlags[oldAtIndex] = indexFlags[i]
+                indexPosX[oldAtIndex] = indexPosX[i]
+                indexPosY[oldAtIndex] = indexPosY[i]
+                indexVelX[oldAtIndex] = indexVelX[i]
+                indexVelY[oldAtIndex] = indexVelY[i]
+                indexGravity[oldAtIndex] = indexGravity[i]
+                const newGridIndex = (indexPosY[oldAtIndex]|0)*MAP_WIDTH+(indexPosX[oldAtIndex]|0)
+                gridIndexes[newGridIndex] = oldAtIndex
+                console.log(i, "At gi:", newGridIndex, "->", oldAtIndex, "|", [indexPosX[oldAtIndex], indexPosY[oldAtIndex]], indexGravity[oldAtIndex])
+            }
         }
     
         // INIT IF DYNAMIC
@@ -467,7 +471,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 i = indexCount[0]++,
                 y = (gridIndex/MAP_WIDTH)|0,
                 x = gridIndex-y*MAP_WIDTH,
-                materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]// TODO
+                materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]
         
             gridMaterials[gridIndex] = material
             indexFlags[i] = materialSettings.flags
@@ -478,10 +482,17 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
             gridIndexes[gridIndex] = i
 
+
+            console.log([...indexPosX].filter(Boolean).map((x,i)=>{
+                return [x, indexPosY[i], ]
+            }))
             console.log("Created", SETTINGS.MATERIAL_NAMES[material], [indexPosX[i], indexPosY[i]], "| gi:", gridIndex, "i:", i, "|")
+
         }
         else if (isStatic) gridMaterials[gridIndex] = material
     }
+
+    a = placePixelAtIndex
 
     // UTILS //
 
