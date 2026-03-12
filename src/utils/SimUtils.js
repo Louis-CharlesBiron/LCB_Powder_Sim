@@ -48,10 +48,7 @@ class SimUtils {
      * @returns the generated number
      */
     static random(min, max, decimals=0) {
-        max+=(decimals?0:1)
-        if (decimals) {
-            const precision = 10**decimals
-            return Math.round((Math.random()*(max-min)+min)*precision)/precision
-        } else return (Math.random()*(max-min)+min)>>0
+        const precision = 10**decimals
+        return Math.floor(Math.random()*((max-min)*precision+1))/precision+min
     }
 }
