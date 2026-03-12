@@ -6,7 +6,7 @@ const FLAGS = {
     COLLISION_X: (1<<1)|(1<<2),
     COLLISION_Y: (1<<3)|(1<<0),
 
-    CONTAMINATED: 1<<4
+    CONTAMINATED: 1<<4,
 }
 
 const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,
@@ -101,14 +101,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             cache.velX = indexVelX[i]
             cache.velY = indexVelY[i]
 
+            //console.log("countIndex", countIndex, "i", i)
             if (i==null || i == -1) console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
-
-
-            if (flags & CONTAMINATED) {
-                indexFlags[i] ^= CONTAMINATED
-                replacePixelAtIndex(gi, CONTAMINANT, particle)
-            }
-
 
             if (mat === SAND) {
                 // IF COLLSION BOTTOM
@@ -159,17 +153,49 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                           waterContainementSkip = (m_B^mat|m_BR^mat|m_BL^mat|m_R^mat|m_L^mat) === 0
 
                     // TODO stricter check, like if contained by not contaminable
-                    if (waterContainementSkip && (m_T^mat) === 0 && velocitySkip) {skip1++;continue}pass1++
-                    applyContaminantBehavior(m_B, m_R, m_L, m_T, i_B, i_R, i_L, i_T, particle)
+
+
+                    // TODO CHECK ORDER HERE!
+            //if (i!==gridIndexes[gi]) throw new Error("YOOOOOOOOOOOOOOOOOOOOO")
 
                     if (waterContainementSkip && velocitySkip) {skip1++;continue}pass1++
                     applyWaterBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
+            //if (i!==gridIndexes[gi]) throw new Error("YOOOOOOOOOOOOOOOOOOOOO")
+
+                    if (waterContainementSkip && (m_T^mat) === 0 && velocitySkip) {skip1++;continue}pass1++
+                    applyContaminantBehavior(m_B, m_R, m_L, m_T, i_B, i_R, i_L, i_T, particle)
+                    //console.log("BEFORE CONTAMINATION, i:",i,"gi",gi, "gi val:", gridIndexes[gi])
+                    //console.log("AFTER CONTAMINATION, i:",i,"gi",gi, "gi val:", gridIndexes[gi])
+                    //if (i!==gridIndexes[gi]) {console.error("UNSYNC");debugger}
+                    //console.log("FAKE")
                 } 
             }
+            //if (i!==gridIndexes[gi]) throw new Error("YOOOOOOOOOOOOOOOOOOOOO")
+
+
+
+
+            //if (mat & CONTAMINABLE) {
+            //    // Look at neighbors
+            //    const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY + 1)],
+            //        m_T = gridMaterials[getAdjacencyCoords(oldX, oldY - 1)],
+            //        m_R = gridMaterials[getAdjacencyCoords(oldX + 1, oldY)],
+            //        m_L = gridMaterials[getAdjacencyCoords(oldX - 1, oldY)]
+//
+            //        console.log(m_B, [oldX, oldY])
+//
+            //    // If any neighbor is a contaminant, infect SELF
+            //    if (m_B === CONTAMINANT || m_T === CONTAMINANT || m_R === CONTAMINANT || m_L === CONTAMINANT) {
+            //        if (RANDOM_TABLE[randomIndex++ & RTSize] > CONTAMINATION_CHANCE) {
+            //            replacePixelAtIndex(gi, CONTAMINANT, particle)
+            //            //gridMaterials[gi] = CONTAMINANT;
+            //        }
+            //    }
+            //}
 
             // APPLY MOVEMENTS
             applyMovements(i, deltaTime, particle, cache)
-            const dx = cache.dx, dy = cache.dy
+            const dx = cache.dx, dy = cache.dy0
             if (!(dy || dx)) {skip2++;continue}pass2++
 
             // MOVE
@@ -180,6 +206,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             if (hasNoGdy && hasNoGdx) {skip3++;continue}pass3++
             cache.newX = newX
             cache.newY = newY
+            //if (i!==gridIndexes[gi]) throw new Error("YOOOOOOOOOOOOOOOOOOOOO")
 
             // CHECK FOR COLLISION X/Y
             if (!hasNoGdy) checkCollisionsY(i, mat, gdy, oldX, oldY, transpierceableMain, particle, cache)
@@ -188,6 +215,15 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             // UPDATE GRID
             updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache)
         }
+
+        //if (TEST_QUEUE.filter(Boolean).length) console.log(TEST_QUEUE)
+        //for (let i=0;i<TEST_QUEUE.length;i++) {
+        //    const newMat = TEST_QUEUE[i]
+        //    if (!newMat) continue
+        //    placePixelAtIndex(i, newMat, particle)
+        //    TEST_QUEUE[i] = undefined
+        //}
+
 
         // PERF
         if (CONFIG.showSkips && count) {
@@ -291,19 +327,30 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
     // DOC TODO (R?)
     function applyContaminantBehavior(m_B, m_R, m_L, m_T, i_B, i_R, i_L, i_T, particle) {
-        const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
 
         if (m_B&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
-            indexFlags[gridIndexes[i_B]] |= CONTAMINATED
+            console.log("real BOTTOM", i_B)
+            particle.indexFlags[i_B] |= CONTAMINATED
+            //placePixelAtIndex(i_B, CONTAMINANT, particle)
+            //TEST_QUEUE[i_B] = CONTAMINANT
         }
         if (m_R&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
-            indexFlags[gridIndexes[i_R]] |= CONTAMINATED
+            console.log("real RIGHT", i_R)
+            particle.indexFlags[i_R] |= CONTAMINATED
+            //placePixelAtIndex(i_R, CONTAMINANT, particle)
+            //TEST_QUEUE[i_R] = CONTAMINANT
         }
         if (m_L&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
-            indexFlags[gridIndexes[i_L]] |= CONTAMINATED
+            console.log("real LEFT", i_L)
+            particle.indexFlags[i_L] |= CONTAMINATED
+            //placePixelAtIndex(i_L, CONTAMINANT, particle)
+            //TEST_QUEUE[i_L] = CONTAMINANT
         }
         if (m_T&CONTAMINABLE && RANDOM_TABLE[randomIndex++&RTSize] > CONTAMINATION_CHANCE) {
-            indexFlags[gridIndexes[i_T]] |= CONTAMINATED
+            console.log("real TOP", i_T)
+            particle.indexFlags[i_T] |= CONTAMINATED
+            //placePixelAtIndex(i_T, CONTAMINANT, particle)
+            //TEST_QUEUE[i_T] = CONTAMINANT
         }
     }
 
@@ -402,13 +449,20 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             newX = cache.newX,
             newY = cache.newY
 
-        const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & transpierceableMain
+        const newGi = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGi] & transpierceableMain
         // SWITCH ONLY IF DEST IS TRANSPIERCEABLE
         if (m_Dest !== 0) {
-            const atI = gridIndexes[newGridI]
+            const atI = gridIndexes[newGi]
             // move to new pos
-            gridIndexes[newGridI] = i
-            gridMaterials[newGridI] = mat
+
+            //console.log("GRID_BEFORE", gridIndexes.filter(x=>x!==-1).toString(), gridIndexes[newGi], gridMaterials[newGi], "|", gi, "->", newGi)
+
+            gridIndexes[newGi] = i
+            gridMaterials[newGi] = mat
+
+            //console.log("GRID_MIDDLE", gridIndexes.filter(x=>x!==-1).toString(), [i,gridIndexes[gi],i==gridIndexes[gi]], gridMaterials[gi], transpierceableMain, m_Dest)
+            if (i!==gridIndexes[gi]) console.warn(i, gridIndexes[gi])//throw new Error("YOOOOOOOOOOOOOOOOOOOOO")
+
 
             // switch info
             gridIndexes[gi] = atI
@@ -417,6 +471,11 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 indexPosX[atI] = ox
                 indexPosY[atI] = oy
             }
+            //console.log("moved grid, i:",i, "gi",gi, "newGi:",newGi, SETTINGS.MATERIAL_NAMES[mat], atI, [ox, oy])
+
+            //console.log("GRID_AFTER", gridIndexes.filter(x=>x!==-1).toString())
+
+
         } else {
             if (newX-oldX !== 0) {
                 console.log(i, "-------CANCEL-X", ": changes ->", newX-oldX, newY-oldY, "|", [indexPosX[i], indexPosY[i]], [ox, oy], "go", [newX, newY])
@@ -430,10 +489,78 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
 
     // DOC TODO
+    function placePixelAtIndex(gridIndex, material, particle) {// TODO OPTIMIZE
+        const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount, 
+            indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity,
+            isStatic = (material & STATIC), oldAtIndex = gridIndexes[gridIndex]
+    
+        //console.log("BEFORE", gridIndexes.filter(x=>x!==-1).toString())
+
+
+        // DELETE IF DYNAMIC 
+        if (oldAtIndex !== -1) {
+            const tailI = --indexCount[0]
+            //console.log("BEFORE EDIT gridIndexes. gi:",gridIndex, "value:", gridIndexes[gridIndex], "-1")
+            gridIndexes[gridIndex] = -1
+            console.log("AFTER EDIT gridIndexes. gi:",gridIndex, "value:", gridIndexes[gridIndex], "-1", "INDEX_COUNT:", indexCount[0])
+
+            // SWAP WITH LAST IF ISN'T LAST PARTICLE
+            if (oldAtIndex !== tailI) {console.warn("HEYYYYYYYYYYYYYYYYY")
+                indexFlags[oldAtIndex] = indexFlags[tailI]
+                indexPosX[oldAtIndex] = indexPosX[tailI]
+                indexPosY[oldAtIndex] = indexPosY[tailI]
+                indexVelX[oldAtIndex] = indexVelX[tailI]
+                indexVelY[oldAtIndex] = indexVelY[tailI]
+                indexGravity[oldAtIndex] = indexGravity[tailI]
+                const newGridIndex = (indexPosY[oldAtIndex]|0)*MAP_WIDTH+(indexPosX[oldAtIndex]|0)
+                console.log("At gi:", gridIndex, newGridIndex, "|", tailI, oldAtIndex, "|", [indexPosX[oldAtIndex], indexPosY[oldAtIndex]], indexGravity[oldAtIndex])
+                console.log("BEFORE EDIT gridIndexes2. gi:",newGridIndex, "value:", gridIndexes[newGridIndex], oldAtIndex)
+                gridIndexes[newGridIndex] = oldAtIndex
+                console.log("AFTER EDIT gridIndexes2. gi:",newGridIndex, "value:", gridIndexes[newGridIndex], oldAtIndex)
+            }
+        }
+
+        //console.log("MIDDLE", gridIndexes.filter(x=>x!==-1).toString())
+
+    
+        // INIT IF DYNAMIC
+        if (!isStatic/* && indexCount[0] < this._userSettings.maxDynamicMaterialCount*/) {// TODO
+
+            const random = SimUtils.random,
+                i = indexCount[0]++,
+                y = (gridIndex/MAP_WIDTH)|0,
+                x = gridIndex-y*MAP_WIDTH,
+                materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]
+        
+            gridMaterials[gridIndex] = material
+            indexFlags[i] = materialSettings.flags
+            indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+            indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+            indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+            indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+            indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
+            console.log("BEFORE EDIT gridIndexes. gi:",gridIndex, "value:", gridIndexes[gridIndex], i)
+            gridIndexes[gridIndex] = i
+            console.log("AFTER EDIT gridIndexes. gi:",gridIndex, "value:", gridIndexes[gridIndex], i)
+
+
+            //console.log("BEFORE CREATION", [...gridIndexes.filter(x=>x!==-1)].filter(Boolean).map((ii)=>{
+            //    return [indexPosX[ii], indexPosY[ii], "i:", ii]
+            //}))
+
+            if (gridIndexes.filter(x=>x==i).length > 1) console.warn(gridIndexes.filter(x=>x==i))
+            //console.log("AFTER", gridIndexes.filter(x=>x!==-1).toString())
+
+            console.log("Created", SETTINGS.MATERIAL_NAMES[material], [indexPosX[i], indexPosY[i]], "| gi:", gridIndex, "i:", i, "|")
+
+        }
+        else if (isStatic) gridMaterials[gridIndex] = material
+    }
+
     function replacePixelAtIndex(gridIndex, material, particle) {// TODO OPTIMIZE
         const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes,
             indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity,
-            isStatic = material & STATIC
+            isStatic = (material & STATIC)
 
     
         // INIT IF DYNAMIC
@@ -452,6 +579,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             indexVelY[oldIndex] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
             indexGravity[oldIndex] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
             gridIndexes[gridIndex] = oldIndex
+
+            console.log("Created", SETTINGS.MATERIAL_NAMES[material], [indexPosX[oldIndex], indexPosY[oldIndex]], "| gi:", gridIndex, "i:", oldIndex, "|")
         }
         else if (isStatic) gridMaterials[gridIndex] = material
     }

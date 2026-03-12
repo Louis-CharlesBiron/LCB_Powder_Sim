@@ -399,6 +399,7 @@ class Simulation {
      */
     updateMapPixelSize(pixelSize=MapGrid.DEFAULT_PIXEL_SIZE) {// TODO TOFIX or OPTIMIZE/ERROR HANDLING
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
+        pixelSize = pixelSize|0
 
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.updateMapPixelSize(pixelSize))
@@ -419,6 +420,8 @@ class Simulation {
      */
     updateMapSize(width, height) {// TODO TOFIX or OPTIMIZE/ERROR HANDLING
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
+        width = width|0
+        height = height|0
 
         if (!this.#simulationHasPixelsBuffer) {
             this._queuedBufferOperations.push(()=>this.updateMapSize(width, height))
