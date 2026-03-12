@@ -55,13 +55,10 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         velY: null,
         newX: null,
         newY: null,
-    }
+    },
     // CONFIG
-    const CONTAMINATION_CHANCE = 1-CONFIG.contaminationChance
-
-    let TEST_QUEUE = []//new Int32Array()
-
-
+    CONTAMINATION_CHANCE = 1
+    
 
     // DOC TODO
     function physicsStep(
@@ -77,6 +74,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         SP_LEFT = sidePriority===LEFT
         SP_RIGHT = sidePriority===RIGHT
         MAP_WIDTH = mapWidth 
+        // CONFIG
+        CONTAMINATION_CHANCE = 1-CONFIG.contaminationChance
 
         particle.indexCount = indexCount
         particle.gridIndexes = gridIndexes
@@ -93,9 +92,9 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
         let countIndex = 0, count = indexCount[0]
         for (;countIndex<count;countIndex++) {
-            const ox = indexPosX[countIndex], oy = indexPosY[countIndex], oldX = ox|0, oldY = oy|0, gi = oldY*mapWidth+oldX, mat = gridMaterials[gi], i = gridIndexes[gi], flags = indexFlags[i]
+            const ox = indexPosX[countIndex], oy = indexPosY[countIndex], oldX = ox|0, oldY = oy|0, gi = oldY*mapWidth+oldX, i = gridIndexes[gi], flags = indexFlags[i]
 
-            let transpierceableMain = REG_TRANSPIERCEABLE, transpierceableSec = GASES
+            let transpierceableMain = REG_TRANSPIERCEABLE, transpierceableSec = GASES, mat = gridMaterials[gi]
             cache.dx = 0
             cache.dy = 0
             cache.velX = indexVelX[i]
@@ -103,13 +102,14 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
             if (i==null || i == -1) console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
 
-
+            // TRANSFORMS
             if (flags & CONTAMINATED) {
-                indexFlags[i] ^= CONTAMINATED
+                indexFlags[i] &= ~CONTAMINATED
                 replacePixelAtIndex(gi, CONTAMINANT, particle)
+                mat = CONTAMINANT
             }
 
-
+            // MATERIAL SPECIFICS
             if (mat === SAND) {
                 // IF COLLSION BOTTOM
                 if (flags&COLLISION_BOTTOM) {
@@ -168,7 +168,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             }
 
             // APPLY MOVEMENTS
-            applyMovements(i, deltaTime, particle, cache)
+            applyForces(i, deltaTime, particle, cache)
             const dx = cache.dx, dy = cache.dy
             if (!(dy || dx)) {skip2++;continue}pass2++
 
@@ -308,7 +308,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
 
 
-    function applyMovements(i, deltaTime, particle, cache) {
+    function applyForces(i, deltaTime, particle, cache) {
         const indexFlags = particle.indexFlags, flags = indexFlags[i], gravity = particle.indexGravity[i], isBottomGravity = gravity >= 0
         let velX = cache.velX, velY = cache.velY
 
@@ -430,7 +430,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     }
 
     // DOC TODO
-    function replacePixelAtIndex(gridIndex, material, particle) {// TODO OPTIMIZE
+    function replacePixelAtIndex(gridIndex, material, particle) {
         const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes,
             indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity,
             isStatic = material & STATIC

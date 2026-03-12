@@ -14,8 +14,8 @@ class MaterialSettings {
         hasPosYOffset:null,
 
         velX:0,
-        velXOffsetMin:-2,
-        velXOffsetMax:2,
+        velXOffsetMin:0,//-2,
+        velXOffsetMax:0,//2,
         velXOffsetDecimals:null,
         hasVelXOffset:null,
 
@@ -51,6 +51,7 @@ class MaterialSettings {
             velY:-3,
             velYOffsetMin:-2,
             velYOffsetMax:-4,
+            flags:15// TODO DEL
         }
 
         MaterialSettings.MATERIALS_SETTINGS[CONTAMINANT] = {
