@@ -4,5 +4,7 @@ const DEFAULT_PHYSICS_SETTINGS = {
     timerName: ".",
     showSkips: false,
     $randomTableSize: 1<<16,
-    contaminationChance: .2
+    contaminationChance: .2,
+    lavaMovementChance: .855,
+    lavaMeltChance: .0008
 }

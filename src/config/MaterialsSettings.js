@@ -59,6 +59,11 @@ class MaterialSettings {
             hasGravityOffset: false
         }
 
+        MaterialSettings.MATERIALS_SETTINGS[LAVA] = {
+            gravity: 20,
+            hasGravityOffset: false
+        }
+
 
 
         Object.values(SETTINGS.MATERIALS).forEach(material=>MaterialSettings.MATERIALS_SETTINGS[material] ??= {})

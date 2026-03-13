@@ -31,7 +31,8 @@ function readyCB(simulation) {
 
     if (!(simulation instanceof Simulation)) return
 
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.CONTAMINANT)
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.LAVA)
+    //simulation.updateSidePriority(Simulation.SIDE_PRIORITIES.LEFT)
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
     //simulation.showGrid = false
