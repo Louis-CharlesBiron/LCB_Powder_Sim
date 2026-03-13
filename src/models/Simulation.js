@@ -1127,8 +1127,9 @@ class Simulation {
      * @returns A string representing the current map
      */
     exportAsText(state=SETTINGS.EXPORT_STATES.COMPACTED, callback) {
+        const hasCallback = CDEUtils.isFunction(callback)
         if (!this.#simulationHasPixelsBuffer) {
-            this._queuedBufferOperations.push(()=>callback&&callback(this.exportAsText(state)))
+            this._queuedBufferOperations.push(()=>hasCallback&&callback(this.exportAsText(state)))
             return
         }
 
@@ -1161,7 +1162,9 @@ class Simulation {
         }
         else return null
 
-        return state+SETTINGS.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+SETTINGS.EXPORT_SEPARATOR+textResult
+        const exportValue = state+SETTINGS.EXPORT_SEPARATOR+this._mapGrid.dimensions+","+this._mapGrid.pixelSize+SETTINGS.EXPORT_SEPARATOR+textResult
+        if (hasCallback) callback(exportValue)
+        return exportValue
     }
 
     // TODO DOC

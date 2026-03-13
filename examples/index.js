@@ -93,13 +93,20 @@ const mousePosStatus = document.getElementById("mousePosStatus"),
       zoomStatus = document.getElementById("zoomStatus"),
       particleStatus = document.getElementById("particleStatus")
 
-let STATUS_REFRESH_RATE = 1000/10
+const MOUSE_POS_KEY = "lastMousePos", storageMousePos = localStorage.getItem(MOUSE_POS_KEY).split(",").map(x=>isFinite(+x)?+x:0)
+if (storageMousePos) {
+    simulation.mouse._x = storageMousePos[0]
+    simulation.mouse._y = storageMousePos[1]
+}
+
+const STATUS_REFRESH_RATE = 1000/10
 function statusLoopCore() {
-    const map = simulation.mapGrid
+    const map = simulation.mapGrid, mousePos = simulation.mouse.pos
+    localStorage.setItem(MOUSE_POS_KEY, mousePos)
 
     // MOUSE MAP POS | MOUSE MAP INDEX | MOUSE ABSOLUTE POS 
-    const mapPos = map.getLocalMapPixel(simulation.CVS.mouse.pos)
-    mousePosStatus.textContent = (mapPos||"")+" | "+(mapPos?map.mapPosToIndex(mapPos):"")+" | "+simulation.CVS.mouse.pos
+    const mapPos = map.getLocalMapPixel(mousePos)
+    mousePosStatus.textContent = (mapPos||"")+" | "+(mapPos?map.mapPosToIndex(mapPos):"")+" | "+mousePos
 
     // MOUSE MATERIAL
     if (simulation.isMouseWithinSimulation && mapPos) {
@@ -170,12 +177,22 @@ document.getElementById("backStepButton").onclick=()=>simulation.backStep()
 document.getElementById("clearButton").onclick=()=>simulation.clear()
 
 // SAVE
-const exportValueInput = document.getElementById("exportValueInput")
-document.getElementById("saveButton").onclick=e=>exportValueInput.value = simulation.exportAsText(e.ctrlKey ? SETTINGS.EXPORT_STATES.RAW : SETTINGS.EXPORT_STATES.COMPACTED, saveValue=>exportValueInput.value=saveValue)
+const exportValueInput = document.getElementById("exportValueInput"), EXPORT_VALUE_KEY = "exportValue"
+function handleExportInput(exportValue) {
+    exportValueInput.value = exportValue
+    localStorage.setItem(EXPORT_VALUE_KEY, exportValue)
+}
+exportValueInput.value = localStorage.getItem(EXPORT_VALUE_KEY)||""
+document.getElementById("saveButton").onclick=e=>simulation.exportAsText(e.ctrlKey ? SETTINGS.EXPORT_STATES.RAW : SETTINGS.EXPORT_STATES.COMPACTED, handleExportInput)
 
 // LOAD
-const loadValueInput = document.getElementById("loadValueInput")
-document.getElementById("loadButton").onclick=e=>simulation.load((loadValueInput.value||exportValueInput.value), e.ctrlKey)
+const loadValueInput = document.getElementById("loadValueInput"), LOAD_VALUE_KEY = "loadedValue"
+document.getElementById("loadButton").onclick=e=>{
+    const loadValue = loadValueInput.value||exportValueInput.value
+    simulation.load(loadValue, e.ctrlKey)
+    localStorage.setItem(LOAD_VALUE_KEY, loadValue)
+}
+loadValueInput.value = localStorage.getItem(LOAD_VALUE_KEY)||""
 loadValueInput.oncontextmenu=e=>{
     e.preventDefault()
     loadValueInput.value = ""
