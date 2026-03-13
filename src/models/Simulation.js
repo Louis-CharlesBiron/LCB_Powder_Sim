@@ -332,6 +332,7 @@ class Simulation {
         if (this._initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this._initialized = Simulation.#INIT_STATES.INITIALIZED)
         if (!this._isRunning || force) {
             this._isRunning = true
+            this.CVS.start()
             if (this.usingWebWorkers) this.#sendPixelsToWorker(Simulation.#WORKER_MESSAGE_TYPES.START_LOOP)
         }
     }
@@ -339,9 +340,10 @@ class Simulation {
     /**
      * Sets the state of the simulation to be stopped
      */
-    stop() {
+    stop(stopCanvas) {
         if (this._isRunning) {
             this._isRunning = false
+            if (stopCanvas) this.CVS.stop()
             if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.STOP_LOOP})
         }
     }

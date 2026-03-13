@@ -27,7 +27,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
     // ENUMS DESTRUCTURING
     {STONE, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, ELECTRICITY, COPPER, GAS} = M,
-    {GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, STATIC} = G,
+    {GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, STATIC, WATER_SKIPABLE, INVERTED_WATER_SKIPABLE, CONTAMINANT_SKIPABLE, LAVA_SKIPABLE} = G,
     {RANDOM, LEFT, RIGHT} = SP,
     {COLLISION_BOTTOM, COLLISION_RIGHT, COLLISION_LEFT, COLLISION_TOP, TRANSFORM_CONTAMINANT, TRANSFORM_LAVA, TRANFORM_STONE} = FLAGS
 
@@ -94,7 +94,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         particle.indexGravity = indexGravity
 
         // SKIPS (PERF)
-        let skip1=0, skip2=0, skip3=0, pass1=0, pass2=0, pass3=0
+        let skip1=0, skip2=0, skip3=0, skip4=0,
+            pass1=0, pass2=0, pass3=0
 
         let countIndex = 0, count = indexCount[0]
         for (;countIndex<count;countIndex++) {
@@ -118,7 +119,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             } 
             else if (flags & TRANFORM_STONE) {
                 flags = indexFlags[i] &= ~TRANFORM_STONE
-                mat = replaceParticleAtIndex(gi, STONE, particle)// TODO STATIC
+                mat = replaceParticleAtIndex(gi, STONE, particle)
                 continue
             } 
 
@@ -140,9 +141,11 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 transpierceableMain = GASES
                 if (flags&COLLISION_BOTTOM) {
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
-                    if ((m_B^mat|m_BR^mat|m_BL^mat|m_R^mat|m_L^mat) === 0 && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
+                    
+                    if (m_B&WATER_SKIPABLE&&m_BR&WATER_SKIPABLE&&m_BL&WATER_SKIPABLE&&m_R&WATER_SKIPABLE&&m_L&WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
+                    
                     applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    //behaviorMovementLock = false
+                    //behaviorMovementLock = false // TODO FIX
                 }
             }
             else if (mat === GRAVEL) {
@@ -157,9 +160,9 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 transpierceableMain = GASES
                 if (flags&COLLISION_TOP) {
                     const m_T = gridMaterials[getAdjacencyCoords(oldX, oldY-1)], m_TR = gridMaterials[getAdjacencyCoords(oldX+1, oldY-1)], m_TL = gridMaterials[getAdjacencyCoords(oldX-1, oldY-1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)]
-                    if ((m_T^mat|m_TR^mat|m_TL^mat|m_R^mat|m_L^mat) === 0 && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
+                    if (m_T&INVERTED_WATER_SKIPABLE&&m_TR&INVERTED_WATER_SKIPABLE&&m_TL&INVERTED_WATER_SKIPABLE&&m_R&INVERTED_WATER_SKIPABLE&&m_L&INVERTED_WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     applyInvertedWaterBehavior(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    behaviorMovementLock = false
+                    //behaviorMovementLock = false //TODO FIX
                 }
             }
             else if (mat === CONTAMINANT) {
@@ -170,42 +173,32 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                           gi_L = getAdjacencyCoords(oldX-1, oldY), m_L = gridMaterials[gi_L],
                           gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = gridMaterials[gi_T],
                           m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)],
-                          m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)],
-                          velocitySkip = abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD,
-                          liquidContainementSkip = (m_B^mat|m_BR^mat|m_BL^mat|m_R^mat|m_L^mat) === 0
+                          m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
 
-                    // TODO stricter check, like if contained by not contaminable
-                    if (liquidContainementSkip && (m_T^mat) === 0 && velocitySkip) {skip1++;continue}pass1++
-                    applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
+                    if ((m_B|m_R|m_L|m_T) & CONTAMINABLE) applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
 
-                    if (liquidContainementSkip && velocitySkip) {skip1++;continue}pass1++
+                    if (m_B&CONTAMINANT_SKIPABLE&&m_BR&CONTAMINANT_SKIPABLE&&m_BL&CONTAMINANT_SKIPABLE&&m_R&CONTAMINANT_SKIPABLE&&m_L&CONTAMINANT_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    behaviorMovementLock = false
+                    behaviorMovementLock = false //TODO FIX
                 } 
             }
             else if (mat === LAVA) {
                 transpierceableMain = GASES
                 if (flags&COLLISION_BOTTOM) {
-                    if (RT[rIndex++&RTSize] <= LAVA_MOVEMENT_CHANCE) {continue}// TODO ADD NEW SKIP++
+                    if (RT[rIndex++&RTSize] <= LAVA_MOVEMENT_CHANCE) {skip4++;continue}
 
                     const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = gridMaterials[gi_B], 
                           gi_R = getAdjacencyCoords(oldX+1, oldY), m_R = gridMaterials[gi_R],
                           gi_L = getAdjacencyCoords(oldX-1, oldY), m_L = gridMaterials[gi_L],
                           gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = gridMaterials[gi_T],
                           m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)],
-                          m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)],
-                          velocitySkip = abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD,
-                          liquidContainementSkip = (m_B^mat|m_BR^mat|m_BL^mat|m_R^mat|m_L^mat) === 0
+                          m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
                     
-                    RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE
+                    if ((m_B|m_R|m_L|m_T) & (MELTABLE|LIQUIDS)) applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
 
-                    // TODO stricter check, like if contained by not meltable
-                    if (liquidContainementSkip && (m_T^mat) === 0 && velocitySkip) {skip1++;continue}pass1++
-                    applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
-
-                    if (liquidContainementSkip && velocitySkip) {skip1++;continue}pass1++
+                    if (m_B&LAVA_SKIPABLE&&m_BR&LAVA_SKIPABLE&&m_BL&LAVA_SKIPABLE&&m_R&LAVA_SKIPABLE&&m_L&LAVA_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    behaviorMovementLock = false
+                    behaviorMovementLock = false //TODO FIX
                 } 
             }
 
@@ -228,18 +221,20 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 if (!hasNoGdy) checkCollisionsY(i, mat, gdy, oldX, oldY, transpierceableMain, particle, cache)
                 if (!hasNoGdx) checkCollisionsX(i, gi, gdx, oldX, transpierceableMain, particle, cache)
             }
-
-            //console.log("END -", "OLDPOS", [oldX, oldY], "NEWPOS", [newX, newY], cache.newX, cache.newY)
             
             // UPDATE GRID
             updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache)
+
+            // TEMP PERF
+            const pxSize = 4
+            simulation.render.stroke(Render.getPositionsRect([cache.newX*pxSize-1, cache.newY*pxSize-1], [cache.newX*pxSize+pxSize+1, cache.newY*pxSize+pxSize+1]), [0,255,255,1])
         }
 
         // PERF
         if (CONFIG.showSkips && count) {
             const skipped = skip1+skip2+skip3, total = count||1
-            console.log("SKIPS :", skipped+"/"+total, "("+((skipped/total)*100).toFixed(1)+"%)", "\n -> 1:", skip1, "2:", skip2, "3:", skip3, "\nACTIVE:", (total-skipped)+"/"+total, "("+(((total-skipped)/total)*100).toFixed(1)+"%)", "\n -> p1:", pass1, "p2:", pass2, "p3:", pass3)
-            skip1 = skip2 = skip3 = 0
+            console.log("SKIPS :", skipped+"/"+total, "("+((skipped/total)*100).toFixed(1)+"%)", "\n -> 1:", skip1, "2:", skip2, "3:", skip3, "4:", skip4, "\nACTIVE:", (total-skipped)+"/"+total, "("+(((total-skipped)/total)*100).toFixed(1)+"%)", "\n -> p1:", pass1, "p2:", pass2, "p3:", pass3)
+            skip1 = skip2 = skip3 = skip4 = 0
             pass1 = pass2 = pass3 = 0
             if (skipsCount++ > CONFIG.maxLogCount) {
                 skipsCount = 0
@@ -443,7 +438,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         }
     }
 
-    function updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache) {
+    function updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache) {// TODO unused params
         const gridMaterials = particle.gridMaterials,
             gridIndexes = particle.gridIndexes,
             indexPosX = particle.indexPosX,
@@ -467,16 +462,6 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 indexPosY[atI] = oy
             }
         } 
-        //else {
-        //    if (newX-oldX !== 0) {
-        //        console.log(i, "-------CANCEL-X", ": changes ->", newX-oldX, newY-oldY, "|", [indexPosX[i], indexPosY[i]], [ox, oy], "go", [newX, newY])
-        //        indexPosX[i] = ox
-        //    }
-        //    if (newY-oldY !== 0) {
-        //        console.log(i, "-------CANCEL-Y", ": changes ->", newX-oldX, newY-oldY, "|", [indexPosX[i], indexPosY[i]], [ox, oy], "go", [newX, newY])
-        //        indexPosY[i] = oy
-        //    }
-        //}
     }
 
     // DOC TODO

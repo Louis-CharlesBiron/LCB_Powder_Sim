@@ -39,8 +39,8 @@ function readyCB(simulation) {
     //simulation.timerEnabled = true
 
     
-    //simulation.updateMapSize(23, 15)
-    //simulation.updateMapPixelSize(40)
+    simulation.updateMapSize(23, 15)
+    simulation.updateMapPixelSize(40)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
 
     //simulation.updateMapSize(300, 200)

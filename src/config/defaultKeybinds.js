@@ -54,9 +54,16 @@ const DEFAULT_KEYBINDS = {
     },
     STOP: {
         defaultFunction: "stop",
-        defaultParams: ["test"],
         keys:[TypingDevice.KEYS.ESCAPE],
         triggerType: TypingDevice.TRIGGER_TYPES.ONCE
+    },
+    FULL_STOP: {
+        defaultFunction: "stop",
+        defaultParams: [true],
+        requiredKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.X],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
     },
     CLEAR: {
         defaultFunction: "clear",
