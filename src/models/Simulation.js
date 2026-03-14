@@ -1217,6 +1217,8 @@ class Simulation {
     TEST_CRAZY() {
         Object.values(Simulation.MATERIALS).forEach(mat=>{
             this.updateMaterialSettings(mat, {
+                hasVelXOffset:true,
+                hasVelYOffset:true,
                 velXOffsetMin:-200,
                 velXOffsetMax:200,
                 velYOffsetMin:-200,

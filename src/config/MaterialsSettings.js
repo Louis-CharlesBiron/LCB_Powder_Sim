@@ -34,7 +34,7 @@ class MaterialSettings {
 
     // MATERIALS CONFIGS //
     static {
-        const {SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, GAS} = SETTINGS.MATERIALS
+        const {SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, VAPOR} = SETTINGS.MATERIALS
 
         MaterialSettings.MATERIALS_SETTINGS[SAND] = {}
 
@@ -51,7 +51,6 @@ class MaterialSettings {
             velY:-3,
             velYOffsetMin:-2,
             velYOffsetMax:-4,
-            flags:15// TODO DEL
         }
 
         MaterialSettings.MATERIALS_SETTINGS[CONTAMINANT] = {
@@ -64,6 +63,17 @@ class MaterialSettings {
             hasGravityOffset: false
         }
 
+        MaterialSettings.MATERIALS_SETTINGS[VAPOR] = {
+            gravity: -1,
+            //hasGravityOffset: false,
+            gravityOffsetMin:-1.5,
+            gravityOffsetMax:0,
+            velY:0,
+            velYOffsetMin:-4,
+            velYOffsetMax:-.5,
+            velXOffsetMin:-2,
+            velXOffsetMax:2,
+        }
 
 
         Object.values(SETTINGS.MATERIALS).forEach(material=>MaterialSettings.MATERIALS_SETTINGS[material] ??= {})
