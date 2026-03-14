@@ -31,7 +31,7 @@ function readyCB(simulation) {
 
     if (!(simulation instanceof Simulation)) return
 
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.LAVA)
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.INVERTED_WATER)
     //simulation.updateSidePriority(Simulation.SIDE_PRIORITIES.LEFT)
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
@@ -39,8 +39,8 @@ function readyCB(simulation) {
     //simulation.timerEnabled = true
 
     
-    simulation.updateMapSize(23, 15)
-    simulation.updateMapPixelSize(40)
+    //simulation.updateMapSize(23, 15)
+    //simulation.updateMapPixelSize(40)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
 
     //simulation.updateMapSize(300, 200)

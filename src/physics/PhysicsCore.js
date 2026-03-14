@@ -61,7 +61,8 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     // CONFIG
     CONTAMINATION_CHANCE = null,
     LAVA_MOVEMENT_CHANCE = null,
-    LAVA_MELT_CHANCE = null
+    LAVA_MELT_CHANCE = null,
+    EQUIVALENT_TRANSPIERCE_CHANCE = null
     
 
     // DOC TODO
@@ -82,6 +83,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         CONTAMINATION_CHANCE = CONFIG.contaminationChance
         LAVA_MOVEMENT_CHANCE = CONFIG.lavaMovementChance
         LAVA_MELT_CHANCE = CONFIG.lavaMeltChance
+        EQUIVALENT_TRANSPIERCE_CHANCE = CONFIG.equivalentTranspierceChance
 
         particle.indexCount = indexCount
         particle.gridIndexes = gridIndexes
@@ -144,6 +146,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                     
                     if (m_B&WATER_SKIPABLE&&m_BR&WATER_SKIPABLE&&m_BL&WATER_SKIPABLE&&m_R&WATER_SKIPABLE&&m_L&WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     
+                    if (RT[rIndex++&RTSize] <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= INVERTED_WATER
                     applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
                     //behaviorMovementLock = false // TODO FIX
                 }
@@ -156,11 +159,13 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                     behaviorMovementLock = false
                 }
             }
-            else if (mat === INVERTED_WATER) {// TODO, give water a 5% chance to travel through it a block
+            else if (mat === INVERTED_WATER) {
                 transpierceableMain = GASES
                 if (flags&COLLISION_TOP) {
                     const m_T = gridMaterials[getAdjacencyCoords(oldX, oldY-1)], m_TR = gridMaterials[getAdjacencyCoords(oldX+1, oldY-1)], m_TL = gridMaterials[getAdjacencyCoords(oldX-1, oldY-1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)]
                     if (m_T&INVERTED_WATER_SKIPABLE&&m_TR&INVERTED_WATER_SKIPABLE&&m_TL&INVERTED_WATER_SKIPABLE&&m_R&INVERTED_WATER_SKIPABLE&&m_L&INVERTED_WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
+                    
+                    if (RT[rIndex++&RTSize] <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= WATER
                     applyInvertedWaterBehavior(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache)
                     //behaviorMovementLock = false //TODO FIX
                 }
@@ -223,11 +228,11 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             }
             
             // UPDATE GRID
-            updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache)
+            updateGrid(i, gi, mat, ox, oy, transpierceableMain, particle, cache)
 
             // TEMP PERF
-            const pxSize = 4
-            simulation.render.stroke(Render.getPositionsRect([cache.newX*pxSize-1, cache.newY*pxSize-1], [cache.newX*pxSize+pxSize+1, cache.newY*pxSize+pxSize+1]), [0,255,255,1])
+            //const pxSize = 4
+            //simulation.render.stroke(Render.getPositionsRect([cache.newX*pxSize-1, cache.newY*pxSize-1], [cache.newX*pxSize+pxSize+1, cache.newY*pxSize+pxSize+1]), [0,255,255,1])
         }
 
         // PERF
@@ -438,7 +443,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         }
     }
 
-    function updateGrid(i, gi, mat, oldX, oldY, ox, oy, transpierceableMain, particle, cache) {// TODO unused params
+    function updateGrid(i, gi, mat, ox, oy, transpierceableMain, particle, cache) {
         const gridMaterials = particle.gridMaterials,
             gridIndexes = particle.gridIndexes,
             indexPosX = particle.indexPosX,

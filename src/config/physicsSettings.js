@@ -6,5 +6,6 @@ const DEFAULT_PHYSICS_SETTINGS = {
     $randomTableSize: 1<<16,
     contaminationChance: .2,
     lavaMovementChance: .855,
-    lavaMeltChance: .0008
+    lavaMeltChance: .0008,
+    equivalentTranspierceChance: .025,
 }
