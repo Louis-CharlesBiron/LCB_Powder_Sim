@@ -1083,7 +1083,6 @@ class Simulation {
                 }
             }
             else if (isExact) {
-                //console.log(exportType, saveWidth, saveHeight, pixelSize, data)
                 const d_ll = data.length, arraySize = saveWidth*saveHeight
                 let gridIndex = 0 
                 this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
@@ -1102,7 +1101,6 @@ class Simulation {
                         this._gridIndexes.set(new Simulation.#C_GRID_INDEXES(count).fill(-1), gridIndex)
                         gridIndex += count
                     } else {
-                        //[material, index, flags, posX, posY, velX, velY, gravity]
                         const [material, index, flags, posX, posY, velX, velY, gravity] = group.split(SETTINGS.EXPORT_DYAMIC_SEPARATOR)
                         this._gridMaterials[gridIndex] = material
                         this._gridIndexes[gridIndex] = index

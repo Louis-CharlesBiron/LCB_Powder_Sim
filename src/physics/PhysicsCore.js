@@ -549,31 +549,31 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
     // DOC TODO
     const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
-    function safeTrunc(num) {
+    function safeTrunc(num) {// (R?)
         FLOAT32_TRUNC_ARR[0] = num
         if (FLOAT32_TRUNC_ARR[0] > num) UINT32_TRUNC_ARR[0]--
         return FLOAT32_TRUNC_ARR[0]
     }
 
     // DOC TODO
-    function abs(num) {
+    function abs(num) {// (R?)
        return (num^(num>>BIT32))-(num>>BIT32)
     }
     
     // DOC TODO
-    function getAdjacencyCoords(x, y) {
+    function getAdjacencyCoords(x, y) {// (R?)
         return y*MAP_WIDTH+clamp(x)
     }
 
     // DOC TODO
-    function getSideSelectionPriority() {
-        if (SP_LEFT) return true
-        if (SP_RIGHT) return false
+    function getSideSelectionPriority() {// (R?)
         if (SP_RANDOM) return RT[rIndex++&RTSize] < .5
+        else if (SP_LEFT) return true
+        else if (SP_RIGHT) return false
     }
 
     // DOC TODO
-    function clamp(num, min=0, max=MAP_WIDTH-1) {
+    function clamp(num, min=0, max=MAP_WIDTH-1) {// (R?)
         return num < min ? min : num > max ? max : num
     }
 

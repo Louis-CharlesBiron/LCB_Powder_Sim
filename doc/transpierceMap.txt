@@ -27,10 +27,15 @@ BL - GASES
 R  - GASES
 L  - GASES
 
+===== LAVA =====
+B  - GASES
+BR - GASES
+BL - GASES
+R  - GASES
+L  - GASES
 
-
-
-
-
-
+===== VAPOR =====
+T  - AIR
+R  - AIR
+L  - AIR
 
