@@ -31,7 +31,7 @@ function readyCB(simulation) {
 
     if (!(simulation instanceof Simulation)) return
 
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.VAPOR)
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
     //simulation.updateSidePriority(Simulation.SIDE_PRIORITIES.LEFT)
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
