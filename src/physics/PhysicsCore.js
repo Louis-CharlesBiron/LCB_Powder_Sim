@@ -247,7 +247,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             updateGrid(i, gi, mat, ox, oy, transpierceableMain, particle, cache)
 
             // TEMP PERF
-            const pxSize = 10
+            const pxSize = 0
             if (pxSize) simulation.render.stroke(Render.getPositionsRect([cache.newX*pxSize-1, cache.newY*pxSize-1], [cache.newX*pxSize+pxSize+1, cache.newY*pxSize+pxSize+1]), [0,255,255,1])
         }
 

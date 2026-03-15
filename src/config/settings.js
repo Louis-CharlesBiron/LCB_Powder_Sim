@@ -13,6 +13,7 @@ const SETTINGS = {
         ELECTRICITY: 1<<8,
         COPPER: 1<<9,
         VAPOR: 1<<10,
+        FIRE: 1<<11,
     },
 
     MATERIAL_GROUPS: {
@@ -31,7 +32,7 @@ const SETTINGS = {
         LAVA_SKIPABLE:null,
         VAPOR_SKIPABLE:null,
     },
-    MATERIAL_NAMES: ["AIR_"],
+    MATERIAL_NAMES: ["VOID "],
 
     MATERIAL_STATES: {
         EMPTY:0,
