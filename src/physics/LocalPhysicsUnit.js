@@ -1,27 +1,30 @@
 class LocalPhysicsUnit {
 
-    constructor() {
-        this._physicsCore = new PhysicsCore()
+    // DOC TODO
+    constructor(physicsConfig, definitionHolder) {
+        this._physicsCore = createPhysicsCore(
+            physicsConfig,
+            definitionHolder.MATERIALS,
+            definitionHolder.MATERIAL_GROUPS,
+            definitionHolder.MATERIAL_STATES,
+            definitionHolder.MATERIAL_STATES_GROUPS,
+            definitionHolder.SIDE_PRIORITIES,
+            definitionHolder.D
+        )
     }
 
-    step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight) {
-       const [px, states]  = this._physicsCore.step(
-            pixels,
-            pxStepUpdated,
-            pxStates,
-            sidePriority,
-            mapWidth,
-            mapHeight,
-            Simulation.MATERIALS,
-            Simulation.MATERIAL_GROUPS, 
-            Simulation.D,
-            Simulation.MATERIAL_STATES,
-            Simulation.MATERIAL_STATES_GROUPS,
-            Simulation.SIDE_PRIORITIES
+    step(
+        gridIndexes, gridMaterials,
+        indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity, indexStepsAlive,
+        sidePriority, mapWidth,
+        deltaTime
+    ) {
+        this._physicsCore(
+            gridIndexes, gridMaterials,
+            indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity, indexStepsAlive,
+            sidePriority, mapWidth,
+            deltaTime
         )
-
-        pixels = px
-        pxStates = states
     }
 
 }

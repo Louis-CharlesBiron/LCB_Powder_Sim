@@ -1,0 +1,10 @@
+{
+  "name": "lcb-ps-desktop",
+  "scripts": {
+    "i": "npm install && npx @neutralinojs/neu update",
+    "start": "cls && npm run removeTmp && npx @neutralinojs/neu run",
+    "build": "cls && npx @neutralinojs/neu build",
+    "removeTmp": "powershell -Command \"if (Test-Path '.tmp/window_state.config.json') {Remove-Item '.tmp/window_state.config.json'}\""
+
+  }
+}

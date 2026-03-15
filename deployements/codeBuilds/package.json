@@ -1,0 +1,72 @@
+{
+    "name": "lcb-ps",
+    "version": "1.0.4",
+    "description": "LCB Powder Simulator is an efficient, customizable and fully native JS powder simulation.",
+    "author": {
+        "name": "Louis-Charles Biron",
+        "email": "louirlesbiron6@gmail.com",
+        "url": "https://github.com/Louis-CharlesBiron"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Louis-CharlesBiron/LCB_Powder_Sim"
+    },
+    "files": [
+        "umd/lcbPS.min.js",
+        "umd/RemotePhysicsUnit.min.js",
+        "dts/lcbPS.umd.d.ts",
+
+        "esm/raw/lcb-ps.js",
+        "esm/raw/RemotePhysicsUnit.js",
+        "dts/lcb-ps.esm.d.ts",
+
+        "readme.md",
+        "LICENSE",
+
+        "bins/global.min.js",
+        "bins/createBrowserProjectTemplate.min.js",
+        "bins/createProjectTemplate.min.js",
+        "bins/openDocumentation.min.js"
+    ],
+    "type": "module",
+    "main": "umd/lcbPS.min.js",
+    "browser": "umd/lcbPS.min.js",
+    "module": "esm/raw/lcb-ps.js",
+    "types": "dts/lcb-ps.esm.d.ts",
+    "exports": {
+        ".": {
+            "require": "./umd/lcbPS.min.js",
+            "import": "./esm/raw/lcb-ps.js",
+            "types": "./dts/lcb-ps.esm.d.ts"
+        },
+        "./lcbPS": {
+            "require": "./umd/lcbPS.min.js",
+            "types": "./dts/lcbPS.umd.d.ts"
+        }
+    },
+    "bin": {
+        "lcb-ps": "./bins/global.min.js",
+        "lcb-ps-template": "./bins/createProjectTemplate.min.js",
+        "lcb-ps-browser-template": "./bins/createBrowserProjectTemplate.min.js",
+        "lcb-ps-documentation": "./bins/openDocumentation.min.js"
+    },
+    "homepage":"https://github.com/Louis-CharlesBiron/LCB_Powder_Sim",
+    "keywords": [
+        "canvas",
+        "library",
+        "simulation",
+        "lcb",
+        "lcbps",
+        "lcb-ps",
+        "lcb-powder-simulator",
+        "multithreading",
+        "webworkers",
+        "dynamic",
+        "cool",
+        "powder",
+        "js",
+        "javascript",
+        "handmade"
+    ]
+}

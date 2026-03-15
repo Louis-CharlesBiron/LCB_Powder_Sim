@@ -1,18 +1,22 @@
-importScripts("PhysicsCore.js")
-importScripts("../config/settings.js")
+//lcb-powder-sim UMD - v1.0.4
+"use strict"
+importScripts("./lcbPS.js")
+
+if (self["lcbPS"]) {
+   self["SETTINGS"] = self["lcbPS"]["SETTINGS"],
+   self["PhysicsCore"] = self["lcbPS"]["PhysicsCore"]
+}
 
 // CONSTANTS
 const WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES,
-    WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS,
-    physicsCore = createPhysicsCore(
-        {},// TODO
-        SETTINGS.MATERIALS,
-        SETTINGS.MATERIAL_GROUPS,
-        SETTINGS.MATERIAL_STATES,
-        SETTINGS.MATERIAL_STATES_GROUPS,
-        SETTINGS.SIDE_PRIORITIES,
-        SETTINGS.D
-    )
+      WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS,
+      MATERIALS = SETTINGS.MATERIALS,
+      MATERIAL_GROUPS = SETTINGS.MATERIAL_GROUPS,
+      MATERIAL_STATES = SETTINGS.MATERIAL_STATES,
+      MATERIAL_STATES_GROUPS = SETTINGS.MATERIAL_STATES_GROUPS,
+      SIDE_PRIORITIES = SETTINGS.SIDE_PRIORITIES,
+      D = SETTINGS.D,
+      physicsCore = new PhysicsCore()
 
 // MAIN ATTRIBUTES
 let pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight
@@ -100,7 +104,8 @@ function stopLoop() {
 function step() {
     if (pixels.buffer.byteLength) {
         lastStepTime = performance.now()
-        //physicsCore.step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, MATERIALS, MATERIAL_GROUPS, D, MATERIAL_STATES, MATERIAL_STATES_GROUPS, SIDE_PRIORITIES)
+        physicsCore.step(pixels, pxStepUpdated, pxStates, sidePriority, mapWidth, mapHeight, MATERIALS, MATERIAL_GROUPS, D, MATERIAL_STATES, MATERIAL_STATES_GROUPS, SIDE_PRIORITIES)
+
         
         postMessage({type:WORKER_MESSAGE_TYPES.STEP, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
     }

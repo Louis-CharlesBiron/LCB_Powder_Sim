@@ -1,0 +1,19 @@
+const DEFAULT_COLOR_SETTINGS = {
+    grid: [240,248,255,.2],
+    border: [240,248,255,1],
+    brush: Color.red,
+    brushInner: Color.blue,
+
+    VOID:[0,0,0,0],
+    AIR:[0,0,0,0],
+    SAND:[235,235,158,1],
+    WATER:[0,15,242,.7],
+    STONE:[100,100,100,1],
+    GRAVEL:[188,188,188,1], 
+    INVERTED_WATER:[55,75,180,.75],
+    CONTAMINANT:[30,95,65,.75],
+    LAVA:[255,132,0,.95],
+    ELECTRICITY:[255,235,0,.9],
+    COPPER:[121,65,52,1],
+    VAPOR:[255,255,228,.25],
+}

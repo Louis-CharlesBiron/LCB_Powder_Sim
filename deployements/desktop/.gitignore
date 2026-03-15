@@ -1,0 +1,11 @@
+/bin
+/dist
+
+neutralino.js
+neutralino.d.ts
+
+.storage
+*.log
+/.tmp
+
+/node_modules

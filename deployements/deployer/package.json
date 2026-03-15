@@ -1,0 +1,17 @@
+{
+  "name": "deployer",
+  "type": "module",
+  "scripts": {
+    "code-build": "cls && node codeBuild.js && npx tsc && node dtsRenamer.js",
+
+    "npm-build-raw": "node npmBuild.js",
+    "npm-build": "npm run code-build && npm run npm-build-raw",
+
+    "app-build-raw": "node appBuild.js",
+    "app-build": "npm run code-build && npm run app-build-raw"
+  },
+  "devDependencies": {
+    "terser": "^5.46.0",
+    "typescript": "^5.9.2"
+  }
+}

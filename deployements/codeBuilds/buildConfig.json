@@ -1,0 +1,50 @@
+{
+    "packageJsonPath": "../codeBuilds/package.json",
+    "projectName": "lcb-powder-sim",
+
+    "projectRoot": "../../",
+    "srcRoot": "src",
+    "distRoot": "deployements/codeBuilds",
+
+    "readmePath": "readme.md",
+    "licensePath": "LICENSE",
+    "npmVersionedFilePaths": ["readme.md"],
+
+    "dtsFolderName": "dts",
+    "binsFolderName": "bins",
+    "UMDFolderName": "umd",
+    "ESMFolderName": "esm",
+    "unminifiedFolderName": "raw",
+    "buildNameUMD": "lcbPS",
+    "buildNameESM": "lcb-ps",
+
+    "mergeOrder": [
+        "[*]canvasDotEffect.js",
+        "[%]cde.js",
+        "settings.js",
+        "defaultKeybinds.js",
+        "LocalPhysicsUnit.js",
+        "PhysicsCore.js",
+        "MapGrid.js",
+        "Simulation.js"
+    ],
+    "UMDExpose": [
+        "SETTINGS",
+        "DEFAULT_KEYBINDS",
+        "PhysicsCore",
+        "MapGrid",
+        "Simulation",
+        "FPSCounter",
+        "CDEUtils"
+    ],
+    "dependencies": [],
+    "workers":[
+        {
+            "file": "RemotePhysicsUnit.js",
+            "importExpressions": ["SETTINGS", "PhysicsCore"]
+        }
+    ],
+    "workerMocks": ["DOMParser", "IntersectionObserver", "HTMLVideoElement", "HTMLAudioElement", "SVGImageElement", "HTMLImageElement", "HTMLCanvasElement", "document"],
+    "verisonedFiles": [],
+    "srcExtensions": [".js"]
+}

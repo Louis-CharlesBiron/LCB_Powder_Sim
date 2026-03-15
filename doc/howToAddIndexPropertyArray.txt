@@ -1,0 +1,25 @@
+SIMULATION.JS
+1. define in Simulation constructor
+2. add in .step() signature
+3. add in #updatePixelsFromSize()
+4. add in placePixelAtIndex()
+5. add in #getIndexArraysCopy()
+6. add in load()
+7. add in getPixelInfo()
+8. add getter
+
+[LOCAL/REMOTE]PHYSICSUNIT.JS
+1. add in .step signature
+2. add in _physicsCore() call
+
+PHYSICSCORE.JS
+1. add in particle definition
+2. add in physicsStep() signature 
+3. add in particle assignement
+4. add in replaceParticleAtIndex()
+
+MATERIALSETTINGS.JS
+1. add in #DEFAULT_MATERIAL_SETTINGS
+
+~INDEX.JS~
+1. add in particleStatus
