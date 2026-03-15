@@ -30,6 +30,11 @@ class MaterialSettings {
         gravityOffsetMax:20,
         gravityOffsetDecimals:null,
         hasGravityOffset:null,
+
+        stepsAlive:0,
+        stepsAliveOffsetMin:0,
+        stepsAliveOffsetMax:0,
+        hasStepsAliveOffset:null,
     }
 
     // MATERIALS CONFIGS //
@@ -65,14 +70,16 @@ class MaterialSettings {
 
         MaterialSettings.MATERIALS_SETTINGS[VAPOR] = {
             gravity: -1,
-            //hasGravityOffset: false,
             gravityOffsetMin:-1.5,
             gravityOffsetMax:0,
+
             velY:0,
             velYOffsetMin:-4,
             velYOffsetMax:-.5,
             velXOffsetMin:-2,
             velXOffsetMax:2,
+
+            stepsAliveOffsetMax:DEFAULT_PHYSICS_SETTINGS.vaporDecayThreshold-5,
         }
 
 
@@ -97,6 +104,8 @@ class MaterialSettings {
 
         adjustedSettings.hasGravityOffset ??= Boolean(adjustedSettings.gravityOffsetMin||adjustedSettings.gravityOffsetMax)
         adjustedSettings.gravityOffsetDecimals ??= SimUtils.getMaxDecimals(adjustedSettings.gravityOffsetMin, adjustedSettings.gravityOffsetMax)
+
+        adjustedSettings.hasStepsAliveOffset ??= Boolean(adjustedSettings.stepsAliveOffsetMin||adjustedSettings.stepsAliveOffsetMax)
 
         MaterialSettings.MATERIALS_SETTINGS[material] = adjustedSettings
     }

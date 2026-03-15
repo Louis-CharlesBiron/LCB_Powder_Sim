@@ -17,7 +17,7 @@ const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,
     GROUND_VELX_DECELERATION_RATE = 135
 
 // DOC TODO
-function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
+function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
     console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
     
     // CONSTANTS //
@@ -29,6 +29,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     {AIR, STONE, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, ELECTRICITY, COPPER, VAPOR} = M,
     {
         GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, STATIC,
+        ALIVE_TRACKING,
         WATER_SKIPABLE, INVERTED_WATER_SKIPABLE, CONTAMINANT_SKIPABLE, LAVA_SKIPABLE, VAPOR_SKIPABLE,
     } = G,
     {RANDOM, LEFT, RIGHT} = SP,
@@ -52,6 +53,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         indexVelX: null,
         indexVelY: null,
         indexGravity: null,
+        indexStepsAlive: null,
     },
     cache = {
         dx: null,
@@ -66,14 +68,15 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     VAPOR_MOVEMENT_CHANCE = null,
     LAVA_MOVEMENT_CHANCE = null,
     LAVA_MELT_CHANCE = null,
-    EQUIVALENT_TRANSPIERCE_CHANCE = null
+    EQUIVALENT_TRANSPIERCE_CHANCE = null,
+    VAPOR_DECAY_THRESHOLD = null
     
 
     // DOC TODO
     function physicsStep(
         gridIndexes, gridMaterials,
-        indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity,
-        sidePriority, mapWidth, mapHeight,
+        indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity, indexStepsAlive,
+        sidePriority, mapWidth,
         deltaTime
     ) {
         if (CONFIG.timerEnabled) handleTimerPre()
@@ -89,6 +92,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         LAVA_MOVEMENT_CHANCE = CONFIG.lavaMovementChance
         LAVA_MELT_CHANCE = CONFIG.lavaMeltChance
         EQUIVALENT_TRANSPIERCE_CHANCE = CONFIG.equivalentTranspierceChance
+        VAPOR_DECAY_THRESHOLD = CONFIG.vaporDecayThreshold
 
         particle.indexCount = indexCount
         particle.gridIndexes = gridIndexes
@@ -99,6 +103,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
         particle.indexVelX = indexVelX
         particle.indexVelY = indexVelY
         particle.indexGravity = indexGravity
+        particle.indexStepsAlive = indexStepsAlive
 
         // SKIPS (PERF)
         let skip1=0, skip2=0, skip3=0, skip4=0,
@@ -115,6 +120,14 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
 
             if (i==null || i == -1) console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
 
+            // INCREMENT STEPS ALIVE
+            if (mat & ALIVE_TRACKING) {
+                if (mat === VAPOR && ++indexStepsAlive[i] >= VAPOR_DECAY_THRESHOLD) {
+                    replaceParticleAtIndex(gi, AIR, particle)
+                    continue
+                }
+            }
+
             // TRANSFORMS
             if (flags & TRANSFORM_CONTAMINANT) {
                 flags = indexFlags[i] &= ~TRANSFORM_CONTAMINANT
@@ -125,8 +138,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
                 mat = replaceParticleAtIndex(gi, LAVA, particle)
             } 
             else if (flags & TRANFORM_STONE) {
-                flags = indexFlags[i] &= ~TRANFORM_STONE
-                mat = replaceParticleAtIndex(gi, STONE, particle)
+                replaceParticleAtIndex(gi, STONE, particle)
                 continue
             } 
 
@@ -509,7 +521,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
     // DOC TODO
     function replaceParticleAtIndex(gridIndex, material, particle) {
         const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount,
-              indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity,
+              indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity, indexStepsAlive = particle.indexStepsAlive,
               isStatic = material & STATIC, oldIndex = gridIndexes[gridIndex]
 
     
@@ -526,17 +538,18 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {
             indexVelX[oldIndex] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
             indexVelY[oldIndex] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
             indexGravity[oldIndex] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
+            indexStepsAlive[oldIndex] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
             gridIndexes[gridIndex] = oldIndex
         }
         else if (isStatic) {
             const i = --indexCount[0]
             if (oldIndex !== i) {
-                const x = indexPosX[oldIndex] = indexPosX[i],
-                        y = indexPosY[oldIndex] = indexPosY[i]
+                const x = indexPosX[oldIndex] = indexPosX[i], y = indexPosY[oldIndex] = indexPosY[i]
                 indexFlags[oldIndex] = indexFlags[i]
                 indexVelX[oldIndex] = indexVelX[i]
                 indexVelY[oldIndex] = indexVelY[i]
                 indexGravity[oldIndex] = indexGravity[i]
+                indexStepsAlive[oldIndex] = indexStepsAlive[i]
                 gridIndexes[(y|0)*MAP_WIDTH+(x|0)] = oldIndex
             }
             gridIndexes[gridIndex] = -1
