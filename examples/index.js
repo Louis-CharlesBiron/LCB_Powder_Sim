@@ -128,6 +128,7 @@ function statusLoopCore() {
         <span>Pos: [${particleInfo[3].toFixed(2)}, ${particleInfo[4].toFixed(2)}]</span>
         <span>Vel: [${particleInfo[5].toFixed(2)}, ${particleInfo[6].toFixed(2)}]</span>
         <span>Gravity: ${particleInfo[7]}</span>
+        <span>StepsAlive: ${particleInfo[8]}</span>
         <span>----------</span>
         `.trim() : ""
     }
