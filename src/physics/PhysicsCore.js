@@ -8,32 +8,50 @@ const FLAGS = {
 
     TRANSFORM_CONTAMINANT: 1<<4,
     TRANSFORM_LAVA: 1<<5,
-    TRANFORM_STONE: 1<<6
+    TRANSFORM_STONE: 1<<6,
+    TRANSFORM_FIRE: 1<<7,
+    TRANSFORM_VAPOR: 1<<8,
+    TRANSFORM_AIR: 1<<9,
 }
 
 const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,
     Y_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,
     X_VELOCITY_SKIP_THRESHOLD = 5,
-    GROUND_VELX_DECELERATION_RATE = 135
+    GROUND_VELX_DECELERATION_RATE = 135,
+    TRANSFORM_PREFIX = "TRANSFORM_"
 
 // DOC TODO
-function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
+function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES) {
     console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
     
+    // COMPUTE VAR UTILS
+    const TRANSFORMS_MAP = [],
+    HAS_TRANSFORM = Object.entries(FLAGS).reduce((a,b)=>{
+        const isTransforms = b[0].includes(TRANSFORM_PREFIX)
+        if (isTransforms) {
+            a |= b[1]
+            TRANSFORMS_MAP[b[1]] = MATERIAL_NAMES.indexOf(b[0].split(TRANSFORM_PREFIX)[1])
+        }
+        return a
+    }, 0)
+
     // CONSTANTS //
     const RTSize = CONFIG.$randomTableSize-1,
         RT = createRandomTable(),
         BIT32 = 31,
 
     // ENUMS DESTRUCTURING
-    {AIR, STONE, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, ELECTRICITY, COPPER, VAPOR} = M,
+    {AIR, STONE, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, FIRE, VAPOR} = MATERIALS,
     {
-        GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, STATIC,
+        GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, INFLAMMABLE, FIRE_EXTINGUISH, STATIC,
         ALIVE_TRACKING,
-        WATER_SKIPABLE, INVERTED_WATER_SKIPABLE, CONTAMINANT_SKIPABLE, LAVA_SKIPABLE, VAPOR_SKIPABLE,
-    } = G,
-    {RANDOM, LEFT, RIGHT} = SP,
-    {COLLISION_BOTTOM, COLLISION_RIGHT, COLLISION_LEFT, COLLISION_TOP, TRANSFORM_CONTAMINANT, TRANSFORM_LAVA, TRANFORM_STONE} = FLAGS
+        WATER_SKIPABLE, INVERTED_WATER_SKIPABLE, CONTAMINANT_SKIPABLE, LAVA_SKIPABLE, VAPOR_SKIPABLE, FIRE_SKIPABLE,
+    } = MATERIAL_GROUPS,
+    {RANDOM, LEFT, RIGHT} = SIDE_PRIORITIES,
+    {
+        COLLISION_BOTTOM, COLLISION_RIGHT, COLLISION_LEFT, COLLISION_TOP, COLLISION_Y, COLLISION_X,
+        TRANSFORM_CONTAMINANT, TRANSFORM_LAVA, TRANSFORM_STONE, TRANSFORM_FIRE, TRANSFORM_VAPOR, TRANSFORM_AIR
+    } = FLAGS
 
     // VARIABLES //
     // TIMER
@@ -55,21 +73,17 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
         indexGravity: null,
         indexStepsAlive: null,
     },
-    cache = {
-        dx: null,
-        dy: null,
-        velX: null,
-        velY: null,
-        newX: null,
-        newY: null,
-    },
+    cache = {dx: null,dy: null,velX: null,velY: null,newX: null,newY: null},
     // CONFIG
+    DECAY_THRESHOLDS = [],
     CONTAMINATION_CHANCE = null,
+    FIRE_INFLAMMATION_CHANCE = null,
     VAPOR_MOVEMENT_CHANCE = null,
     LAVA_MOVEMENT_CHANCE = null,
     LAVA_MELT_CHANCE = null,
     EQUIVALENT_TRANSPIERCE_CHANCE = null,
-    VAPOR_DECAY_THRESHOLD = null
+    FIRE_PROPAGATES_VAPOR_CREATION_CHANCE = null,
+    FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE = null
     
 
     // DOC TODO
@@ -87,12 +101,16 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
         SP_RIGHT = sidePriority===RIGHT
         MAP_WIDTH = mapWidth 
         // CONFIG
+        DECAY_THRESHOLDS[VAPOR] = CONFIG.vaporDecayThreshold
+        DECAY_THRESHOLDS[FIRE] = CONFIG.fireDecayThreshold
         CONTAMINATION_CHANCE = CONFIG.contaminationChance
         VAPOR_MOVEMENT_CHANCE = CONFIG.vaporMovementChance
         LAVA_MOVEMENT_CHANCE = CONFIG.lavaMovementChance
         LAVA_MELT_CHANCE = CONFIG.lavaMeltChance
         EQUIVALENT_TRANSPIERCE_CHANCE = CONFIG.equivalentTranspierceChance
-        VAPOR_DECAY_THRESHOLD = CONFIG.vaporDecayThreshold
+        FIRE_INFLAMMATION_CHANCE = CONFIG.fireInflammationChance
+        FIRE_PROPAGATES_VAPOR_CREATION_CHANCE = CONFIG.firePropagatesVaporCreationChance
+        FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE = CONFIG.fireExtinguishesVaporCreationChance
 
         particle.indexCount = indexCount
         particle.gridIndexes = gridIndexes
@@ -120,27 +138,27 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
 
             if (i==null || i == -1) console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
 
-            // INCREMENT STEPS ALIVE
-            if (mat & ALIVE_TRACKING) {
-                if (mat === VAPOR && ++indexStepsAlive[i] >= VAPOR_DECAY_THRESHOLD) {
-                    replaceParticleAtIndex(gi, AIR, particle)
-                    continue
-                }
+            // DECAY
+            if ((mat & ALIVE_TRACKING) && ++indexStepsAlive[i] >= DECAY_THRESHOLDS[mat]) {
+                let newMat = AIR
+
+                if (RT[rIndex++&RTSize] <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE) newMat = VAPOR
+
+                replaceParticleAtIndex(gi, newMat, particle)
+                continue
             }
 
             // TRANSFORMS
-            if (flags & TRANSFORM_CONTAMINANT) {
-                flags = indexFlags[i] &= ~TRANSFORM_CONTAMINANT
-                mat = replaceParticleAtIndex(gi, CONTAMINANT, particle)
+            const transformFlag = flags & HAS_TRANSFORM
+            if (transformFlag) {
+                let newMat = TRANSFORMS_MAP[transformFlag]
+
+                if ((flags & TRANSFORM_FIRE) && RT[rIndex++&RTSize] <= FIRE_PROPAGATES_VAPOR_CREATION_CHANCE) newMat = VAPOR
+
+                mat = replaceParticleAtIndex(gi, newMat, particle)
+                if (mat & STATIC) continue
+                flags = indexFlags[i] &= ~transformFlag
             }
-            else if (flags & TRANSFORM_LAVA) {
-                flags = indexFlags[i] &= ~TRANSFORM_LAVA
-                mat = replaceParticleAtIndex(gi, LAVA, particle)
-            } 
-            else if (flags & TRANFORM_STONE) {
-                replaceParticleAtIndex(gi, STONE, particle)
-                continue
-            } 
 
             // MATERIAL SPECIFICS
             if (mat === SAND) {
@@ -189,7 +207,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
             }
             else if (mat === CONTAMINANT) {
                 transpierceableMain = GASES
-                if (flags&COLLISION_BOTTOM) {
+                if (flags&COLLISION_Y) {
                     const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = gridMaterials[gi_B], 
                           gi_R = getAdjacencyCoords(oldX+1, oldY), m_R = gridMaterials[gi_R],
                           gi_L = getAdjacencyCoords(oldX-1, oldY), m_L = gridMaterials[gi_L],
@@ -232,6 +250,23 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
                     if (m_T&VAPOR_SKIPABLE&&m_R&VAPOR_SKIPABLE&&m_L&VAPOR_SKIPABLE) {skip1++;continue}pass1++
 
                     applyVaporBehavior(i, m_T, m_R, m_L, transpierceableMain, indexFlags, cache)
+                }
+            }
+            else if (mat === FIRE) {
+                transpierceableMain = AIR|VAPOR
+
+                const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = gridMaterials[gi_B], 
+                      gi_R = getAdjacencyCoords(oldX+1, oldY), m_R = gridMaterials[gi_R],
+                      gi_L = getAdjacencyCoords(oldX-1, oldY), m_L = gridMaterials[gi_L],
+                      gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = gridMaterials[gi_T]??mat
+
+                if ((m_B|m_R|m_L|m_T) & (INFLAMMABLE|FIRE_EXTINGUISH)) applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
+
+                if (flags&COLLISION_TOP) {
+                    const m_TR = gridMaterials[getAdjacencyCoords(oldX+1, oldY-1)], m_TL = gridMaterials[getAdjacencyCoords(oldX-1, oldY-1)]
+
+                    if (m_T&FIRE_SKIPABLE&&m_TR&FIRE_SKIPABLE&&m_TL&FIRE_SKIPABLE&&m_R&FIRE_SKIPABLE&&m_L&FIRE_SKIPABLE) {skip1++;continue}pass1++
+                    applyInvertedWaterBehavior(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache)
                 }
             }
 
@@ -298,7 +333,7 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
 
     // DOC TODO (R?)
     function applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
-        if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
+        if (m_B & transpierceableMain) indexFlags[i] &= ~COLLISION_BOTTOM
         else {
             // GO SIDES
             if (getSideSelectionPriority()) {
@@ -364,20 +399,20 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
     }
 
     // DOC TODO (R?)
-    function applyContaminantBehavior(m_B, m_R, m_L, m_T, i_B, i_R, i_L, i_T, particle) {
+    function applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
         const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
 
-        if (m_B&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[i_B]] |= TRANSFORM_CONTAMINANT
-        if (m_R&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE)indexFlags[gridIndexes[i_R]] |= TRANSFORM_CONTAMINANT
-        if (m_L&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[i_L]] |= TRANSFORM_CONTAMINANT
-        if (m_T&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[i_T]] |= TRANSFORM_CONTAMINANT
+        if (m_B&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_CONTAMINANT
+        if (m_R&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_CONTAMINANT
+        if (m_L&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_CONTAMINANT
+        if (m_T&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_CONTAMINANT
     }
     
     // DOC TODO (R?)
     function applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
         const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
 
-        if (m_B&LIQUIDS||m_R&LIQUIDS||m_L&LIQUIDS||m_T&LIQUIDS) indexFlags[gridIndexes[gi]] |= TRANFORM_STONE
+        if (m_B&LIQUIDS||m_R&LIQUIDS||m_L&LIQUIDS||m_T&LIQUIDS) indexFlags[gridIndexes[gi]] |= TRANSFORM_STONE
 
         if (m_B&MELTABLE && RT[rIndex++&RTSize] <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_LAVA
         if (m_R&MELTABLE && RT[rIndex++&RTSize] <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_LAVA
@@ -398,6 +433,18 @@ function createPhysicsCore(CONFIG, M, G, S, SG, SP, D) {// TODO REMOVE UNUSED
                 else if (m_L & transpierceableMain) cache.dx -= 1
             }
         }
+    }
+    
+    // DOC TODO (R?)
+    function applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
+        const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
+
+        if ((m_B|m_R|m_L|m_T) & FIRE_EXTINGUISH) indexFlags[gridIndexes[gi]] |= RT[rIndex++&RTSize] <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE ? TRANSFORM_VAPOR : TRANSFORM_AIR
+
+        if (m_B&INFLAMMABLE && RT[rIndex++&RTSize] <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_FIRE
+        if (m_R&INFLAMMABLE && RT[rIndex++&RTSize] <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_FIRE
+        if (m_L&INFLAMMABLE && RT[rIndex++&RTSize] <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_FIRE
+        if (m_T&INFLAMMABLE && RT[rIndex++&RTSize] <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_FIRE
     }
 
 

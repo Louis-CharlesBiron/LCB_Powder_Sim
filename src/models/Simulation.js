@@ -26,7 +26,7 @@ class Simulation {
     static #PHYSICS_UNIT_INSTANCES = [null, null]
     static #C_GRID_INDEXES = Int32Array
     static #C_GRID_MATERIALS = Uint16Array
-    static #C_FLAGS_SMALL = Uint8Array
+    static #C_FLAGS_SMALL = Uint16Array
     static #C_PHYSICS_REGULAR = Float32Array
     static #C_PHYSICS_SMALL = (typeof Float16Array === "undefined" ? Simulation.#C_PHYSICS_REGULAR : Float16Array)
     static #C_STEPS_ALIVE = Uint16Array

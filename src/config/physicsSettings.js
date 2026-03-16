@@ -7,11 +7,15 @@ const DEFAULT_PHYSICS_SETTINGS = {
 
     equivalentTranspierceChance: .025,
 
-    contaminationChance: .2,
-    
     vaporMovementChance: .855,
     lavaMovementChance: .855,
+
+    contaminationChance: .2,
     lavaMeltChance: .0008,
+    fireInflammationChance: .16,
+    firePropagatesVaporCreationChance: .21,
+    fireExtinguishesVaporCreationChance: .15,
 
     vaporDecayThreshold: 750,
+    fireDecayThreshold: 150,
 }

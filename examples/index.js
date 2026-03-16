@@ -31,7 +31,7 @@ function readyCB(simulation) {
 
     if (!(simulation instanceof Simulation)) return
 
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.VAPOR)
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.FIRE)
     //simulation.updateSidePriority(Simulation.SIDE_PRIORITIES.LEFT)
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
@@ -43,8 +43,8 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(40)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
 
-    //simulation.updateMapSize(300, 200)
-    //simulation.updateMapPixelSize(3)
+    //simulation.updateMapSize(400, 300)
+    //simulation.updateMapPixelSize(2)
     
     //simulation.updateMapSize(231, 149)
     //simulation.updateMapPixelSize(4)

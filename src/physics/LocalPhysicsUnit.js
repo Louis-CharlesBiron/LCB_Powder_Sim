@@ -6,10 +6,8 @@ class LocalPhysicsUnit {
             physicsConfig,
             definitionHolder.MATERIALS,
             definitionHolder.MATERIAL_GROUPS,
-            definitionHolder.MATERIAL_STATES,
-            definitionHolder.MATERIAL_STATES_GROUPS,
+            definitionHolder.MATERIAL_NAMES,
             definitionHolder.SIDE_PRIORITIES,
-            definitionHolder.D
         )
     }
 
