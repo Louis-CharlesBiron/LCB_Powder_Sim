@@ -523,7 +523,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
                     if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD)) {
                         indexVelX[i] = 0
-                        indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
+                        //indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
                     }
                     return cache.newX = (indexPosX[i] = colX-dirGdx)|0
                 }
@@ -534,7 +534,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                 const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
                 if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD)) {
                     indexVelX[i] = 0
-                    indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
+                    //indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
                 }
                 return cache.newX = (indexPosX[i] = oldX)|0
             }

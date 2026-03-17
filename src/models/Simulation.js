@@ -133,10 +133,9 @@ class Simulation {
         this._CVS.start()
         this._mouseListenerIds = [
             this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
-            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.MOVE, ()=>this._isMouseWithinSimulation = true),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.MOVE,  ()=>this._isMouseWithinSimulation = true),
             this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
-
 
         // INTERNAL LOAD CALLS
         this._initialized = Simulation.#INIT_STATES.READY
