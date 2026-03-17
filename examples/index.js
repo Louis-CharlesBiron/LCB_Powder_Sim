@@ -50,10 +50,10 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(4)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
-    //simulation.updateMapPixelSize(1)
-    //simulation.updateMapSize(975, 600)
+    simulation.updateMapPixelSize(1)
+    simulation.updateMapSize(975, 600)
+    simulation.showGrid = false
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
-    //simulation.showGrid = false
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(1920, 818)

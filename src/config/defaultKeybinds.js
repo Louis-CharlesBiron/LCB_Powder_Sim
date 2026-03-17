@@ -39,12 +39,12 @@ const DEFAULT_KEYBINDS = {
     STEP_FAST: {
         defaultFunction: "step",
         keys:[TypingDevice.KEYS.ARROW_UP],
-        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.FAST_REPEATING
     },
     BACK_STEP_FAST: {
         defaultFunction: "backStep",
         keys:[TypingDevice.KEYS.ARROW_DOWN],
-        triggerType: TypingDevice.TRIGGER_TYPES.MEDIUM_REPEATING
+        triggerType: TypingDevice.TRIGGER_TYPES.FAST_REPEATING
     },
 
     START: {
@@ -146,17 +146,17 @@ const DEFAULT_KEYBINDS = {
         triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
         preventDefault: true
     },
-    SELECT_ELECTRICITY: {
+    SELECT_VAPOR: {
         defaultFunction: "updateSelectedMaterial",
-        defaultParams: [SETTINGS.MATERIALS.ELECTRICITY],
+        defaultParams: [SETTINGS.MATERIALS.VAPOR],
         cancelKeys: [TypingDevice.KEYS.CONTROL],
         keys:[TypingDevice.KEYS.DIGIT_8, TypingDevice.KEYS.NUMPAD_8],
         triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
         preventDefault: true
     },
-    SELECT_COPPER: {
+    SELECT_FIRE: {
         defaultFunction: "updateSelectedMaterial",
-        defaultParams: [SETTINGS.MATERIALS.COPPER],
+        defaultParams: [SETTINGS.MATERIALS.FIRE],
         cancelKeys: [TypingDevice.KEYS.CONTROL],
         keys:[TypingDevice.KEYS.DIGIT_9, TypingDevice.KEYS.NUMPAD_9],
         triggerType: TypingDevice.TRIGGER_TYPES.ONCE,

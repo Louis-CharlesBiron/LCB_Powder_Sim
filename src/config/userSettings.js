@@ -24,9 +24,11 @@ const DEFAULT_USER_SETTINGS = {
 
     smoothDrawingEnabled: true,
     drawingDisabled: false,
+    useMouseVelocityForCreation: true,
+    mouseVelocityCoefficient: .09,
 }
 
 ;(()=>{
-    // SET DEFAULT USER SETTINGS autoSimulationSizing
+    // SET DEFAULT autoSimulationSizing
     if (DEFAULT_USER_SETTINGS.autoSimulationSizing === null) DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
 })()

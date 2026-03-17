@@ -881,7 +881,7 @@ class Simulation {
         const gridMaterials = this._gridMaterials, oldMat = gridMaterials[gridIndex]
         if (!oldMat || material === oldMat || (replaceMode !== Simulation.REPLACE_MODES.ALL && !(oldMat & replaceMode))) return
 
-        const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC), gridIndexes = this._gridIndexes, oldIndex = gridIndexes[gridIndex], indexCount = this._indexCount
+        const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC), gridIndexes = this._gridIndexes, oldIndex = gridIndexes[gridIndex], indexCount = this._indexCount, userSettings = this._userSettings
 
         // DELETE IF DYNAMIC 
         if (oldIndex !== -1) {
@@ -901,7 +901,7 @@ class Simulation {
         }
 
         // INIT IF DYNAMIC
-        if (!isStatic && indexCount[0] < this._userSettings.maxDynamicMaterialCount) {
+        if (!isStatic && indexCount[0] < userSettings.maxDynamicMaterialCount) {
             const mapWidth = this._mapGrid.mapWidth, random = SimUtils.random,
                 i = indexCount[0]++,
                 y = (gridIndex/mapWidth)|0,
@@ -912,10 +912,20 @@ class Simulation {
             this._indexFlags[i] = materialSettings.flags
             this._indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
             this._indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
-            this._indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
-            this._indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
             this._indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
             this._indexStepsAlive[i] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
+            
+            if (userSettings.useMouseVelocityForCreation) {
+                const mouse = this.mouse, speed = mouse.speed, coefficient = userSettings.mouseVelocityCoefficient, rad = -CDEUtils.toRad(mouse.dir)
+                this._indexVelX[i] = Math.cos(rad)*speed*coefficient
+                this._indexVelY[i] = Math.sin(rad)*speed*coefficient
+            } 
+            else {
+                this._indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+                this._indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+            }
+
+
             gridIndexes[gridIndex] = i
         }
         else if (isStatic) gridMaterials[gridIndex] = material

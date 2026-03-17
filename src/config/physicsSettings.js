@@ -12,7 +12,7 @@ const DEFAULT_PHYSICS_SETTINGS = {
 
     contaminationChance: .2,
     lavaMeltChance: .0008,
-    fireInflammationChance: .16,
+    fireInflammationChance: .175,
     firePropagatesVaporCreationChance: .21,
     fireExtinguishesVaporCreationChance: .15,
 
