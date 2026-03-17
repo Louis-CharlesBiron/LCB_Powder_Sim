@@ -26,14 +26,14 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
     
     // COMPUTE VAR UTILS
     const TRANSFORMS_MAP = [],
-    HAS_TRANSFORM = Object.entries(FLAGS).reduce((a,b)=>{
-        const isTransforms = b[0].includes(TRANSFORM_PREFIX)
-        if (isTransforms) {
-            a |= b[1]
-            TRANSFORMS_MAP[b[1]] = MATERIAL_NAMES.indexOf(b[0].split(TRANSFORM_PREFIX)[1])
-        }
-        return a
-    }, 0)
+          HAS_TRANSFORM = Object.entries(FLAGS).reduce((a,b)=>{
+                const isTransforms = b[0].includes(TRANSFORM_PREFIX)
+                if (isTransforms) {
+                    a |= b[1]
+                    TRANSFORMS_MAP[b[1]] = MATERIAL_NAMES.indexOf(b[0].split(TRANSFORM_PREFIX)[1])
+                }
+                return a
+            }, 0)
 
     // CONSTANTS //
     const RTSize = CONFIG.$randomTableSize-1,
@@ -41,7 +41,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
         BIT32 = 31,
 
     // ENUMS DESTRUCTURING
-    {AIR, STONE, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, FIRE, VAPOR} = MATERIALS,
+    {AIR, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, FIRE, VAPOR} = MATERIALS,
     {
         GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, INFLAMMABLE, FIRE_EXTINGUISH, STATIC,
         ALIVE_TRACKING,
@@ -75,6 +75,8 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
     },
     cache = {dx: null,dy: null,velX: null,velY: null,newX: null,newY: null},
     // CONFIG
+    BASE_FRICTION = null,
+    FRICTION_COEFFICIENT = null,
     DECAY_THRESHOLDS = [],
     CONTAMINATION_CHANCE = null,
     FIRE_INFLAMMATION_CHANCE = null,
@@ -101,6 +103,8 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
         SP_RIGHT = sidePriority===RIGHT
         MAP_WIDTH = mapWidth 
         // CONFIG
+        BASE_FRICTION = CONFIG.baseFriction
+        FRICTION_COEFFICIENT = CONFIG.frictionCoefficient
         DECAY_THRESHOLDS[VAPOR] = CONFIG.vaporDecayThreshold
         DECAY_THRESHOLDS[FIRE] = CONFIG.fireDecayThreshold
         CONTAMINATION_CHANCE = CONFIG.contaminationChance
@@ -271,7 +275,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
             }
 
             // APPLY MOVEMENTS
-            if (behaviorMovementLock) applyForces(i, mat, deltaTime, particle, cache)
+            if (behaviorMovementLock) applyForces(i, deltaTime, particle, cache)
             const dx = cache.dx, dy = cache.dy
             if (!(dy || dx)) {skip2++;continue}pass2++
 
@@ -449,18 +453,16 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
 
 
 
-    function applyForces(i, mat, deltaTime, particle, cache) {
-        const indexFlags = particle.indexFlags, flags = indexFlags[i], gravity = particle.indexGravity[i], isBottomGravity = gravity >= 0
+    function applyForces(i, deltaTime, particle, cache) {
+        const indexFlags = particle.indexFlags, indexVelX = particle.indexVelX, flags = indexFlags[i], gravity = particle.indexGravity[i], isBottomGravity = gravity >= 0
         let velX = cache.velX, velY = cache.velY
 
         // ADD VERTICAL FORCES
         if (isBottomGravity ? (flags&COLLISION_BOTTOM) === 0 : (flags&COLLISION_TOP) === 0) velY = particle.indexVelY[i] += gravity*deltaTime
-        // DECELERATE X VEL WHEN ON GROUND
-        else if ((mat&GASES) === 0) {
-            const indexVelX = particle.indexVelX, rate = GROUND_VELX_DECELERATION_RATE*deltaTime
-            if (velX > 0) velX = indexVelX[i] = velX > rate ? velX-rate : 0
-            else velX =  indexVelX[i] = velX < -rate ? velX+rate : 0
-        }
+
+        // HORIZONTAL FRICTION
+        const speed = abs(velX), rate = (BASE_FRICTION+speed*speed*.5*FRICTION_COEFFICIENT)*deltaTime
+        indexVelX[i] = speed>rate ? velX-((velX/speed)*rate) : 0 
 
         cache.velX = velX
         cache.velY = velY
@@ -472,9 +474,9 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
         const gridMaterials = particle.gridMaterials,
             indexVelY = particle.indexVelY,
             indexPosY = particle.indexPosY,
-            indexFlags = particle.indexFlags
-
-        const absGdy = abs(gdy), dirGdy = 1|(gdy>>BIT32)
+            indexFlags = particle.indexFlags,
+            absGdy = abs(gdy),
+            dirGdy = 1|(gdy>>BIT32)
 
         if (absGdy > 1) {// check collision at oldY..newY
             for (let colY=oldY+dirGdy,colI=0; colI<absGdy; colI++,colY+=dirGdy) {
@@ -510,9 +512,9 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
             indexFlags = particle.indexFlags,
             velX = cache.vel,
             newX = cache.newX,
-            newY = cache.newY
-
-        const absGdx = abs(gdx), dirGdx = 1|(gdx>>BIT32)
+            newY = cache.newY,
+            absGdx = abs(gdx),
+            dirGdx = 1|(gdx>>BIT32)
 
         if (absGdx > 1) {// check collision at oldX..newX
             for (let colX=oldX+dirGdx,colI=0; colI<absGdx; colI++,colX+=dirGdx) {

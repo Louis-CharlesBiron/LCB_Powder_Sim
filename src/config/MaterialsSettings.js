@@ -83,15 +83,15 @@ class MaterialSettings {
         }
 
         MaterialSettings.MATERIALS_SETTINGS[FIRE] = {
-            gravity: -10,
-            gravityOffsetMin:-5,
-            gravityOffsetMax:3,
+            gravity: -12,
+            gravityOffsetMin:-6,
+            gravityOffsetMax:5,
 
             velY:0,
-            velYOffsetMin:-5,
-            velYOffsetMax:-1,
-            velXOffsetMin:-20,
-            velXOffsetMax:20,
+            velYOffsetMin:-8,
+            velYOffsetMax:-2,
+            velXOffsetMin:-25,
+            velXOffsetMax:25,
 
             stepsAliveOffsetMax:DEFAULT_PHYSICS_SETTINGS.fireDecayThreshold-5,
         }
