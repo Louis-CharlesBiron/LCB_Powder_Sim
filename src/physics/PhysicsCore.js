@@ -175,7 +175,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
 
                     // CHECK MAIN DIRECTIONS
                     applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    behaviorMovementLock = false
+                    //behaviorMovementLock = false
                 } 
             }
             else if (mat === WATER) {
@@ -195,7 +195,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)]
                     if (m_B&mat && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     applyGravelBehavior(i, m_B, transpierceableMain, indexFlags)
-                    behaviorMovementLock = false
+                    //behaviorMovementLock = false
                 }
             }
             else if (mat === INVERTED_WATER) {
@@ -242,7 +242,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
 
                     if (m_B&LAVA_SKIPABLE&&m_BR&LAVA_SKIPABLE&&m_BL&LAVA_SKIPABLE&&m_R&LAVA_SKIPABLE&&m_L&LAVA_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    behaviorMovementLock = false //TODO FIX
+                    //behaviorMovementLock = false //TODO FIX
                 } 
             }
             else if (mat === VAPOR) {

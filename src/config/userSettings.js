@@ -24,7 +24,7 @@ const DEFAULT_USER_SETTINGS = {
 
     smoothDrawingEnabled: true,
     drawingDisabled: false,
-    useMouseVelocityForCreation: true,
+    useMouseVelocityForCreation: false,
     mouseVelocityCoefficient: .09,
 }
 

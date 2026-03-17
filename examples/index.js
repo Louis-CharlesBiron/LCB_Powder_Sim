@@ -50,9 +50,9 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(4)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
 
-    simulation.updateMapPixelSize(1)
-    simulation.updateMapSize(975, 600)
-    simulation.showGrid = false
+    //simulation.updateMapPixelSize(1)
+    //simulation.updateMapSize(975, 600)
+    //simulation.showGrid = false
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
 
     //simulation.updateMapPixelSize(1)
@@ -63,6 +63,7 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(100)
 
     //simulation.updateMaterialSettings(2, {velXOffsetMin:-200,velXOffsetMax:200,velYOffsetMin:-200,velYOffsetMax:200,})
+    simulation.updateMaterialSettings(2, {velX:-50})
 }
 
 
@@ -95,8 +96,9 @@ const mousePosStatus = document.getElementById("mousePosStatus"),
       zoomStatus = document.getElementById("zoomStatus"),
       particleStatus = document.getElementById("particleStatus")
 
-const MOUSE_POS_KEY = "lastMousePos", storageMousePos = localStorage.getItem(MOUSE_POS_KEY).split(",").map(x=>isFinite(+x)?+x:0)
+const MOUSE_POS_KEY = "lastMousePos", storageMousePos = localStorage.getItem(MOUSE_POS_KEY)
 if (storageMousePos) {
+    const pos = storageMousePos.split(",").map(x=>isFinite(+x)?+x:0)
     simulation.mouse._x = storageMousePos[0]
     simulation.mouse._y = storageMousePos[1]
 }

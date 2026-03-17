@@ -19,6 +19,6 @@ const DEFAULT_PHYSICS_SETTINGS = {
     vaporDecayThreshold: 750,
     fireDecayThreshold: 150,
 
-    baseFriction: 1,
+    baseFriction: 16,
     frictionCoefficient: .0525
 }
