@@ -173,6 +173,8 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     // SKIP IF CONTAINED
                     if ((m_B^mat) === 0 && ((m_BR^mat|m_BL^mat) === 0 || (m_R^mat|m_L^mat) === 0) && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
 
+                    // TODO, fix contained 1x5,3,120x1,4,2,1,1,3,2,2,8,5
+
                     // CHECK MAIN DIRECTIONS
                     applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
                     //behaviorMovementLock = false
