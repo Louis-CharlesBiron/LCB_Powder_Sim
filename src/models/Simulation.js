@@ -77,7 +77,7 @@ class Simulation {
         this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1)
         this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR)
         this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
-        this._indexCount = [0]
+        this._indexCount = new Uint32Array(1)
         this.#createIndexArrays(arraySize)
         this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_SETTINGS)
 
@@ -91,6 +91,7 @@ class Simulation {
 
         // DISPLAY
         this._userSettings = SimUtils.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
+        this.showCursor = this._userSettings.showCursor
         this._colorSettings = SimUtils.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
         this._selectedMaterial = Simulation.MATERIALS.SAND
         this._brushType = Simulation.BRUSH_TYPES.PIXEL
@@ -166,7 +167,7 @@ class Simulation {
         if (userSettings.showBrush) this.#drawBrush()
     }
 
-    // DOC TODO
+    // draws the visual boundaries of the cursor's brush
     #drawBrush() {
         if (this.mouse.valid) {
             const localCenterPos = this._mapGrid.getLocalMapPixel(this.mouse.pos)
@@ -452,7 +453,11 @@ class Simulation {
         this.renderPixels()
     }
 
-    // DOC TODO
+    /**
+     * Updates a material's physics configurations
+     * @param {Simulation.MATERIALS} material The material type to update
+     * @param {Object} settings An object containing the physics configurations to override
+     */
     updateMaterialSettings(material, settings) {
         MaterialSettings.updateMaterialSettings(material, SimUtils.getAdjustedSettings(settings, MaterialSettings.MATERIALS_SETTINGS[material]||{}))
     }
@@ -498,8 +503,8 @@ class Simulation {
     }
 
     /**
-     * Updates the shape used to draw materials on the simulation with mouse.
-     * @param {Simulation.BRUSH_TYPES} brushType The brush type to use  TODO DOC
+     * Updates the mask used to draw materials on the simulation with mouse.
+     * @param {Simulation.REPLACE_MODES} replaceMode The replace mode to use 
      */
     updateReplaceMode(replaceMode) {
         replaceMode = +replaceMode
@@ -829,57 +834,65 @@ class Simulation {
      * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    placePixelAtIndex(gridIndex, material=this._selectedMaterial, replaceMode=this._replaceMode) {// TODO OPTIMIZE
+    placePixelAtIndex(gridIndex, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.placePixelAtIndex(gridIndex, material, replaceMode))
 
         const gridMaterials = this._gridMaterials, oldMat = gridMaterials[gridIndex]
         if (!oldMat || material === oldMat || (replaceMode != Simulation.REPLACE_MODES.ALL && !(oldMat & replaceMode))) return
 
-        const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC), gridIndexes = this._gridIndexes, oldIndex = gridIndexes[gridIndex], indexCount = this._indexCount, userSettings = this._userSettings
+        const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC),
+              gridIndexes = this._gridIndexes,
+              indexFlags = this._indexFlags,
+              indexPosX = this._indexPosX,
+              indexPosY = this._indexPosY,
+              indexVelX = this._indexVelX,
+              indexVelY = this._indexVelY,
+              indexGravity = this._indexGravity,
+              indexStepsAlive = this._indexStepsAlive,
+              indexCount = this._indexCount,
+              oldIndex = gridIndexes[gridIndex],
+              userSettings = this._userSettings,
+              mapWidth = this._mapGrid.mapWidth
 
         // DELETE IF DYNAMIC 
         if (oldIndex !== -1) {
             const i = --indexCount[0]
             if (oldIndex !== i) {
-                this._indexFlags[oldIndex] = this._indexFlags[i]
-                this._indexPosX[oldIndex] = this._indexPosX[i]
-                this._indexPosY[oldIndex] = this._indexPosY[i]
-                this._indexVelX[oldIndex] = this._indexVelX[i]
-                this._indexVelY[oldIndex] = this._indexVelY[i]
-                this._indexGravity[oldIndex] = this._indexGravity[i]
-                this._indexStepsAlive[oldIndex] = this._indexStepsAlive[i]
-                const newGridIndex = (this._indexPosY[oldIndex]|0)*this._mapGrid.mapWidth+(this._indexPosX[oldIndex]|0)
-                gridIndexes[newGridIndex] = oldIndex
+                const x = indexPosX[oldIndex] = indexPosX[i],
+                      y = indexPosY[oldIndex] = indexPosY[i]
+                indexFlags[oldIndex] = indexFlags[i]
+                indexVelX[oldIndex] = indexVelX[i]
+                indexVelY[oldIndex] = indexVelY[i]
+                indexGravity[oldIndex] = indexGravity[i]
+                indexStepsAlive[oldIndex] = indexStepsAlive[i]
+                gridIndexes[(y|0)*mapWidth+(x|0)] = oldIndex
             }
             gridIndexes[gridIndex] = -1
         }
 
         // INIT IF DYNAMIC
         if (!isStatic && indexCount[0] < userSettings.maxDynamicMaterialCount) {
-            const mapWidth = this._mapGrid.mapWidth, random = SimUtils.random,
+            const random = SimUtils.random,
                 i = indexCount[0]++,
                 y = (gridIndex/mapWidth)|0,
                 x = gridIndex-y*mapWidth,
                 materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]
 
             gridMaterials[gridIndex] = material
-            this._indexFlags[i] = materialSettings.flags
-            this._indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
-            this._indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
-            this._indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
-            this._indexStepsAlive[i] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
-            
+            indexFlags[i] = materialSettings.flags
+            indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+            indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+            indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
+            indexStepsAlive[i] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
             if (userSettings.useMouseVelocityForCreation) {
                 const mouse = this.mouse, speed = mouse.speed, coefficient = userSettings.mouseVelocityCoefficient, rad = -CDEUtils.toRad(mouse.dir)
-                this._indexVelX[i] = Math.cos(rad)*speed*coefficient
-                this._indexVelY[i] = Math.sin(rad)*speed*coefficient
+                indexVelX[i] = Math.cos(rad)*speed*coefficient
+                indexVelY[i] = Math.sin(rad)*speed*coefficient
             } 
             else {
-                this._indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
-                this._indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+                indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+                indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
             }
-
-
             gridIndexes[gridIndex] = i
         }
         else if (isStatic) gridMaterials[gridIndex] = material
@@ -967,24 +980,18 @@ class Simulation {
 
     
     /* SAVE / IMPORT / EXPORT */
-    /**
-     * Returns a copy of the current pixels array 
-     * @returns TODO DOC
-     */
     #getGridMaterialsCopy(arraySize=this._mapGrid.arraySize) {
         const gridMaterialsCopy = new Simulation.#C_GRID_MATERIALS(arraySize)
         gridMaterialsCopy.set(this._gridMaterials.subarray(0, arraySize))
         return gridMaterialsCopy
     }
 
-    // TODO DOC
     #getGridIndexesCopy(arraySize=this._mapGrid.arraySize) {
         const gridIndexesCopy = new Simulation.#C_GRID_INDEXES(arraySize)
         gridIndexesCopy.set(this._gridIndexes.subarray(0, arraySize))
         return gridIndexesCopy
     }
 
-    // DOC TODO
     #createIndexArrays(arraySize) {
         this._indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize)
         this._indexPosX = new Simulation.#C_PHYSICS_REGULAR(arraySize)
@@ -1004,7 +1011,6 @@ class Simulation {
         ]
     }
 
-    // TODO DOC
     #getIndexArraysCopy(arraySize=this._mapGrid.arraySize) {
         const indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize),
               indexPosX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
@@ -1034,9 +1040,10 @@ class Simulation {
     }
 
     /**
-     * Fills the map with saved data. DOC TODO
+     * Fills the map with saved data.
      * @param {String} mapData The save data as a string in the format created by the function exportAsText()
      * @param {Boolean? | [width, height]?} useSaveSizes Whether to resize the map size and pixel size to the save's values (Also used internally to specify the save data dimensions when mapData is of Uint16Array type)
+     * @param {Simulation.REPLACE_MODES} replaceMode The replace mode to use 
      */
     load(mapData, useSaveSizes=null, replaceMode=Simulation.REPLACE_MODES.ALL) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_LOAD_WARN)) return
@@ -1102,7 +1109,7 @@ class Simulation {
 
     /**
      * Exports/saves the current pixels array as text
-     * @param {EXPORT_STATES} state Whether to disable the text compacting (not recommended for large maps)// DOC TODO
+     * @param {Simulation.EXPORT_STATES} state The type of export to generate
      * @param {Function?} callback If using web workers, use this callback to retrieve the return value (stringValue)=>{...}
      * @returns A string representing the current map
      */
@@ -1144,7 +1151,11 @@ class Simulation {
         return exportValue
     }
 
-    // TODO DOC
+    /**
+     * Returns informations on the pixel at the provided index
+     * @param {Number} gridIndex The grid index to look at 
+     * @returns the pixel's informations
+     */
     getPixelInfo(gridIndex) {
         const material = this._gridMaterials[gridIndex], index = this._gridIndexes[gridIndex]
         

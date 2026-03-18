@@ -18,7 +18,7 @@ const DEFAULT_USER_SETTINGS = {
     showBorder: true,
     showGrid: true,
     showBrush: true,
-    showCursor: true,// TODO
+    showCursor: true,
 
     visualEffectsEnabled: true,
 
