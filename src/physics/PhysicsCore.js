@@ -21,7 +21,7 @@ const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,
     TRANSFORM_PREFIX = "TRANSFORM_"
 
 // DOC TODO
-function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES) {
+function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES) {
     console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
     
     // COMPUTE VAR UTILS
@@ -49,17 +49,18 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
     } = MATERIAL_GROUPS,
     {RANDOM, LEFT, RIGHT} = SIDE_PRIORITIES,
     {
-        COLLISION_BOTTOM, COLLISION_RIGHT, COLLISION_LEFT, COLLISION_TOP, COLLISION_Y, COLLISION_X,
+        COLLISION_BOTTOM, COLLISION_TOP, COLLISION_Y, COLLISION_X,
         TRANSFORM_CONTAMINANT, TRANSFORM_LAVA, TRANSFORM_STONE, TRANSFORM_FIRE, TRANSFORM_VAPOR, TRANSFORM_AIR
-    } = FLAGS
+    } = FLAGS,
+
+    // UTILS
+    {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, getSideSelectionPriority, replaceParticleAtIndex} = getPhysicsUtils(RT, RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS)
 
     // VARIABLES //
     // TIMER
     let timerCount = 0, skipsCount = 0,
     // RANDOMNESS
     rIndex = 0,
-    // GLOBAL CACHES
-    SP_RANDOM = null, SP_LEFT = null, SP_RIGHT = null, MAP_WIDTH = null,
     // PARAMS
     particle = {
         indexCount: null,
@@ -98,10 +99,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
         if (CONFIG.timerEnabled) handleTimerPre()
 
         // VARIABLES UPDATES
-        SP_RANDOM = sidePriority===RANDOM
-        SP_LEFT = sidePriority===LEFT
-        SP_RIGHT = sidePriority===RIGHT
-        MAP_WIDTH = mapWidth 
+        _updatePhysicsUtilsGlobals(mapWidth, sidePriority===RANDOM, sidePriority===LEFT, sidePriority===RIGHT)
         // CONFIG
         BASE_FRICTION = CONFIG.baseFriction
         FRICTION_COEFFICIENT = CONFIG.frictionCoefficient
@@ -462,7 +460,6 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
             gridIndexes = particle.gridIndexes,
             indexVelX = particle.indexVelX,
             indexPosX = particle.indexPosX,
-            indexFlags = particle.indexFlags,
             velX = cache.vel,
             newX = cache.newX,
             newY = cache.newY,
@@ -520,78 +517,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
         } 
     }
 
-    // DOC TODO
-    function replaceParticleAtIndex(gridIndex, material, particle) {
-        const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount,
-              indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity, indexStepsAlive = particle.indexStepsAlive,
-              isStatic = material & STATIC, oldIndex = gridIndexes[gridIndex]
-
-    
-        // INIT IF DYNAMIC
-        if (!isStatic) {
-            const random = SimUtils.random,
-                y = (gridIndex/MAP_WIDTH)|0,
-                x = gridIndex-y*MAP_WIDTH,
-                materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]
-        
-            indexFlags[oldIndex] = materialSettings.flags
-            indexPosX[oldIndex] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
-            indexPosY[oldIndex] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
-            indexVelX[oldIndex] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
-            indexVelY[oldIndex] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
-            indexGravity[oldIndex] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
-            indexStepsAlive[oldIndex] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
-            gridIndexes[gridIndex] = oldIndex
-        }
-        else if (isStatic) {
-            const i = --indexCount[0]
-            if (oldIndex !== i) {
-                const x = indexPosX[oldIndex] = indexPosX[i], y = indexPosY[oldIndex] = indexPosY[i]
-                indexFlags[oldIndex] = indexFlags[i]
-                indexVelX[oldIndex] = indexVelX[i]
-                indexVelY[oldIndex] = indexVelY[i]
-                indexGravity[oldIndex] = indexGravity[i]
-                indexStepsAlive[oldIndex] = indexStepsAlive[i]
-                gridIndexes[(y|0)*MAP_WIDTH+(x|0)] = oldIndex
-            }
-            gridIndexes[gridIndex] = -1
-        }
-
-        return gridMaterials[gridIndex] = material
-    }
-
     // UTILS //
-
-    // DOC TODO
-    const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
-    function safeTrunc(num) {// (R?)
-        FLOAT32_TRUNC_ARR[0] = num
-        if (FLOAT32_TRUNC_ARR[0] > num) UINT32_TRUNC_ARR[0]--
-        return FLOAT32_TRUNC_ARR[0]
-    }
-
-    // DOC TODO
-    function abs(num) {// (R?)
-       return (num^(num>>BIT32))-(num>>BIT32)
-    }
-    
-    // DOC TODO
-    function getAdjacencyCoords(x, y) {// (R?)
-        return y*MAP_WIDTH+clamp(x)
-    }
-
-    // DOC TODO
-    function getSideSelectionPriority() {// (R?)
-        if (SP_RANDOM) return RT[rIndex++&RTSize] < .5
-        else if (SP_LEFT) return true
-        else if (SP_RIGHT) return false
-    }
-
-    // DOC TODO
-    function clamp(num, min=0, max=MAP_WIDTH-1) {// (R?)
-        return num < min ? min : num > max ? max : num
-    }
-
     // DOC TODO
     function handleTimerPre() {
         if (timerCount++ > CONFIG.maxLogCount) {
@@ -607,7 +533,6 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
         for (let i=0;i<RTSize;i++) table[i] = random()
         return table
     }
-
 
     return physicsStep
 }

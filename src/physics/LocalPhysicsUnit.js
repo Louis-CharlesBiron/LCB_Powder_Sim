@@ -1,9 +1,10 @@
 class LocalPhysicsUnit {
 
     // DOC TODO
-    constructor(physicsConfig, definitionHolder) {
+    constructor(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
         this._physicsCore = createPhysicsCore(
             physicsConfig,
+            MATERIALS_SETTINGS,
             definitionHolder.MATERIALS,
             definitionHolder.MATERIAL_GROUPS,
             definitionHolder.MATERIAL_NAMES,
