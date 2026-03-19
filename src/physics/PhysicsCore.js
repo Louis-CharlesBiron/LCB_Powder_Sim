@@ -134,7 +134,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
         let countIndex = 0, count = indexCount[0]
         for (;countIndex<count;countIndex++) {
             const ox = indexPosX[countIndex], oy = indexPosY[countIndex], oldX = ox|0, oldY = oy|0, gi = oldY*mapWidth+oldX, i = gridIndexes[gi]
-            let behaviorMovementLock = true, transpierceableMain = REG_TRANSPIERCEABLE, transpierceableSec = GASES, mat = gridMaterials[gi], flags = indexFlags[i]
+            let transpierceableMain = REG_TRANSPIERCEABLE, transpierceableSec = GASES, mat = gridMaterials[gi], flags = indexFlags[i]
             cache.dx = 0
             cache.dy = 0
             cache.velX = indexVelX[i]
@@ -175,7 +175,6 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
 
                     // CHECK MAIN DIRECTIONS
                     applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    //behaviorMovementLock = false
                 } 
             }
             else if (mat === WATER) {
@@ -186,8 +185,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     if (m_B&WATER_SKIPABLE&&m_BR&WATER_SKIPABLE&&m_BL&WATER_SKIPABLE&&m_R&WATER_SKIPABLE&&m_L&WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     
                     if (RT[rIndex++&RTSize] <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= INVERTED_WATER
-                    applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    //behaviorMovementLock = false // TODO FIX
+                    applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 }
             }
             else if (mat === GRAVEL) {
@@ -195,7 +193,6 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)]
                     if (m_B&GRAVEL_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     applyGravelBehavior(i, m_B, transpierceableMain, indexFlags)
-                    //behaviorMovementLock = false
                 }
             }
             else if (mat === INVERTED_WATER) {
@@ -205,8 +202,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     if (m_T&INVERTED_WATER_SKIPABLE&&m_TR&INVERTED_WATER_SKIPABLE&&m_TL&INVERTED_WATER_SKIPABLE&&m_R&INVERTED_WATER_SKIPABLE&&m_L&INVERTED_WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     
                     if (RT[rIndex++&RTSize] <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= WATER
-                    applyInvertedWaterBehavior(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    //behaviorMovementLock = false //TODO FIX
+                    applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 }
             }
             else if (mat === CONTAMINANT) {
@@ -222,8 +218,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     if ((m_B|m_R|m_L|m_T) & CONTAMINABLE) applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
 
                     if (m_B&CONTAMINANT_SKIPABLE&&m_BR&CONTAMINANT_SKIPABLE&&m_BL&CONTAMINANT_SKIPABLE&&m_R&CONTAMINANT_SKIPABLE&&m_L&CONTAMINANT_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
-                    applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    //behaviorMovementLock = false //TODO FIX
+                    applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 } 
             }
             else if (mat === LAVA) {
@@ -241,8 +236,7 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     if ((m_B|m_R|m_L|m_T) & (MELTABLE|LIQUIDS)) applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
 
                     if (m_B&LAVA_SKIPABLE&&m_BR&LAVA_SKIPABLE&&m_BL&LAVA_SKIPABLE&&m_R&LAVA_SKIPABLE&&m_L&LAVA_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
-                    applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
-                    //behaviorMovementLock = false //TODO FIX
+                    applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 } 
             }
             else if (mat === VAPOR) {
@@ -270,12 +264,12 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
                     const m_TR = gridMaterials[getAdjacencyCoords(oldX+1, oldY-1)], m_TL = gridMaterials[getAdjacencyCoords(oldX-1, oldY-1)]
 
                     if (m_T&FIRE_SKIPABLE&&m_TR&FIRE_SKIPABLE&&m_TL&FIRE_SKIPABLE&&m_R&FIRE_SKIPABLE&&m_L&FIRE_SKIPABLE) {skip1++;continue}pass1++
-                    applyInvertedWaterBehavior(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache)
+                    applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 }
             }
 
             // APPLY MOVEMENTS
-            if (behaviorMovementLock) applyForces(i, deltaTime, particle, cache)
+            applyForces(i, deltaTime, particle, cache)
             const dx = cache.dx, dy = cache.dy
             if (!(dy || dx)) {skip2++;continue}pass2++
 
@@ -289,16 +283,14 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
             cache.newY = newY
 
             // CHECK FOR COLLISION X/Y
-            if (behaviorMovementLock) {
-                if (!hasNoGdy) checkCollisionsY(i, mat, gdy, oldX, oldY, transpierceableMain, particle, cache)
-                if (!hasNoGdx) checkCollisionsX(i, gi, mat, gdx, oldX, transpierceableMain, particle, cache)
-            }
+            if (!hasNoGdy) checkCollisionsY(i, mat, gdy, oldX, oldY, transpierceableMain, particle, cache)
+            if (!hasNoGdx) checkCollisionsX(i, gi, mat, gdx, oldX, transpierceableMain, particle, cache)
             
             // UPDATE GRID
             updateGrid(i, gi, mat, ox, oy, transpierceableMain, particle, cache)
 
             // TEMP PERF
-            const pxSize = 120
+            const pxSize = 0
             if (pxSize) simulation.render.stroke(Render.getPositionsRect([cache.newX*pxSize-1, cache.newY*pxSize-1], [cache.newX*pxSize+pxSize+1, cache.newY*pxSize+pxSize+1]), [0,255,255,1])
         }
 
@@ -321,46 +313,22 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
         if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
         else {
             // GO SIDES
-            if (getSideSelectionPriority()) {
-                if (m_R & transpierceableSec && m_BR & transpierceableSec) {
-                    cache.dx += 1
-                    cache.dy += 1
-                } 
-            } else {
-                if (m_L & transpierceableSec && m_BL & transpierceableSec) {
-                    cache.dx -= 1
-                    cache.dy += 1
-                } 
-            }
+            if (getSideSelectionPriority() && m_R & transpierceableSec && m_BR & transpierceableSec) cache.dx += 1
+            else if (m_L & transpierceableSec && m_BL & transpierceableSec) cache.dx -= 1
         }
     }
 
     // DOC TODO (R?)
-    function applyLiquidBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
+    function applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] &= ~COLLISION_BOTTOM
         else {
             // GO SIDES
+            const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
             if (getSideSelectionPriority()) {
-                const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
-                if (leftEmpty && m_BL & transpierceableSec) {
-                    cache.dx -= 1
-                    cache.dy += 1
-                } else if (rightEmpty && m_BR & transpierceableSec) {
-                    cache.dx += 1
-                    cache.dy += 1
-                }
-                else if (leftEmpty) cache.dx -= 1
+                if (leftEmpty) cache.dx -= 1
                 else if (rightEmpty) cache.dx += 1
             } else {
-                const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
-                if (rightEmpty && m_BR & transpierceableSec) {
-                    cache.dx += 1
-                    cache.dy += 1
-                } else if (leftEmpty && m_BL & transpierceableSec) {
-                    cache.dx -= 1
-                    cache.dy += 1
-                }
-                else if (rightEmpty) cache.dx += 1
+                if (rightEmpty) cache.dx += 1
                 else if (leftEmpty) cache.dx -= 1
             }
         }
@@ -372,31 +340,16 @@ function createPhysicsCore(CONFIG, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, S
     }
 
     // DOC TODO (R?)
-    function applyInvertedWaterBehavior(i, m_T, m_R, m_L, m_TR, m_TL, transpierceableMain, transpierceableSec, indexFlags, cache) {
+    function applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_T & transpierceableMain) indexFlags[i] ^= COLLISION_TOP
         else {
             // GO SIDES
+            const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
             if (getSideSelectionPriority()) {
-                const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
-                if (leftEmpty && m_TL & transpierceableSec) {
-                    cache.dx -= 1
-                    cache.dy -= 1
-                } else if (rightEmpty && m_TR & transpierceableSec) {
-                    cache.dx += 1
-                    cache.dy -= 1
-                }
-                else if (leftEmpty) cache.dx -= 1
+                if (leftEmpty) cache.dx -= 1
                 else if (rightEmpty) cache.dx += 1
             } else {
-                const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
-                if (rightEmpty && m_TR & transpierceableSec) {
-                    cache.dx += 1
-                    cache.dy -= 1
-                } else if (leftEmpty && m_TL & transpierceableSec) {
-                    cache.dx -= 1
-                    cache.dy -= 1
-                }
-                else if (rightEmpty) cache.dx += 1
+                if (rightEmpty) cache.dx += 1
                 else if (leftEmpty) cache.dx -= 1
             }
         }
