@@ -1,18 +1,27 @@
-function getPhysicsUtils(RT, RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
+function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
     // GLOBAL CONSTANTS
-    const {STATIC} = MATERIAL_GROUPS
+    const {STATIC} = MATERIAL_GROUPS,
+        RT = createRandomTable()
+
     // GLOBAL VARS
     let SP_RANDOM,
         SP_LEFT,
         SP_RIGHT,
         MAP_WIDTH,
-        CLMAP_MAX
+        CLAMP_MAX
 
     function _updatePhysicsUtilsGlobals(mapWidth, spRandom, spLeft, spRight) {
-        CLMAP_MAX = (MAP_WIDTH = mapWidth)-1
+        CLAMP_MAX = (MAP_WIDTH = mapWidth)-1
         SP_RANDOM = spRandom
         SP_LEFT = spLeft
         SP_RIGHT = spRight
+    }
+
+    
+    let _rIndex=0
+    // TODO DOC
+    function nextRandom() {
+        return RT[_rIndex++&RTSize]
     }
 
     const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
@@ -30,13 +39,13 @@ function getPhysicsUtils(RT, RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
     }
 
     // DOC TODO
-    function clamp(num, min=0, max=CLMAP_MAX) {
+    function clamp(num, min=0, max=CLAMP_MAX) {
         return num < min ? min : num > max ? max : num
     }
 
     // DOC TODO
     function getAdjacencyCoords(x, y) {
-        return y*MAP_WIDTH+clamp(x, 0, CLMAP_MAX)
+        return y*MAP_WIDTH+clamp(x, 0, CLAMP_MAX)
     }
 
     /**
@@ -57,8 +66,6 @@ function getPhysicsUtils(RT, RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
               indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity, indexStepsAlive = particle.indexStepsAlive,
               isStatic = material & STATIC, oldIndex = gridIndexes[gridIndex]
 
-    
-        // INIT IF DYNAMIC
         if (!isStatic) {
             const y = (gridIndex/MAP_WIDTH)|0,
                   x = gridIndex-y*MAP_WIDTH,
@@ -76,7 +83,8 @@ function getPhysicsUtils(RT, RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
         else if (isStatic) {
             const i = --indexCount[0]
             if (oldIndex !== i) {
-                const x = indexPosX[oldIndex] = indexPosX[i], y = indexPosY[oldIndex] = indexPosY[i]
+                const x = indexPosX[oldIndex] = indexPosX[i], 
+                      y = indexPosY[oldIndex] = indexPosY[i]
                 indexFlags[oldIndex] = indexFlags[i]
                 indexVelX[oldIndex] = indexVelX[i]
                 indexVelY[oldIndex] = indexVelY[i]
@@ -89,15 +97,21 @@ function getPhysicsUtils(RT, RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
 
         return gridMaterials[gridIndex] = material
     }
-
     
     // DOC TODO
-    let _rIndex=0
     function getSideSelectionPriority() {
         if (SP_RANDOM) return RT[_rIndex++&RTSize] < .5
         else if (SP_LEFT) return true
         else if (SP_RIGHT) return false
     }
 
-    return {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, random, replaceParticleAtIndex, getSideSelectionPriority}
+    
+    // DOC TODO
+    function createRandomTable() {
+        const table = new Float32Array(RTSize), random = Math.random
+        for (let i=0;i<RTSize;i++) table[i] = random()
+        return table
+    }
+
+    return {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, random, replaceParticleAtIndex, getSideSelectionPriority, nextRandom}
 }

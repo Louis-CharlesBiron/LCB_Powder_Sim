@@ -37,7 +37,6 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
     // CONSTANTS //
     const RTSize = CONFIG.$randomTableSize-1,
-        RT = createRandomTable(),
         BIT32 = 31,
 
     // ENUMS DESTRUCTURING
@@ -54,7 +53,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     } = FLAGS,
 
     // UTILS
-    {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, getSideSelectionPriority, replaceParticleAtIndex} = getPhysicsUtils(RT, RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS)
+    {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, getSideSelectionPriority, replaceParticleAtIndex, nextRandom} = getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS)
 
     // VARIABLES //
     // TIMER
@@ -144,7 +143,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             if ((mat & ALIVE_TRACKING) && ++indexStepsAlive[i] >= DECAY_THRESHOLDS[mat]) {
                 let newMat = AIR
 
-                if (RT[rIndex++&RTSize] <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE) newMat = VAPOR
+                if (nextRandom() <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE) newMat = VAPOR
 
                 replaceParticleAtIndex(gi, newMat, particle)
                 continue
@@ -155,10 +154,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             if (transformFlag) {
                 let newMat = TRANSFORMS_MAP[transformFlag]
 
-                if ((flags & TRANSFORM_FIRE) && RT[rIndex++&RTSize] <= FIRE_PROPAGATES_VAPOR_CREATION_CHANCE) newMat = VAPOR
+                if ((flags&TRANSFORM_FIRE) && nextRandom() <= FIRE_PROPAGATES_VAPOR_CREATION_CHANCE) newMat = VAPOR
 
                 mat = replaceParticleAtIndex(gi, newMat, particle)
-                if (mat & STATIC) continue
+                if (mat&STATIC) continue
                 flags = indexFlags[i] &= ~transformFlag
             }
 
@@ -182,7 +181,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                     
                     if (m_B&WATER_SKIPABLE&&m_BR&WATER_SKIPABLE&&m_BL&WATER_SKIPABLE&&m_R&WATER_SKIPABLE&&m_L&WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     
-                    if (RT[rIndex++&RTSize] <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= INVERTED_WATER
+                    if (nextRandom() <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= INVERTED_WATER
                     applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 }
             }
@@ -199,7 +198,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                     const m_T = gridMaterials[getAdjacencyCoords(oldX, oldY-1)], m_TR = gridMaterials[getAdjacencyCoords(oldX+1, oldY-1)], m_TL = gridMaterials[getAdjacencyCoords(oldX-1, oldY-1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)]
                     if (m_T&INVERTED_WATER_SKIPABLE&&m_TR&INVERTED_WATER_SKIPABLE&&m_TL&INVERTED_WATER_SKIPABLE&&m_R&INVERTED_WATER_SKIPABLE&&m_L&INVERTED_WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     
-                    if (RT[rIndex++&RTSize] <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= WATER
+                    if (nextRandom() <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= WATER
                     applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 }
             }
@@ -222,7 +221,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             else if (mat === LAVA) {
                 transpierceableMain = GASES
                 if (flags&COLLISION_BOTTOM) {
-                    if (RT[rIndex++&RTSize] <= LAVA_MOVEMENT_CHANCE) {skip4++;continue}
+                    if (nextRandom() <= LAVA_MOVEMENT_CHANCE) {skip4++;continue}
 
                     const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = gridMaterials[gi_B], 
                           gi_R = getAdjacencyCoords(oldX+1, oldY), m_R = gridMaterials[gi_R],
@@ -240,7 +239,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             else if (mat === VAPOR) {
                 transpierceableMain = AIR
                 if (flags&COLLISION_TOP) {
-                    if (RT[rIndex++&RTSize] <= VAPOR_MOVEMENT_CHANCE) {skip4++;continue}
+                    if (nextRandom() <= VAPOR_MOVEMENT_CHANCE) {skip4++;continue}
 
                     const m_T = gridMaterials[getAdjacencyCoords(oldX, oldY-1)]??mat, m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)]
                     if (m_T&VAPOR_SKIPABLE&&m_R&VAPOR_SKIPABLE&&m_L&VAPOR_SKIPABLE) {skip1++;continue}pass1++
@@ -310,7 +309,6 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     function applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
         else {
-            // GO SIDES
             if (getSideSelectionPriority() && m_R & transpierceableSec && m_BR & transpierceableSec) cache.dx += 1
             else if (m_L & transpierceableSec && m_BL & transpierceableSec) cache.dx -= 1
         }
@@ -320,7 +318,6 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     function applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] &= ~COLLISION_BOTTOM
         else {
-            // GO SIDES
             const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
             if (getSideSelectionPriority()) {
                 if (leftEmpty) cache.dx -= 1
@@ -341,7 +338,6 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     function applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_T & transpierceableMain) indexFlags[i] ^= COLLISION_TOP
         else {
-            // GO SIDES
             const rightEmpty = m_R & transpierceableSec, leftEmpty = m_L & transpierceableSec
             if (getSideSelectionPriority()) {
                 if (leftEmpty) cache.dx -= 1
@@ -357,10 +353,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     function applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
         const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
 
-        if (m_B&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_CONTAMINANT
-        if (m_R&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_CONTAMINANT
-        if (m_L&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_CONTAMINANT
-        if (m_T&CONTAMINABLE && RT[rIndex++&RTSize] <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_CONTAMINANT
+        if (m_B&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_CONTAMINANT
+        if (m_R&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_CONTAMINANT
+        if (m_L&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_CONTAMINANT
+        if (m_T&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_CONTAMINANT
     }
     
     // DOC TODO (R?)
@@ -369,10 +365,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
         if (m_B&LIQUIDS||m_R&LIQUIDS||m_L&LIQUIDS||m_T&LIQUIDS) indexFlags[gridIndexes[gi]] |= TRANSFORM_STONE
 
-        if (m_B&MELTABLE && RT[rIndex++&RTSize] <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_LAVA
-        if (m_R&MELTABLE && RT[rIndex++&RTSize] <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_LAVA
-        if (m_L&MELTABLE && RT[rIndex++&RTSize] <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_LAVA
-        if (m_T&MELTABLE && RT[rIndex++&RTSize] <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_LAVA
+        if (m_B&MELTABLE && nextRandom() <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_LAVA
+        if (m_R&MELTABLE && nextRandom() <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_LAVA
+        if (m_L&MELTABLE && nextRandom() <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_LAVA
+        if (m_T&MELTABLE && nextRandom() <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_LAVA
     }
 
     // DOC TODO (R?)
@@ -394,12 +390,12 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     function applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
         const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
 
-        if ((m_B|m_R|m_L|m_T) & FIRE_EXTINGUISH) indexFlags[gridIndexes[gi]] |= RT[rIndex++&RTSize] <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE ? TRANSFORM_VAPOR : TRANSFORM_AIR
+        if ((m_B|m_R|m_L|m_T) & FIRE_EXTINGUISH) indexFlags[gridIndexes[gi]] |= nextRandom() <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE ? TRANSFORM_VAPOR : TRANSFORM_AIR
 
-        if (m_B&INFLAMMABLE && RT[rIndex++&RTSize] <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_FIRE
-        if (m_R&INFLAMMABLE && RT[rIndex++&RTSize] <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_FIRE
-        if (m_L&INFLAMMABLE && RT[rIndex++&RTSize] <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_FIRE
-        if (m_T&INFLAMMABLE && RT[rIndex++&RTSize] <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_FIRE
+        if (m_B&INFLAMMABLE && nextRandom() <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_FIRE
+        if (m_R&INFLAMMABLE && nextRandom() <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_FIRE
+        if (m_L&INFLAMMABLE && nextRandom() <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_FIRE
+        if (m_T&INFLAMMABLE && nextRandom() <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_FIRE
     }
 
 
@@ -500,14 +496,11 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             newY = cache.newY
 
         const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & transpierceableMain
-        // SWITCH ONLY IF DEST IS TRANSPIERCEABLE
         if (m_Dest !== 0) {
             const atI = gridIndexes[newGridI]
-            // move to new pos
             gridIndexes[newGridI] = i
             gridMaterials[newGridI] = mat
 
-            // switch info
             gridIndexes[gi] = atI
             gridMaterials[gi] = m_Dest
             if (atI !== -1) {
@@ -525,13 +518,6 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             timerCount = 0
         }
         console.time(CONFIG.timerName)
-    }
-
-    // DOC TODO
-    function createRandomTable() {
-        const table = new Float32Array(RTSize), random = Math.random
-        for (let i=0;i<RTSize;i++) table[i] = random()
-        return table
     }
 
     return physicsStep
