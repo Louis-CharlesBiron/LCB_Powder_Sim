@@ -13,8 +13,7 @@ const DEFAULT_KEYBINDS = {
 
     MY_CUSTOM_SIZE_KEYBIND: {
         callback:simulation=>{
-            console.log("YO")
-            simulation.updateMapSize(231, 149)
+            simulation.updateMapSize(235, 149)
             simulation.updateMapPixelSize(4)
         },
         requiredKeys: [TypingDevice.KEYS.CONTROL, TypingDevice.KEYS.SHIFT],

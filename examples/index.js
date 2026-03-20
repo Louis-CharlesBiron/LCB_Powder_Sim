@@ -69,7 +69,6 @@ function readyCB(simulation) {
 }
 
 
-
 // FPS / SPS DISPLAY
 const fpsDisplay = document.getElementById("fpsDisplay"), fpsStepDisplay = document.getElementById("fpsStepDisplay"),
       fpsCounter = new FPSCounter(), stepFpsCounter = new FPSCounter()

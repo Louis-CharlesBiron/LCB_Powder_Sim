@@ -15,9 +15,7 @@ class Simulation {
     static #BRUSHES_X_VALUES = SETTINGS.BRUSHES_X_VALUES
     static #BRUSH_GROUPS = SETTINGS.BRUSH_GROUPS
     static WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
-    static #WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES
     static PHYSICS_UNIT_TYPE = SETTINGS.PHYSICS_UNIT_TYPE
-    static #WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS
     static #INIT_STATES = SETTINGS.INITIALIZED_STATES
     // CACHES
     static #CACHED_MATERIALS_ROWS = []
@@ -47,15 +45,16 @@ class Simulation {
             ...Object.keys(Simulation.DEFAULT_WORLD_START_SETTINGS).map(exposedName=>({exposedName, path:["_worldStartSettings", exposedName]})),
             ...Object.keys(Simulation.DEFAULT_PHYSICS_SETTINGS).filter(x=>x[0]!=="$").map(exposedName=>({exposedName, path:["_physicsConfig", exposedName]})),
             {exposedName:"loopExtra"},
-            {exposedName:"stepExtra"},
             {exposedName:"isRunning"},
             {exposedName:"mapGridRenderStyles"},
             {exposedName:"mapBorderRenderStyles"},
         ])
     }
 
-    #simulationHasPixelsBuffer = true // Whether the main thread has the pixel buffer when using webworkers
     #lastPlacedPos = null // Pos of the last place pixel
+    #backStepSaves = []
+    #isMouseWithinSimulation = true
+    #initialized = null
 
     /**
      * The core of the simulation and manages all rendering and world manipulation. (except for physics)
@@ -70,7 +69,7 @@ class Simulation {
         this._CVS = canvas instanceof Canvas ? canvas : new Canvas(canvas)
         this._worldStartSettings = SimUtils.getAdjustedSettings(worldStartSettings, Simulation.DEFAULT_WORLD_START_SETTINGS)
         this._CVS.fpsLimit = this._worldStartSettings.aimedFPS
-        this._initialized = this._worldStartSettings.autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
+        this.#initialized = this._worldStartSettings.autoStart ? Simulation.#INIT_STATES.NOT_INITIALIZED : Simulation.#INIT_STATES.INITIALIZED
         this._mapGrid = new MapGrid(this._worldStartSettings.mapPixelSize, this._worldStartSettings.mapWidth, this._worldStartSettings.mapHeight)
         
         const arraySize = this._mapGrid.arraySize
@@ -81,12 +80,8 @@ class Simulation {
         this.#createIndexArrays(arraySize)
         this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_SETTINGS)
 
-        this._backStepSaves = []
-        this._isMouseWithinSimulation = true
         this._isRunning = false
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
-        this._lastStepTime = null
-        this._queuedBufferOperations = []
         this.updatePhysicsUnitType(this._worldStartSettings.usesWebWorkers)
 
         // DISPLAY
@@ -103,9 +98,8 @@ class Simulation {
         this._offscreenCanvas = new OffscreenCanvas(...this._mapGrid.globalDimensions)
         this._offscreenCtx = this._offscreenCanvas.getContext("2d")
         this._loopExtra = null
-        this._stepExtra = null
         this._keybindManager = new KeybindManager(this, Simulation.DEFAULT_KEYBINDS)
-        this._zoomManager = new CameraManager(this)
+        this._cameraManager = new CameraManager(this)
         this.#updateCachedGridDisplays()
         this.#updateCachedMapPixelsRows()
 
@@ -123,22 +117,22 @@ class Simulation {
         this._CVS.setKeyDown(null, true)
         this._CVS.onResizeCB=()=>{
             const pixelSize = this._userSettings.autoSimulationSizing
-            if (pixelSize) this.autoFitSize(pixelSize)
+            if (pixelSize) this.autoFitMapSize(pixelSize)
         }
         this._CVS.start()
         this._mouseListenerIds = [
-            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this._isMouseWithinSimulation = true),
-            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.MOVE,  ()=>this._isMouseWithinSimulation = true),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this.#isMouseWithinSimulation = true),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.MOVE,  ()=>this.#isMouseWithinSimulation = true),
             this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
 
         // INTERNAL LOAD CALLS
-        this._initialized = Simulation.#INIT_STATES.READY
+        this.#initialized = Simulation.#INIT_STATES.READY
 
-        if (this._userSettings.autoSimulationSizing) this.autoFitSize(this._userSettings.autoSimulationSizing)
+        if (this._userSettings.autoSimulationSizing) this.autoFitMapSize(this._userSettings.autoSimulationSizing)
         if (CDEUtils.isFunction(readyCB)) readyCB(this)
 
-        this._initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
+        this.#initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
 
         if (this._worldStartSettings.autoStart) this.start()
     }
@@ -201,7 +195,7 @@ class Simulation {
      * Draws visual effects on certain materials if visualEffects are enabled 
      */
     #drawVisualEffects() {// OPTIMIZE / TODO
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.#drawVisualEffects())
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.#drawVisualEffects())
 
         const pixels = this._gridMaterials, p_ll = pixels.length, map = this._mapGrid, M = Simulation.MATERIALS, G = Simulation.MATERIAL_GROUPS, SG = Simulation.MATERIAL_STATES_GROUPS, D = Simulation.D,
               w = map.mapWidth, pxSize = map.pixelSize, pxSize2 = pxSize/4, random = Math.random(), batchStroke = this.render.batchStroke.bind(this.render), batchFill = this.render.batchFill.bind(this.render)
@@ -237,7 +231,7 @@ class Simulation {
      * @param {Boolean?} force If true, disables optimization and forces every pixel to get redrawn
      */
     renderPixels(force) {
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.renderPixels(force))
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.renderPixels(force))
 
         const pixels = this._gridMaterials, lastPixels = this._lastGridMaterials, p_ll = pixels.length, map = this._mapGrid, enableOptimization = force ? false : lastPixels.length===p_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
         for (let i=0;i<p_ll;i++) {
@@ -268,12 +262,9 @@ class Simulation {
      * Runs and displays one physics step
      */
     step(deltaTime=this.CVS.deltaTime) {
-        const T = Simulation.#WORKER_MESSAGE_TYPES, unit = this._physicsUnit
-        if (this.useLocalPhysics && this.#simulationHasPixelsBuffer) {
-            const stepExtra = this._stepExtra
-            if (stepExtra) stepExtra()
+        if (this.useLocalPhysics && !this._physicsUnit.isBlocked) {
             this.saveStep()
-            unit.step(
+            this._physicsUnit.step(
                 this._gridIndexes, this._gridMaterials,
                 this._indexCount, this._indexFlags, this._indexPosX, this._indexPosY, this._indexVelX, this._indexVelY, this._indexGravity, this._indexStepsAlive,
                 this._sidePriority, this._mapGrid.mapWidth,
@@ -281,7 +272,8 @@ class Simulation {
             )
             this.renderPixels()
         }
-        else if (this.#simulationHasPixelsBuffer) this.#sendPixelsToWorker(T.STEP)
+        
+        // TODO else if (this.#simulationHasPixelBuffer) this._physicsUnit.send(T.STEP)
     }
 
     /**
@@ -289,7 +281,7 @@ class Simulation {
      */
     saveStep(isExact=this._userSettings.backStepSavingIsExact) {
         if (this.backStepSavingEnabled) {
-            const saves = this._backStepSaves, b_ll = saves.length, currentSave = this.exportAsText(isExact ? SETTINGS.EXPORT_STATES.EXACT : SETTINGS.EXPORT_STATES.COMPACTED)
+            const saves = this.#backStepSaves, b_ll = saves.length, currentSave = this.exportAsText(isExact ? SETTINGS.EXPORT_STATES.EXACT : SETTINGS.EXPORT_STATES.COMPACTED)
             if (saves[b_ll-1] !== currentSave) {
                 saves.push(currentSave)
                 if ((b_ll+1) > this._userSettings.backStepSavingCount) saves.shift()
@@ -301,9 +293,9 @@ class Simulation {
      * Displays the previous physics step saved
      */
     backStep() {
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.backStep())
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.backStep())
 
-        const saves = this._backStepSaves, b_ll = saves.length
+        const saves = this.#backStepSaves, b_ll = saves.length
         if (b_ll) {
             const lastSave = saves[b_ll-1]
             if (lastSave) this.load(lastSave)
@@ -316,11 +308,11 @@ class Simulation {
      * @param {Boolean} force If true, forces the start even if simulation is already running
      */
     start(force) {
-        if (this._initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this._initialized = Simulation.#INIT_STATES.INITIALIZED)
+        if (this.#initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this.#initialized = Simulation.#INIT_STATES.INITIALIZED)
         if (!this._isRunning || force) {
             this._isRunning = true
             this.CVS.start()
-            if (this.usingWebWorkers) this.#sendPixelsToWorker(Simulation.#WORKER_MESSAGE_TYPES.START_LOOP)
+            ///if (this.usingWebWorkers) this.#sendPixelsToWorker(RemotePhysicsUnit.WORKER_MESSAGE_TYPES.START_LOOP) TODO FIX
         }
     }
 
@@ -331,7 +323,7 @@ class Simulation {
         if (this._isRunning) {
             this._isRunning = false
             if (stopCanvas) this.CVS.stop()
-            if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.STOP_LOOP})
+            //if (this.usingWebWorkers) this._physicsUnit.postMessage({type:RemotePhysicsUnit.WORKER_MESSAGE_TYPES.STOP_LOOP}) TODO FIX
         }
     }
     /* SIMULATION CONTROL -end */
@@ -339,8 +331,8 @@ class Simulation {
 
     /* SIMULATION API */
     /**
-     * Updates whether the physics calculations are offloaded to a worker thread (R? yes)
-     * @param {Boolean} usesWebWorkers Whether an other thread is used. (Defaults to true)
+     * Updates whether the physics calculations are offloaded to worker threads
+     * @param {Boolean} usesWebWorkers Whether multithreading thread is used. (Defaults to true)
      */
     updatePhysicsUnitType(usesWebWorkers=true) {// TODO TOFIX TOCHECK
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
@@ -348,23 +340,12 @@ class Simulation {
         const isWebWorker = +(usesWebWorkers&&!this.isFileServed)
         if ((isWebWorker && this.usingWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
 
-
         let instance = Simulation.#PHYSICS_UNIT_INSTANCES[isWebWorker]
-        if (!instance) instance = Simulation.#PHYSICS_UNIT_INSTANCES[isWebWorker] = isWebWorker ? new Worker(Simulation.WORKER_RELATIVE_PATH, {type:"classic"}) : new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+        if (!instance) instance = Simulation.#PHYSICS_UNIT_INSTANCES[isWebWorker] = isWebWorker ? 
+            new RemotePhysicsUnit() :
+            new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+        
         this._physicsUnit = instance
-
-        if (isWebWorker) {
-            this.#simulationHasPixelsBuffer = true
-            this._physicsUnit.onmessage=this.#physicsUnitMessage.bind(this)
-            this._physicsUnit.postMessage({
-                type:Simulation.#WORKER_MESSAGE_TYPES.INIT,
-                pixels:this._gridIndexes, pxStepUpdated:this._indexUpdated, pxStates:this._indexStates, sidePriority:this._sidePriority, 
-                mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight,
-                aimedFps:this._CVS.fpsLimit
-            })
-            if (this._isRunning) this.start(true)
-        }
-        else if (usesWebWorkers && this.isFileServed) SimUtils.warn(SETTINGS.FILE_SERVED_WARN, this._userSettings)
     }
 
     /**
@@ -374,7 +355,7 @@ class Simulation {
      * @param {Number?} globalHeight The height to cover in px
      * @returns The calculated width/height in local pixels
      */
-    autoFitSize(pixelSize=Simulation.DEFAULT_MAP_RESOLUTIONS.DEFAULT, globalWidth=this._CVS.width, globalHeight=this._CVS.height) {
+    autoFitMapSize(pixelSize=Simulation.DEFAULT_MAP_RESOLUTIONS.DEFAULT, globalWidth=this._CVS.width, globalHeight=this._CVS.height) {
         if (pixelSize === true || pixelSize === null) pixelSize = Simulation.DEFAULT_MAP_RESOLUTIONS.DEFAULT
         const width = (globalWidth/pixelSize)|0, height = (globalHeight/pixelSize)|0
         this.updateMapPixelSize(pixelSize)
@@ -389,7 +370,7 @@ class Simulation {
     updateMapPixelSize(pixelSize=MapGrid.DEFAULT_PIXEL_SIZE) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
         pixelSize = pixelSize|0
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.updateMapPixelSize(pixelSize))
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.updateMapPixelSize(pixelSize))
 
         const map = this._mapGrid
         if (pixelSize !== map.pixelSize) {
@@ -407,7 +388,7 @@ class Simulation {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
         width = width|0
         height = height|0
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.updateMapSize(width, height))
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.updateMapSize(width, height))
 
         const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight
         if ((width && width !== oldWidth) || (height && height !== oldHeight)) {
@@ -416,9 +397,8 @@ class Simulation {
 
             // SIZE DOWNSCALE
             const isWidthDownscale = width < oldWidth, isHeightDownscale = height < oldHeight
-            if (this._initialized === Simulation.#INIT_STATES.INITIALIZED && (isWidthDownscale || isHeightDownscale)) {
+            if (this.#initialized === Simulation.#INIT_STATES.INITIALIZED && (isWidthDownscale || isHeightDownscale)) {
                 const gridIndexes = this._gridIndexes, AIR = Simulation.MATERIALS.AIR
-
                 if (isWidthDownscale) 
                     for (let x=width;x<oldWidth;x++) 
                         for (let y=0;y<oldHeight;y++) {
@@ -468,7 +448,7 @@ class Simulation {
      * @returns The new priority
      */
     updateSidePriority(sidePriority) {
-        if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
+        if (this.usingWebWorkers) this._physicsUnit.postMessage({type:RemotePhysicsUnit.WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
         return this._sidePriority = sidePriority
     }
 
@@ -558,6 +538,7 @@ class Simulation {
         //if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
     }
 
+    // TODO DOC
     #updateIndexCount() {
         const gridIndexes = this._gridIndexes, gi_ll = gridIndexes.length
         let count = 0
@@ -572,60 +553,13 @@ class Simulation {
      */
     #checkInitializationState(warningMessage) {
         const userSettings = this._userSettings
-        if (userSettings && this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
+        if (userSettings && this.#initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
             SimUtils.warn(warningMessage, userSettings)
             return true
         }
     }
 
     /* SIMULATION API -end */
-
-    /* WEB WORKER CONTROL */
-    // Listener for web worker messages (R?)
-    #physicsUnitMessage(e) {// TODO TOFIX
-        const data = e.data, type = data.type, T = Simulation.#WORKER_MESSAGE_TYPES, stepExtra = this._stepExtra
-
-        if (type & Simulation.#WORKER_MESSAGE_GROUPS.GIVES_PIXELS_TO_MAIN) {
-            //this._gridMaterials = new Uint16Array(data.pixels) TODO
-            //this._indexStates = new Uint16Array(data.pxStates)
-            this.#simulationHasPixelsBuffer = true
-        }
-
-        if (type === T.STEP) {// RECEIVE STEP RESULTS (is step/sec bound)
-            // DO BUFFER OPERATION
-            this.renderPixels()
-            this.#executeQueuedOperations()
-
-            if (stepExtra) stepExtra()
-
-            // PASS BACK PIXELS IF LOOP RUNNING
-            if (this._isRunning) {
-                this.#simulationHasPixelsBuffer = false
-                this.#sendPixelsToWorker(T.PIXELS)
-            }
-        }
-    }
-
-    /** 
-     * Sends a command of a certain type to the worker, needing pixels (R?)
-     * @param {Simulation.#WORKER_MESSAGE_TYPES} type The worker message type
-     */
-    #sendPixelsToWorker(type) {// TODO TOFIX
-        const pixels = this._gridMaterials//, pxStates = this._indexStates TODO
-        this.saveStep()
-        if (this.usingWebWorkers) this._physicsUnit.postMessage({type, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
-        else this.#simulationHasPixelsBuffer = true
-    }
-
-    // Executes queued operations (R?? prob no)
-    #executeQueuedOperations() {
-        const queued = this._queuedBufferOperations, q_ll = queued.length
-        for (let i=0;i<q_ll;i++) {
-            queued[0]()
-            queued.shift()
-        }
-    }
-    /* WEB WORKER CONTROL -end*/
 
     /* CACHE UPADTES */
     // Updates the cached pixels row used for drawing optimizations
@@ -674,7 +608,7 @@ class Simulation {
     // Runs when the mouse leaves the simulation's bounding box
     #mouseLeaveSimulation() {
         this.#lastPlacedPos = null
-        this._isMouseWithinSimulation = false
+        this.#isMouseWithinSimulation = false
     }
 
     /**
@@ -683,7 +617,7 @@ class Simulation {
      */
     #placePixelWithMouse(mouse) {
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
-        if (this._isMouseWithinSimulation && mapPos) {
+        if (this.#isMouseWithinSimulation && mapPos) {
             const isRunning = this._isRunning, [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
 
             if (this._userSettings.smoothDrawingEnabled && dMax) for (let i=0;i<dMax;i++) {
@@ -710,7 +644,7 @@ class Simulation {
      */
     placePixel(mapPos, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         const i = this._mapGrid.mapPosToIndex(mapPos)
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material, replaceMode))
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(i, material, replaceMode))
 
         this.placePixelAtIndex(i, material, replaceMode)
     }
@@ -725,7 +659,7 @@ class Simulation {
     placePixelAtCoords(x, y, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         const i = this._mapGrid.mapPosToIndexCoords(x, y)
         if (i === -1) return
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.placePixelAtIndex(i, material, replaceMode))
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(i, material, replaceMode))
 
         this.placePixelAtIndex(i, material, replaceMode)
     }
@@ -737,7 +671,7 @@ class Simulation {
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     placePixelAtIndex(gridIndex, material=this._selectedMaterial, replaceMode=this._replaceMode) {
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.placePixelAtIndex(gridIndex, material, replaceMode))
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(gridIndex, material, replaceMode))
 
         const gridMaterials = this._gridMaterials, oldMat = gridMaterials[gridIndex]
         if (!oldMat || material === oldMat || (replaceMode != Simulation.REPLACE_MODES.ALL && !(oldMat & replaceMode))) return
@@ -852,7 +786,7 @@ class Simulation {
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     fillArea(pos1, pos2, material=this._selectedMaterial, replaceMode=this._replaceMode) {
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.fillArea(pos1, pos2, material))
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.fillArea(pos1, pos2, material))
 
         const pixels = this._gridMaterials, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, x1 = pos1[0]<0?0:pos1[0], y1 = pos1[1]<0?0:pos1[1], x2 = pos2[0]<0?0:pos2[0], y2 = pos2[1]<0?0:pos2[1]
         for (let i=map.mapPosToIndex([x1, y1]);i<p_ll;i++) {
@@ -949,7 +883,7 @@ class Simulation {
      */
     load(mapData, useSaveSizes=null, replaceMode=Simulation.REPLACE_MODES.ALL) {
         if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_LOAD_WARN)) return
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>this.load(mapData, useSaveSizes, replaceMode))
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.load(mapData, useSaveSizes, replaceMode))
 
         if (mapData) {
             const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x), isExact = exportType == Simulation.EXPORT_STATES.EXACT
@@ -1017,7 +951,7 @@ class Simulation {
      */
     exportAsText(state=SETTINGS.EXPORT_STATES.COMPACTED, callback) {
         const hasCallback = CDEUtils.isFunction(callback)
-        if (!this.#simulationHasPixelsBuffer) return void this._queuedBufferOperations.push(()=>hasCallback&&callback(this.exportAsText(state)))
+        if (this._physicsUnit.isBlocked && hasCallback) return void this._physicsUnit.addToQueue(()=>callback(this.exportAsText(state)))
 
         const gridMaterials = this._gridMaterials, g_ll = gridMaterials.length
         let textResult = [], lastMaterial, atI = -1
@@ -1124,12 +1058,11 @@ class Simulation {
     get mouse() {return this._CVS.mouse}
     get keyboard() {return this._CVS.keyboard}
 	get mapGrid() {return this._mapGrid}
-	get lastStepTime() {return this._lastStepTime}
 	get offscreenCanvas() {return this._offscreenCanvas}
 	get imgMap() {return this._imgMap}
-    get isMouseWithinSimulation() {return this._isMouseWithinSimulation}
+    get isMouseWithinSimulation() {return this.#isMouseWithinSimulation}
     get sidePriority() {return this._sidePriority}
-	get backStepSaves() {return this._backStepSaves}
+	get backStepSaves() {return this.#backStepSaves}
 	get selectedMaterial() {return this._selectedMaterial}
     get brushType() {return this._brushType}
     get replaceMode() {return this._replaceMode}
@@ -1138,7 +1071,7 @@ class Simulation {
 	get worldStartSettings() {return this._worldStartSettings}
 	get userSettings() {return this._userSettings}
 	get colorSettings() {return this._colorSettings}
-    get initialized() {return this._initialized}
+    get initialized() {return this.#initialized}
 	get queuedBufferOperations() {return this._queuedBufferOperations}
     get aimedFPS() {return this._CVS.fpsLimit}
     get backStepSavingEnabled() {return Boolean(this._userSettings.backStepSavingCount)}
@@ -1156,6 +1089,9 @@ class Simulation {
 	get indexVelY() {return this._indexVelY}
 	get indexGravity() {return this._indexGravity}
 	get indexStepsAlive() {return this._indexStepsAlive}
+	get stepExtra() {return this._physicsUnit.stepExtra}
+	get keybindManager() {return this._keybindManager}
+	get cameraManager() {return this._cameraManager}
     
 
     set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
@@ -1163,9 +1099,10 @@ class Simulation {
 	set sidePriority(sidePriority) {return this.updateSidePriority(sidePriority)}
 	set replaceMode(replaceMode) {return this.updateReplaceMode(replaceMode)}
     set aimedFPS(aimedFPS) {this._CVS.fpsLimit = aimedFPS}
+	set stepExtra(stepExtra) {this._physicsUnit.stepExtra = stepExtra}
     set autoSimulationSizing(autoSimulationSizing) {
         this._userSettings.autoSimulationSizing = autoSimulationSizing
-        if (autoSimulationSizing) this.autoFitSize(autoSimulationSizing)
+        if (autoSimulationSizing) this.autoFitMapSize(autoSimulationSizing)
     }
     set dragAndZoomCanvasEnabled(dragAndZoomCanvasEnabled) {
         this._userSettings.dragAndZoomCanvasEnabled = dragAndZoomCanvasEnabled
@@ -1175,7 +1112,7 @@ class Simulation {
         if (backStepSavingEnabled) this._userSettings.backStepSavingCount = Simulation.DEFAULT_USER_SETTINGS.backStepSavingCount
         else {
             this._userSettings.backStepSavingCount = 0
-            this._backStepSaves = []
+            this.#backStepSaves = []
         }
     }
     set showCursor(showCursor) {

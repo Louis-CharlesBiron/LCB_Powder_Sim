@@ -38,7 +38,7 @@ const SETTINGS = {
         VAPOR_SKIPABLE:null,
         FIRE_SKIPABLE:null,
     },
-    MATERIAL_NAMES: ["VOID "],
+    MATERIAL_NAMES: ["VOID"],
 
     MATERIAL_STATES: {
         EMPTY:0,
