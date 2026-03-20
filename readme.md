@@ -361,4 +361,7 @@ This is the list of commands available through the `lcb-ps` command.
 
 Made by [Louis-Charles Biron](https://github.com/Louis-CharlesBiron) !
 
-Every line of code and documentation in this repository was written by hand with passion!
+Every uncredited line of code and documentation in this repository was written by me, by hand and with passion!
+
+Except for:
+- [coi-serviceworker.min.js](https://github.com/gzuidhof/coi-serviceworker)
