@@ -28,7 +28,6 @@ const simulation = new Simulation(
 // READY FUNCTION
 function readyCB(simulation) {
     console.log("%cSIMULATION LOADED", "font-size:9.5px;color:#9c9c9c;")
-
     if (!(simulation instanceof Simulation)) return
 
     simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
@@ -39,21 +38,23 @@ function readyCB(simulation) {
     //simulation.timerEnabled = true
 
     
+    //simulation.updateMapSize(5, 3)
+    //simulation.updateMapPixelSize(120)
+
     //simulation.updateMapSize(23, 15)
     //simulation.updateMapPixelSize(40)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.BIG_DOT)
 
-    //simulation.updateMapSize(300, 200)
-    //simulation.updateMapPixelSize(3)
+    //simulation.updateMapSize(400, 300)
+    //simulation.updateMapPixelSize(2)
     
     //simulation.updateMapSize(231, 149)
     //simulation.updateMapPixelSize(4)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X15)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X55)
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(975, 600)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
     //simulation.showGrid = false
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(1920, 818)
@@ -63,8 +64,8 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(100)
 
     //simulation.updateMaterialSettings(2, {velXOffsetMin:-200,velXOffsetMax:200,velYOffsetMin:-200,velYOffsetMax:200,})
+    //simulation.updateMaterialSettings(4, {velX:150})
 }
-
 
 
 // FPS / SPS DISPLAY
@@ -95,10 +96,12 @@ const mousePosStatus = document.getElementById("mousePosStatus"),
       zoomStatus = document.getElementById("zoomStatus"),
       particleStatus = document.getElementById("particleStatus")
 
-const MOUSE_POS_KEY = "lastMousePos", storageMousePos = localStorage.getItem(MOUSE_POS_KEY).split(",").map(x=>isFinite(+x)?+x:0)
+const MOUSE_POS_KEY = "lastMousePos", storageMousePos = localStorage.getItem(MOUSE_POS_KEY)
 if (storageMousePos) {
-    simulation.mouse._x = storageMousePos[0]
-    simulation.mouse._y = storageMousePos[1]
+    const pos = storageMousePos.split(",").map(x=>isFinite(+x)?+x:0)
+    simulation.mouse._x = pos[0]
+    simulation.mouse._y = pos[1]
+    if (isFinite(pos[0]) && isFinite(pos[1])) simulation.mouse._valid = true
 }
 
 const STATUS_REFRESH_RATE = 1000/10

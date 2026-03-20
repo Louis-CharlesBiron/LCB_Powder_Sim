@@ -1,15 +1,15 @@
-class LocalPhysicsUnit {
+class LocalPhysicsUnit extends _PhysicsUnit {
 
     // DOC TODO
-    constructor(physicsConfig, definitionHolder) {
+    constructor(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
+        super(null)
         this._physicsCore = createPhysicsCore(
             physicsConfig,
+            MATERIALS_SETTINGS,
             definitionHolder.MATERIALS,
             definitionHolder.MATERIAL_GROUPS,
-            definitionHolder.MATERIAL_STATES,
-            definitionHolder.MATERIAL_STATES_GROUPS,
+            definitionHolder.MATERIAL_NAMES,
             definitionHolder.SIDE_PRIORITIES,
-            definitionHolder.D
         )
     }
 
@@ -19,6 +19,7 @@ class LocalPhysicsUnit {
         sidePriority, mapWidth,
         deltaTime
     ) {
+        super.step()
         this._physicsCore(
             gridIndexes, gridMaterials,
             indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity, indexStepsAlive,

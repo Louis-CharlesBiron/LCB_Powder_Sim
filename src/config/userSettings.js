@@ -18,15 +18,17 @@ const DEFAULT_USER_SETTINGS = {
     showBorder: true,
     showGrid: true,
     showBrush: true,
-    showCursor: true,// TODO
+    showCursor: true,
 
     visualEffectsEnabled: true,
 
     smoothDrawingEnabled: true,
     drawingDisabled: false,
+    useMouseVelocityForCreation: false,
+    mouseVelocityCoefficient: .09,
 }
 
 ;(()=>{
-    // SET DEFAULT USER SETTINGS autoSimulationSizing
+    // SET DEFAULT autoSimulationSizing
     if (DEFAULT_USER_SETTINGS.autoSimulationSizing === null) DEFAULT_USER_SETTINGS.autoSimulationSizing = SETTINGS.DEFAULT_MAP_RESOLUTIONS.DEFAULT
 })()

@@ -14,23 +14,24 @@ class SimUtils {
     // DOC TODO
     static addGettersSetters(targetClass, attributes) {
         attributes.forEach(({exposedName, path})=>{
-            if (!Object.getOwnPropertyDescriptor(targetClass.prototype, exposedName)) {
-                path ??= "_"+exposedName
-                const isPathArray = Array.isArray(path)
-                Object.defineProperty(targetClass.prototype, exposedName, {
-                    set(value) {
-                        if (isPathArray) {
-                            const directPath = path[path.length-1], prop = path.slice(0, path.length-1).reduce((a,b)=>a[b], this)
-                            prop[directPath] = value
-                        }
-                        else this[path] = value
-                    },
-                    get() {
-                        return isPathArray ? path.reduce((a,b)=>a[b], this) : this[path]
-                    },
-                    configurable: true
-                })
-            }
+            path ??= "_"+exposedName
+            const isPathArray = Array.isArray(path), overrides = Object.getOwnPropertyDescriptor(targetClass.prototype, exposedName)
+
+            if (!overrides?.get) Object.defineProperty(targetClass.prototype, exposedName, {
+                get() {return isPathArray ? path.reduce((a,b)=>a[b], this) : this[path]},
+                configurable: true
+            })
+
+            if (!overrides?.set) Object.defineProperty(targetClass.prototype, exposedName, {
+                set(value) {
+                    if (isPathArray) {
+                        const directPath = path[path.length-1], prop = path.slice(0, path.length-1).reduce((a,b)=>a[b], this)
+                        prop[directPath] = value
+                    }
+                    else this[path] = value
+                },
+                configurable: true
+            })
         })
     }
 
@@ -39,7 +40,6 @@ class SimUtils {
         return Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
     }
 
-    
     /**
      * Returns a random number within the min and max range
      * @param {Number} min: the minimal possible value (included)
@@ -50,5 +50,14 @@ class SimUtils {
     static random(min, max, decimals=0) {
         const precision = 10**decimals
         return Math.floor(Math.random()*((max-min)*precision+1))/precision+min
+    }
+
+    /**
+     * Logs a warning messages if warnings are enabled
+     * @param {String} warningMessage Warning message to log
+     * @param {Object} userSettings The userSettings object
+     */
+    static warn(warningMessage, userSettings) {
+        if (!userSettings?.warningsDisabled) console.warn(warningMessage)
     }
 }

@@ -14,8 +14,8 @@ class MaterialSettings {
         hasPosYOffset:null,
 
         velX:0,
-        velXOffsetMin:0,//-2,
-        velXOffsetMax:0,//2,
+        velXOffsetMin:-1.5,
+        velXOffsetMax:1.5,
         velXOffsetDecimals:null,
         hasVelXOffset:null,
 
@@ -39,7 +39,7 @@ class MaterialSettings {
 
     // MATERIALS CONFIGS //
     static {
-        const {SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, VAPOR} = SETTINGS.MATERIALS
+        const {SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, VAPOR, FIRE} = SETTINGS.MATERIALS
 
         MaterialSettings.MATERIALS_SETTINGS[SAND] = {}
 
@@ -80,6 +80,20 @@ class MaterialSettings {
             velXOffsetMax:2,
 
             stepsAliveOffsetMax:DEFAULT_PHYSICS_SETTINGS.vaporDecayThreshold-5,
+        }
+
+        MaterialSettings.MATERIALS_SETTINGS[FIRE] = {
+            gravity: -12,
+            gravityOffsetMin:-6,
+            gravityOffsetMax:5,
+
+            velY:0,
+            velYOffsetMin:-8,
+            velYOffsetMax:-2,
+            velXOffsetMin:-25,
+            velXOffsetMax:25,
+
+            stepsAliveOffsetMax:DEFAULT_PHYSICS_SETTINGS.fireDecayThreshold-5,
         }
 
 

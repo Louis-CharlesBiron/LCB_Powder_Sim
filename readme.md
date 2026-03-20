@@ -220,7 +220,7 @@ This can be used to update map properties / import a world as soon as the simula
 - `height` The new height of the map (*local px*)
 #### - `updateMapPixelSize(pixelSize?)` -> Updates the map pixel size. (Defaults to `MapGrid.DEFAULT_PIXEL_SIZE`)
 - `pixelSize` The new map pixel size (*global px*)
-#### - `autoFitSize(pixelSize?, globalWidth?, globalHeight?)` ->Updates map size and pixel size automatically based on the optimal fit for the provided sizes. 
+#### - `autoFitMapSize(pixelSize?, globalWidth?, globalHeight?)` ->Updates map size and pixel size automatically based on the optimal fit for the provided sizes. 
 - `pixelSize` The desired map pixel size (*global px*) (Defaults to `DEFAULT_MAP_RESOLUTIONS.DEFAULT`)
 - `globalWidth` The width to cover (*global px*) (Defaults to the canvas width)
 - `globalHeight` The height to cover (*global px*) (Defaults to the canvas height)
