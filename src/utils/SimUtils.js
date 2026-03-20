@@ -40,7 +40,6 @@ class SimUtils {
         return Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
     }
 
-    
     /**
      * Returns a random number within the min and max range
      * @param {Number} min: the minimal possible value (included)
@@ -51,5 +50,14 @@ class SimUtils {
     static random(min, max, decimals=0) {
         const precision = 10**decimals
         return Math.floor(Math.random()*((max-min)*precision+1))/precision+min
+    }
+
+    /**
+     * Logs a warning messages if warnings are enabled
+     * @param {String} warningMessage Warning message to log
+     * @param {Object} userSettings The userSettings object
+     */
+    static warn(warningMessage, userSettings) {
+        if (!userSettings?.warningsDisabled) console.warn(warningMessage)
     }
 }

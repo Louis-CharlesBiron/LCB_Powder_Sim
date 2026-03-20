@@ -55,7 +55,7 @@ class Simulation {
     }
 
     #simulationHasPixelsBuffer = true // Whether the main thread has the pixel buffer when using webworkers
-    #lastPlacedPos = null
+    #lastPlacedPos = null // Pos of the last place pixel
 
     /**
      * The core of the simulation and manages all rendering and world manipulation. (except for physics)
@@ -104,10 +104,10 @@ class Simulation {
         this._offscreenCtx = this._offscreenCanvas.getContext("2d")
         this._loopExtra = null
         this._stepExtra = null
+        this._keybindManager = new KeybindManager(this, Simulation.DEFAULT_KEYBINDS)
+        this._zoomManager = new CameraManager(this)
         this.#updateCachedGridDisplays()
         this.#updateCachedMapPixelsRows()
-        this.#setCanvasZoomAndDrag()
-        this.setKeyBinds()
 
         const cameraCenterPos = this._worldStartSettings.cameraCenterPos
         if (cameraCenterPos !== undefined) this._CVS.centerViewAt(cameraCenterPos||this._mapGrid.getCenter(true))
@@ -339,7 +339,7 @@ class Simulation {
 
     /* SIMULATION API */
     /**
-     * Updates whether the physics calculations are offloaded to a worker thread (R?)
+     * Updates whether the physics calculations are offloaded to a worker thread (R? yes)
      * @param {Boolean} usesWebWorkers Whether an other thread is used. (Defaults to true)
      */
     updatePhysicsUnitType(usesWebWorkers=true) {// TODO TOFIX TOCHECK
@@ -364,7 +364,7 @@ class Simulation {
             })
             if (this._isRunning) this.start(true)
         }
-        else if (usesWebWorkers && this.isFileServed) this.#warn(SETTINGS.FILE_SERVED_WARN)
+        else if (usesWebWorkers && this.isFileServed) SimUtils.warn(SETTINGS.FILE_SERVED_WARN, this._userSettings)
     }
 
     /**
@@ -571,19 +571,13 @@ class Simulation {
      * @returns True if the simulation is NOT initialized
      */
     #checkInitializationState(warningMessage) {
-        if (this._userSettings && this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
-            this.#warn(warningMessage)
+        const userSettings = this._userSettings
+        if (userSettings && this._initialized === Simulation.#INIT_STATES.NOT_INITIALIZED) {
+            SimUtils.warn(warningMessage, userSettings)
             return true
         }
     }
 
-    /**
-     * Logs a warning messages if warnings are enabled
-     * @param {String} warningMessage Warning message to log
-     */
-    #warn(warningMessage) {
-        if (!this.warningsDisabled) console.warn(warningMessage)
-    }
     /* SIMULATION API -end */
 
     /* WEB WORKER CONTROL */
@@ -623,7 +617,7 @@ class Simulation {
         else this.#simulationHasPixelsBuffer = true
     }
 
-    // Executes queued operations (R??)
+    // Executes queued operations (R?? prob no)
     #executeQueuedOperations() {
         const queued = this._queuedBufferOperations, q_ll = queued.length
         for (let i=0;i<q_ll;i++) {
@@ -666,35 +660,6 @@ class Simulation {
     /* CACHE UPADTES -end */
 
     /* USER INPUT */
-    /**
-     * Creates functional keybinds (R?) TODO IMPROVE
-     * @param {Object} keybinds The keybinds to set (Defaults to Simulation.DEFAULT_KEYBINDS)
-     */
-    setKeyBinds(keybinds=Simulation.DEFAULT_KEYBINDS) {
-        const keyboard = this._CVS.typingDevice, DOWN = TypingDevice.LISTENER_TYPES.DOWN
-
-        // SET DEFAULTS
-        Object.entries(keybinds).filter(bind=>bind[1].defaultFunction).forEach(([bindName, bindValue])=>{
-            const {defaultFunction, defaultParams, keys, triggerType} = bindValue
-            keyboard.addListener(DOWN, keys, (keyboard, e)=>this.#keybindTryAction(keyboard, e, ()=>this[defaultFunction](...(defaultParams||[])), bindValue), triggerType)
-        })
-
-        if (keybinds.MY_CUSTOM_SIZE_KEYBIND) keyboard.addListener(DOWN, keybinds.MY_CUSTOM_SIZE_KEYBIND.keys, (keyboard, e)=>this.#keybindTryAction(keyboard, e, ()=>{
-            this.updateMapSize(231, 149)
-            this.updateMapPixelSize(4)
-        }, keybinds.MY_CUSTOM_SIZE_KEYBIND), keybinds.MY_CUSTOM_SIZE_KEYBIND.triggerType)
-    }
-
-    // Utils function to check if keybind's conditions are met before executing the action (R?)
-    #keybindTryAction(typingDevice, e, actionCB, bindValue) {
-        const hasAction = CDEUtils.isFunction(actionCB), {requiredKeys, cancelKeys, preventDefault} = bindValue
-        if (preventDefault && e.target.value === undefined) e.preventDefault()
-        if (!hasAction) {
-            this.#warn(SETTINGS.STANDALONE_KEYBIND_WARN)
-            return
-        }
-        if ((!requiredKeys || typingDevice.isDown(requiredKeys)) && (!cancelKeys || !typingDevice.isDown(cancelKeys))) actionCB.bind(this)()
-    }
 
     // mouseUp listener, disables smooth drawing when mouse is unpressed
     #mouseUp() {
@@ -734,69 +699,6 @@ class Simulation {
         if (this._userSettings.backStepSaveOnPlacement) this.saveStep()
     }
 
-    // Zooms in/out towards the provided pos
-    #zoomTowardsPos(pos,  zoomDirection) {
-        const newZoom = this._CVS.zoom + (zoomDirection<0 ? this.zoomInIncrement : this.zoomOutIncrement)
-        if (newZoom > this.minZoomThreshold && newZoom < this._userSettings.maxZoomThreshold) {
-            this._CVS.zoomAtPos(pos, newZoom)
-            return pos
-        }  else return false
-    }
-
-    // Adds the ability do zoom/move around the canvas (if dragAndZoomCanvasEnabled) (R?)
-    #setCanvasZoomAndDrag() {
-        const CVS = this._CVS
-
-        Canvas.preventNativeZoom((dir, isMouse)=>{
-            if (this._userSettings.dragAndZoomCanvasEnabled && !isMouse) this.#zoomTowardsPos(CVS.getCenter(), dir)
-        })
-
-        if (this._userSettings.dragAndZoomCanvasEnabled) {
-            const frame = CVS.frame, mouse = CVS.mouse
-            let isCameraMoving = false, lastDragPos = [0,0]
-
-            frame.addEventListener("wheel", e=>{
-                if (this._userSettings.dragAndZoomCanvasEnabled) {
-                    if (this.#zoomTowardsPos(mouse.rawPos, e.deltaY)) lastDragPos = [...mouse.rawPos]
-                }
-            })
-
-            frame.addEventListener("mousedown", e=>{
-                if (this._userSettings.dragAndZoomCanvasEnabled) {
-                    if (e.button === Mouse.BUTTON_TYPES.RIGHT) {
-                        isCameraMoving = true
-                        lastDragPos = [e.clientX, e.clientY]
-                    }
-                    else if (e.button === Mouse.BUTTON_TYPES.MIDDLE) CVS.resetTransformations(true)
-                }
-            })
-
-            frame.addEventListener("mousemove", e=>{
-                if (this._userSettings.dragAndZoomCanvasEnabled && isCameraMoving) {
-                    const {clientX, clientY} = e, [vx, vy] = CVS.viewPos, dx = clientX-lastDragPos[0], dy = clientY-lastDragPos[1]
-                    CVS.moveViewAt([vx+dx, vy+dy])
-                    lastDragPos = [clientX, clientY]
-                }
-            })
-
-            frame.addEventListener("mouseleave", e=>{
-                if (this._userSettings.dragAndZoomCanvasEnabled && isCameraMoving) {
-                    const {clientX, clientY} = e
-                    lastDragPos = [clientX, clientY]
-                    isCameraMoving = false
-                }
-            })
-
-            frame.addEventListener("mouseup", e=>{
-                if (isCameraMoving && e.button === Mouse.BUTTON_TYPES.RIGHT) isCameraMoving = false
-            })
-
-            frame.addEventListener("contextmenu", e=>e.preventDefault())
-
-            return true
-        }
-        else return false
-    }
     /* USER INPUT -end */
 
     /* PIXEL EDIT */
