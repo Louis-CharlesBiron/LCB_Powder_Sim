@@ -14,7 +14,7 @@ const FLAGS = {// TODO (R)
     TRANSFORM_AIR: 1<<9,
 }
 
-const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 5,// TODO (R)
+const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 50,// TODO (R)
     X_VELOCITY_SKIP_THRESHOLD = 5,
     TRANSFORM_PREFIX = "TRANSFORM_"
 
@@ -317,8 +317,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
         if (isBottomGravity ? (flags&COLLISION_BOTTOM) === 0 : (flags&COLLISION_TOP) === 0) velY = particle.indexVelY[i] += gravity*deltaTime
 
         // HORIZONTAL FRICTION
-        const speed = abs(velX), rate = (BASE_FRICTION+speed*speed*.5*FRICTION_COEFFICIENT)*deltaTime
-        indexVelX[i] = speed>rate ? velX-((velX/speed)*rate) : 0 
+        if (velX) {
+            const speed = abs(velX), rate = (BASE_FRICTION+speed*speed*.5*FRICTION_COEFFICIENT)*deltaTime
+            indexVelX[i] = speed>rate ? velX-((velX/speed)*rate) : 0
+        }
 
         cache.velX = velX
         cache.velY = velY
@@ -362,10 +364,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     
     function checkCollisionsX(i, gi, mat, gdx, oldX, transpierceableMain, particle, cache) {
         const gridMaterials = particle.gridMaterials,
-            gridIndexes = particle.gridIndexes,
+            //gridIndexes = particle.gridIndexes,
             indexVelX = particle.indexVelX,
             indexPosX = particle.indexPosX,
-            velX = cache.velX,
+            //velX = cache.velX,
             newX = cache.newX,
             newY = cache.newY,
             absGdx = abs(gdx),
@@ -375,10 +377,9 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             for (let colX=oldX+dirGdx,colI=0; colI<absGdx; colI++,colX+=dirGdx) {
                 const gi_Dest = getAdjacencyCoords(colX, newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
                 if (hasCollision) {
-                    const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
-                    if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD)) {
+                    //const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
+                    if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) {// || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD
                         indexVelX[i] = 0
-                        //indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
                     }
                     return cache.newX = (indexPosX[i] = colX-dirGdx)|0
                 }
@@ -386,10 +387,9 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
         } else {// check collision at destination pos
             const gi_Dest = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
             if (hasCollision) {
-                const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
-                if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD)) {
+                //const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
+                if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) {// || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD
                     indexVelX[i] = 0
-                    //indexFlags[i] |= dirGdx===1 ? COLLISION_RIGHT : COLLISION_LEFT
                 }
                 return cache.newX = (indexPosX[i] = oldX)|0
             }
