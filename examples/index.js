@@ -51,9 +51,9 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(4)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X55)
 
-    simulation.updateMapPixelSize(1)
-    simulation.updateMapSize(975, 600)
-    simulation.showGrid = false
+    //simulation.updateMapPixelSize(1)
+    //simulation.updateMapSize(975, 600)
+    //simulation.showGrid = false
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
 
     //simulation.updateMapPixelSize(1)
@@ -94,7 +94,8 @@ const mousePosStatus = document.getElementById("mousePosStatus"),
       physicsUnitTypeStatus = document.getElementById("physicsUnitTypeStatus"),
       timeStampStatus = document.getElementById("timeStampStatus"),
       zoomStatus = document.getElementById("zoomStatus"),
-      particleStatus = document.getElementById("particleStatus")
+      particleStatus = document.getElementById("particleStatus"),
+      securityStatus = document.getElementById("securityStatus")
 
 const MOUSE_POS_KEY = "lastMousePos", storageMousePos = localStorage.getItem(MOUSE_POS_KEY)
 if (storageMousePos) {
@@ -166,7 +167,11 @@ function statusLoopCore() {
 
     // ZOOM LEVEL
     const zoomText = CDEUtils.truncateDecimals(simulation.CVS.zoom, 3)
-    if (zoomStatus.textContent != zoomText) zoomStatus.textContent = zoomText
+    if (zoomStatus.textContent !== zoomText) zoomStatus.textContent = zoomText
+
+    // SECURITY STATUS
+    const securityText = (window.isSecureContext&&window.crossOriginIsolated)+" ("+(+window.isSecureContext)+" "+(+window.crossOriginIsolated)+")"
+    if (securityStatus.textContent !== securityText) securityStatus.textContent = securityText
 
     setTimeout(statusLoopCore, STATUS_REFRESH_RATE)
 }statusLoopCore()
