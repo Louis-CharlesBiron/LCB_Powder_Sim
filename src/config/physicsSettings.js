@@ -4,9 +4,11 @@ const DEFAULT_PHYSICS_SETTINGS = {
     timerName: ".",
     timerEnabled: false,
     showSkips: false,
+    enable2ndFallUniformity: true,
 
     // PHYSICS
     equivalentTranspierceChance: .025,
+    collisionFinalizationTime: 60,
 
     vaporMovementChance: .855,
     lavaMovementChance: .855,

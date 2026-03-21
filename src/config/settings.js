@@ -27,6 +27,7 @@ const SETTINGS = {
         STATIC:null,
 
         ALIVE_TRACKING:null,
+        DEPOSITABLE:null,
         HAS_VISUAL_EFFECTS:null,
 
         SAND_SKIPABLE:null,
@@ -39,22 +40,6 @@ const SETTINGS = {
         FIRE_SKIPABLE:null,
     },
     MATERIAL_NAMES: ["VOID"],
-
-    MATERIAL_STATES: {
-        EMPTY:0,
-        COPPER: {
-            LIT:1<<0,
-            ORIGIN:1<<1,
-            DISABLED:1<<2,
-        }
-    },
-
-    MATERIAL_STATES_GROUPS: {
-        COPPER: {
-            ACTIVATED: null,
-            SOURCEABLE: null,
-        }
-    },
 
     D: {b:1<<0, r:1<<1, l:1<<2, br:1<<3, bl:1<<4, t:1<<5, tr:1<<6, tl:1<<7},
 
@@ -157,14 +142,7 @@ const SETTINGS = {
 
     G.HAS_VISUAL_EFFECTS = M.ELECTRICITY|M.COPPER
     G.ALIVE_TRACKING = M.VAPOR|M.FIRE
-
-    // SET MATERIAL STATES GROUPS
-    SETTINGS.MATERIAL_STATES_GROUPS = {
-        COPPER: {
-            ACTIVATED: SETTINGS.MATERIAL_STATES.COPPER.LIT|SETTINGS.MATERIAL_STATES.COPPER.ORIGIN,
-            SOURCEABLE: SETTINGS.MATERIAL_STATES.COPPER.LIT|SETTINGS.MATERIAL_STATES.COPPER.DISABLED
-        }
-    }
+    G.DEPOSITABLE = M.SAND|G.LIQUIDS|M.GRAVEL|M.LAVA
 
     // SET WORKER MESSAGE GROUPS
     SETTINGS.WORKER_MESSAGE_GROUPS = {

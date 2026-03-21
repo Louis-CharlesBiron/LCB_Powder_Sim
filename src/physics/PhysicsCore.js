@@ -1,27 +1,31 @@
-const FLAGS = {// TODO (R)
-    COLLISION_BOTTOM: 1<<0,
-    COLLISION_RIGHT: 1<<1,
-    COLLISION_LEFT: 1<<2,
-    COLLISION_TOP: 1<<3,
-    COLLISION_X: (1<<1)|(1<<2),
-    COLLISION_Y: (1<<3)|(1<<0),
-
-    TRANSFORM_CONTAMINANT: 1<<4,
-    TRANSFORM_LAVA: 1<<5,
-    TRANSFORM_STONE: 1<<6,
-    TRANSFORM_FIRE: 1<<7,
-    TRANSFORM_VAPOR: 1<<8,
-    TRANSFORM_AIR: 1<<9,
-}
-
-const X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD = 50,// TODO (R)
-    X_VELOCITY_SKIP_THRESHOLD = 5,
-    TRANSFORM_PREFIX = "TRANSFORM_"
-
 // DOC TODO
 function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES) {
     console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
     
+    // CONSTANTS //
+    let _FLAGS_I = 0
+    const RTSize = CONFIG.$randomTableSize-1,
+        BIT32 = 31,
+        X_VELOCITY_SKIP_THRESHOLD = 5,
+        TRANSFORM_PREFIX = "TRANSFORM_",
+        FLAGS = {
+            FINALIZED: 1<<_FLAGS_I++,
+            COLLISION_BOTTOM: 1<<_FLAGS_I++,
+            COLLISION_RIGHT: 1<<_FLAGS_I++,
+            COLLISION_LEFT: 1<<_FLAGS_I++,
+            COLLISION_TOP: 1<<_FLAGS_I++,
+            COLLISION_Y: null,
+
+            TRANSFORM_CONTAMINANT: 1<<_FLAGS_I++,
+            TRANSFORM_LAVA: 1<<_FLAGS_I++,
+            TRANSFORM_STONE: 1<<_FLAGS_I++,
+            TRANSFORM_FIRE: 1<<_FLAGS_I++,
+            TRANSFORM_VAPOR: 1<<_FLAGS_I++,
+            TRANSFORM_AIR: 1<<_FLAGS_I++,
+        }
+            
+    FLAGS.COLLISION_Y = FLAGS.COLLISION_BOTTOM|FLAGS.COLLISION_TOP
+
     // COMPUTE VAR UTILS
     const TRANSFORMS_MAP = [],
           HAS_TRANSFORM = Object.entries(FLAGS).reduce((a,b)=>{
@@ -33,27 +37,23 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 return a
             }, 0)
 
-    // CONSTANTS //
-    const RTSize = CONFIG.$randomTableSize-1,
-        BIT32 = 31,
-
     // ENUMS DESTRUCTURING
-    {AIR, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, FIRE, VAPOR} = MATERIALS,
+    const {AIR, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, FIRE, VAPOR} = MATERIALS,
     {
         GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, INFLAMMABLE, FIRE_EXTINGUISH, STATIC,
-        ALIVE_TRACKING,
+        ALIVE_TRACKING, DEPOSITABLE,
         SAND_SKIPABLE, WATER_SKIPABLE, GRAVEL_SKIPABLE, INVERTED_WATER_SKIPABLE, CONTAMINANT_SKIPABLE, LAVA_SKIPABLE, VAPOR_SKIPABLE, FIRE_SKIPABLE,
     } = MATERIAL_GROUPS,
     {RANDOM, LEFT, RIGHT} = SIDE_PRIORITIES,
     {
+        FINALIZED,
         COLLISION_BOTTOM, COLLISION_TOP, COLLISION_Y,
         TRANSFORM_FIRE,
     } = FLAGS,
 
     // UTILS
     {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, getSideSelectionPriority, replaceParticleAtIndex, nextRandom} = getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS),
-    // MATERIALS BEHAVIOR
-    {
+    {    // MATERIALS BEHAVIOR
         _updateMaterialsBehaviorGlobals,
         applySandBehavior, 
         applyLiquidBehavior,
@@ -83,15 +83,16 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     },
     cache = {dx: null,dy: null,velX: null,velY: null,newX: null,newY: null},
     // CONFIG
-    BASE_FRICTION = null,
-    FRICTION_COEFFICIENT = null,
     DECAY_THRESHOLDS = [],
-    VAPOR_MOVEMENT_CHANCE = null,
-    LAVA_MOVEMENT_CHANCE = null,
-    EQUIVALENT_TRANSPIERCE_CHANCE = null,
-    FIRE_PROPAGATES_VAPOR_CREATION_CHANCE = null,
-    FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE = null
-    
+    BASE_FRICTION,
+    FRICTION_COEFFICIENT,
+    VAPOR_MOVEMENT_CHANCE,
+    LAVA_MOVEMENT_CHANCE,
+    EQUIVALENT_TRANSPIERCE_CHANCE,
+    COLLISION_FINALIZATION_TIME,
+    FIRE_PROPAGATES_VAPOR_CREATION_CHANCE,
+    FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE,
+    ENABLE_2ND_FALL_UNIFORMITY
 
     // DOC TODO
     function physicsStep(
@@ -106,6 +107,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
         _updatePhysicsUtilsGlobals(mapWidth, sidePriority===RANDOM, sidePriority===LEFT, sidePriority===RIGHT)
         _updateMaterialsBehaviorGlobals(CONFIG.contaminationChance, CONFIG.lavaMeltChance, CONFIG.fireExtinguishesVaporCreationChance, CONFIG.fireInflammationChance)
         // CONFIG
+        ENABLE_2ND_FALL_UNIFORMITY = CONFIG.enable2ndFallUniformity
         BASE_FRICTION = CONFIG.baseFriction
         FRICTION_COEFFICIENT = CONFIG.frictionCoefficient
         DECAY_THRESHOLDS[VAPOR] = CONFIG.vaporDecayThreshold
@@ -113,6 +115,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
         VAPOR_MOVEMENT_CHANCE = CONFIG.vaporMovementChance
         LAVA_MOVEMENT_CHANCE = CONFIG.lavaMovementChance
         EQUIVALENT_TRANSPIERCE_CHANCE = CONFIG.equivalentTranspierceChance
+        COLLISION_FINALIZATION_TIME = CONFIG.collisionFinalizationTime
         FIRE_PROPAGATES_VAPOR_CREATION_CHANCE = CONFIG.firePropagatesVaporCreationChance
         FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE = CONFIG.fireExtinguishesVaporCreationChance
 
@@ -143,13 +146,28 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             if (i==null || i == -1) console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
 
             // DECAY
-            if ((mat & ALIVE_TRACKING) && ++indexStepsAlive[i] >= DECAY_THRESHOLDS[mat]) {
+            if ((mat&ALIVE_TRACKING) && ++indexStepsAlive[i] >= DECAY_THRESHOLDS[mat]) {
                 let newMat = AIR
 
                 if (nextRandom() <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE) newMat = VAPOR
 
                 replaceParticleAtIndex(gi, newMat, particle)
                 continue
+            }
+
+            // 2ND FALL UNIFORMITY
+            if (ENABLE_2ND_FALL_UNIFORMITY && mat&DEPOSITABLE) {
+                const hasBottomCollision = flags&COLLISION_BOTTOM, isFinalized = flags&FINALIZED
+
+                if (isFinalized && hasBottomCollision===0) {
+                    indexFlags[i] &= ~FINALIZED
+                    indexStepsAlive[i] = 0
+                }
+                else if (isFinalized===0 && hasBottomCollision && ++indexStepsAlive[i] > COLLISION_FINALIZATION_TIME) {
+                    indexFlags[i] |= FINALIZED
+                    indexVelY[i] = MATERIALS_SETTINGS[mat].gravity*.45
+                    indexStepsAlive[i] = 0
+                }
             }
 
             // TRANSFORMS
@@ -364,10 +382,8 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     
     function checkCollisionsX(i, gi, mat, gdx, oldX, transpierceableMain, particle, cache) {
         const gridMaterials = particle.gridMaterials,
-            //gridIndexes = particle.gridIndexes,
             indexVelX = particle.indexVelX,
             indexPosX = particle.indexPosX,
-            //velX = cache.velX,
             newX = cache.newX,
             newY = cache.newY,
             absGdx = abs(gdx),
@@ -377,20 +393,14 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             for (let colX=oldX+dirGdx,colI=0; colI<absGdx; colI++,colX+=dirGdx) {
                 const gi_Dest = getAdjacencyCoords(colX, newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
                 if (hasCollision) {
-                    //const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
-                    if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) {// || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD
-                        indexVelX[i] = 0
-                    }
+                    if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) indexVelX[i] = 0
                     return cache.newX = (indexPosX[i] = colX-dirGdx)|0
                 }
             }
         } else {// check collision at destination pos
             const gi_Dest = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
             if (hasCollision) {
-                //const velDiff = abs(indexVelX[gridIndexes[gi_Dest]]-velX)
-                if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) {// || velDiff > X_COLLISION_VELOCITY_DIFFERENCE_THRESHOLD
-                    indexVelX[i] = 0
-                }
+                if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) indexVelX[i] = 0
                 return cache.newX = (indexPosX[i] = oldX)|0
             }
         }

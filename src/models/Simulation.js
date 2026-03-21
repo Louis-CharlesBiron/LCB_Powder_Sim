@@ -37,7 +37,7 @@ class Simulation {
     static DEFAULT_COLOR_SETTINGS = DEFAULT_COLOR_SETTINGS
     static DEFAULT_MAP_RESOLUTIONS = SETTINGS.DEFAULT_MAP_RESOLUTIONS
     static DEFAULT_KEYBINDS = DEFAULT_KEYBINDS
-    static DEFAULT_PRECISE_PLACE_KEY = TypingDevice.KEYS.SHIFT
+    static PRECISE_PLACE_KEY = TypingDevice.KEYS.SHIFT
     // GET / SET
     static {
         SimUtils.addGettersSetters(this, [
@@ -143,16 +143,23 @@ class Simulation {
      * @param {Number} deltaTime The deltaTime
      */
     #main(deltaTime) {
-        const mouse = this.mouse, userSettings = this._userSettings, loopExtra = this._loopExtra
+        const mouse = this.mouse, userSettings = this._userSettings, loopExtra = this._loopExtra, isRunning = this._isRunning, lastPlacedPos = this.#lastPlacedPos
 
         if (loopExtra) loopExtra(deltaTime)
 
-        if (!this._userSettings.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.DEFAULT_PRECISE_PLACE_KEY)) this.#placePixelWithMouse(mouse)
+        if (!userSettings.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.PRECISE_PLACE_KEY)) {
+
+            if (isRunning) this.#placePixelWithMouse(mouse)
+            else if (lastPlacedPos) {
+                const currentPlacePos = this._mapGrid.getLocalMapPixel(mouse.pos)
+                if (lastPlacedPos[0] !== currentPlacePos[0] && lastPlacedPos[1] !== currentPlacePos[1]) this.#placePixelWithMouse(mouse)
+            }
+        }
 
         if (userSettings.showGrid) this.#drawMapGrid()
         if (userSettings.showBorder) this.#drawBorder()
 
-        if (this._isRunning && this.useLocalPhysics) this.step(deltaTime)
+        if (isRunning && this.useLocalPhysics) this.step(deltaTime)
 
         this._offscreenCtx.putImageData(this._imgMap, 0, 0)
         this.ctx.drawImage(this._offscreenCanvas, 0, 0)
@@ -745,7 +752,7 @@ class Simulation {
     placePixelsWithBrush(x, y, brushType=this._brushType, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         const B = Simulation.BRUSH_TYPES
         if (brushType & Simulation.#BRUSH_GROUPS.SMALL_OPTIMIZED) {
-            if (brushType === B.LINE3 || brushType === B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1], material, replaceMode)
+            if (brushType === B.LINE3 || brushType === B.VERTICAL_CROSS) this.fillArea([x,y-1], [x,y+1], material, replaceMode, true)
             if (brushType === B.ROW3 || brushType === B.VERTICAL_CROSS) {
                 if (x) this.placePixelAtCoords(x-1, y, material, replaceMode)
                 if (x !== this._mapGrid.mapWidth-1) this.placePixelAtCoords(x+1, y, material, replaceMode)
@@ -756,10 +763,10 @@ class Simulation {
             if (x+2 < this._mapGrid.mapWidth) this.placePixelAtCoords(x+2, y, material, replaceMode)
                 this.placePixelAtCoords(x, y-2, material, replaceMode)
                 this.placePixelAtCoords(x, y+2, material, replaceMode)
-                this.fillArea([x-1,y-1], [x+1,y+1], material, replaceMode)
+                this.fillArea([x-1,y-1], [x+1,y+1], material, replaceMode, tru)
         } else if (brushType & Simulation.#BRUSH_GROUPS.X) {
             const offset = (Simulation.#BRUSHES_X_VALUES[brushType]/2)|0
-            this.fillArea([x-offset,y-offset], [x+offset,y+offset], material, replaceMode)
+            this.fillArea([x-offset,y-offset], [x+offset,y+offset], material, replaceMode, true)
         }
     }
 
@@ -785,8 +792,8 @@ class Simulation {
      * @param {Simulation.MATERIALS?} material The material used (Defaults to the selected material)
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    fillArea(pos1, pos2, material=this._selectedMaterial, replaceMode=this._replaceMode) {
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.fillArea(pos1, pos2, material))
+    fillArea(pos1, pos2, material=this._selectedMaterial, replaceMode=this._replaceMode, disableStoppedRendering) {
+        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.fillArea(pos1, pos2, material, replaceMode, disableStoppedRendering))
 
         const pixels = this._gridMaterials, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, x1 = pos1[0]<0?0:pos1[0], y1 = pos1[1]<0?0:pos1[1], x2 = pos2[0]<0?0:pos2[0], y2 = pos2[1]<0?0:pos2[1]
         for (let i=map.mapPosToIndex([x1, y1]);i<p_ll;i++) {
@@ -810,7 +817,7 @@ class Simulation {
             this.placePixelAtIndex(i, material, replaceMode)
         }
 
-        if (!this._isRunning) this.renderPixels()
+        if (!disableStoppedRendering && !this._isRunning) this.renderPixels()
     }
     /* PIXEL EDIT -end */
 

@@ -51,9 +51,9 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(4)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X55)
 
-    //simulation.updateMapPixelSize(1)
-    //simulation.updateMapSize(975, 600)
-    //simulation.showGrid = false
+    simulation.updateMapPixelSize(1)
+    simulation.updateMapSize(975, 600)
+    simulation.showGrid = false
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
 
     //simulation.updateMapPixelSize(1)
@@ -64,7 +64,7 @@ function readyCB(simulation) {
     //simulation.updateMapPixelSize(100)
 
     //simulation.updateMaterialSettings(2, {velXOffsetMin:-200,velXOffsetMax:200,velYOffsetMin:-200,velYOffsetMax:200,})
-    simulation.updateMaterialSettings(2, {velX:-100})
+    //simulation.updateMaterialSettings(2, {velX:-100})
 }
 
 
