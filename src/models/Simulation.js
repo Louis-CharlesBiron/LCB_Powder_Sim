@@ -55,6 +55,7 @@ class Simulation {
     #backStepSaves = []
     #isMouseWithinSimulation = true
     #initialized = null
+    #isSecure = isSecureContext&&crossOriginIsolated
 
     /**
      * The core of the simulation and manages all rendering and world manipulation. (except for physics)
@@ -75,9 +76,9 @@ class Simulation {
         const arraySize = this._mapGrid.arraySize
         this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1)
         this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR)
-        this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
         this._indexCount = new Uint32Array(1)
         this.#createIndexArrays(arraySize)
+        this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
         this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_SETTINGS)
 
         this._isRunning = false
@@ -1099,7 +1100,7 @@ class Simulation {
 	get stepExtra() {return this._physicsUnit.stepExtra}
 	get keybindManager() {return this._keybindManager}
 	get cameraManager() {return this._cameraManager}
-    
+    get isSecure() {return this.#isSecure}
 
     set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
 	set brushType(brushType) {return this.updateBrushType(brushType)}

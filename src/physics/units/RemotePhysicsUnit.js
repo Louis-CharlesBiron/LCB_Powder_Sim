@@ -38,7 +38,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
     }
 
     /** DOC TODO
-     * Sends a command of a certain type to the worker, needing pixels (R?)
+     * Sends a command of a certain type to the worker, needing pixels
      * @param {Simulation.#WORKER_MESSAGE_TYPES} type The worker message type
      */
     sendToWorkers(type) {// TODO TOFIX

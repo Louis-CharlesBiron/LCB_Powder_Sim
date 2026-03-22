@@ -170,12 +170,11 @@ function statusLoopCore() {
     if (zoomStatus.textContent !== zoomText) zoomStatus.textContent = zoomText
 
     // SECURITY STATUS
-    const securityText = (window.isSecureContext&&window.crossOriginIsolated)+" ("+(+window.isSecureContext)+" "+(+window.crossOriginIsolated)+")"
+    const securityText = simulation.isSecure+" ("+(+window.isSecureContext)+" "+(+window.crossOriginIsolated)+")"
     if (securityStatus.textContent !== securityText) securityStatus.textContent = securityText
 
     setTimeout(statusLoopCore, STATUS_REFRESH_RATE)
 }statusLoopCore()
-
 
 
 document.oncontextmenu=e=>e.preventDefault()
