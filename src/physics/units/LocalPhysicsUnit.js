@@ -15,17 +15,13 @@ class LocalPhysicsUnit extends _PhysicsUnit {
     }
 
     step(
-        gridIndexes, gridMaterials,
-        indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
-        sidePriority, mapWidth,
-        deltaTime
+        gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
+        sidePriority, mapWidth, deltaTime
     ) {
         super.step()
         this._physicsCore(
-            gridIndexes, gridMaterials,
-            indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
-            sidePriority, mapWidth,
-            deltaTime
+            gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
+            sidePriority, mapWidth, deltaTime
         )
     }
 

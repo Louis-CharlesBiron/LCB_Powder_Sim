@@ -39,37 +39,34 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
     // ENUMS DESTRUCTURING
     const {AIR, SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, FIRE, VAPOR} = MATERIALS,
-    {
-        GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, INFLAMMABLE, FIRE_EXTINGUISH, STATIC,
-        ALIVE_TRACKING, DEPOSITABLE,
-        SAND_SKIPABLE, WATER_SKIPABLE, GRAVEL_SKIPABLE, INVERTED_WATER_SKIPABLE, CONTAMINANT_SKIPABLE, LAVA_SKIPABLE, VAPOR_SKIPABLE, FIRE_SKIPABLE,
-    } = MATERIAL_GROUPS,
-    {RANDOM, LEFT, RIGHT} = SIDE_PRIORITIES,
-    {
-        FINALIZED,
-        COLLISION_BOTTOM, COLLISION_TOP, COLLISION_Y,
-        TRANSFORM_FIRE,
-    } = FLAGS,
+          {RANDOM, LEFT, RIGHT} = SIDE_PRIORITIES,
+          {
+              GASES, REG_TRANSPIERCEABLE, LIQUIDS, CONTAMINABLE, MELTABLE, INFLAMMABLE, FIRE_EXTINGUISH, STATIC,
+              ALIVE_TRACKING, DEPOSITABLE,
+              SAND_SKIPABLE, WATER_SKIPABLE, GRAVEL_SKIPABLE, INVERTED_WATER_SKIPABLE, CONTAMINANT_SKIPABLE, LAVA_SKIPABLE, VAPOR_SKIPABLE, FIRE_SKIPABLE,
+          } = MATERIAL_GROUPS,
+          {
+              FINALIZED,
+              COLLISION_BOTTOM, COLLISION_TOP, COLLISION_Y,
+              TRANSFORM_FIRE,
+          } = FLAGS,
 
-    // UTILS
+    // UTILS / MATERIALS BEHAVIOR
     {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, getSideSelectionPriority, replaceParticleAtIndex, nextRandom} = getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DATA_ATTRIBUTES),
-    {    // MATERIALS BEHAVIOR
-        _updateMaterialsBehaviorGlobals,
-        applySandBehavior, 
-        applyLiquidBehavior,
-        applyGravelBehavior,
-        applyInvertedWaterBehavior,
-        applyContaminantBehavior,
-        applyLavaBehavior,
-        applyVaporBehavior,
-        applyFireBehavior,
-    } = getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, nextRandom)
+    {_updateMaterialsBehaviorGlobals, applySandBehavior, applyLiquidBehavior, applyGravelBehavior, applyInvertedWaterBehavior, applyContaminantBehavior, applyLavaBehavior, applyVaporBehavior, applyFireBehavior} = getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, nextRandom)
 
     // VARIABLES //
     // TIMER
     let timerCount = 0, skipsCount = 0,
     // PARAMS
-    cache = {dx: null,dy: null,velX: null,velY: null,newX: null,newY: null},
+    cache = {
+        dx: null,
+        dy: null,
+        velX: null,
+        velY: null,
+        newX: null,
+        newY: null
+    },
     // CONFIG
     DECAY_THRESHOLDS = [],
     BASE_FRICTION,
@@ -84,10 +81,8 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
     // DOC TODO
     function physicsStep(
-        gridIndexes, gridMaterials,
-        indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
-        sidePriority, mapWidth,
-        deltaTime
+        gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
+        sidePriority, mapWidth, deltaTime
     ) {
         if (CONFIG.timerEnabled) handleTimerPre()
 
