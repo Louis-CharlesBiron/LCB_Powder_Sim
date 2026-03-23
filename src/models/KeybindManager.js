@@ -22,7 +22,7 @@ class KeybindManager {
         const hasAction = CDEUtils.isFunction(actionCB), {requiredKeys, cancelKeys, preventDefault} = bindValue
         if (preventDefault && e.target.value === undefined) e.preventDefault()
 
-        if (!hasAction) return void SimUtils.warn(SETTINGS.STANDALONE_KEYBIND_WARN, this.#simulation.userSettings)
+        if (!hasAction) return void SimUtils.warn(WARNINGS.STANDALONE_KEYBIND_WARN, this.#simulation.userSettings)
 
         if ((!requiredKeys || typingDevice.isDown(requiredKeys)) && (!cancelKeys || !typingDevice.isDown(cancelKeys))) actionCB.bind(this)()
     }

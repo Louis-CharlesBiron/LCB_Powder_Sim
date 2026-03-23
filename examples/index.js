@@ -9,11 +9,9 @@ const simulation = new Simulation(
     document.getElementById("simulationCanvas"),
     readyCB,
     {
-        usesWebWorkers: false,
+        //usesWebWorkers: false,
         autoStart: true,
         aimedFPS: 60,
-        //cameraCenterPos: null,
-        //zoom: 4
     },
     {
         //autoSimulationSizing: 15,

@@ -1,15 +1,46 @@
 class RemotePhysicsUnit extends _PhysicsUnit {
     static WORKER_MESSAGE_TYPES = SETTINGS.WORKER_MESSAGE_TYPES
     static WORKER_MESSAGE_GROUPS = SETTINGS.WORKER_MESSAGE_GROUPS
+    static DEFAULT_THREAD_COUNT = 4
+    static WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
 
-    constructor() {
+    constructor(threadCount, physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
+        const instance = _PhysicsUnit.REMOTE_PHYSICS_UNIT_INSTANCE
+        if (instance) return instance
+
         super(null)
+        this._threadCount = threadCount||RemotePhysicsUnit.DEFAULT_THREAD_COUNT
         this._queuedBufferOperations = []
+        this._workers = []
+        this.#createWorkers(physicsConfig, MATERIALS_SETTINGS, definitionHolder)
     }
 
     step() {
         super.step()
         this.sendToWorkers()
+    }
+
+    #createWorkers(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
+        const threadCount = this._threadCount
+        for (let i=0;i<threadCount;i++) {
+            const worker = new Worker(RemotePhysicsUnit.WORKER_RELATIVE_PATH, {type:"classic"})
+            this._workers[i] = worker
+
+            worker.postMessage({
+                type: RemotePhysicsUnit.WORKER_MESSAGE_TYPES.INIT,
+                id: i,
+                threadCount,
+                physicsConfig,
+                WORKER_MESSAGE_TYPES: RemotePhysicsUnit.WORKER_MESSAGE_TYPES,
+                WORKER_MESSAGE_GROUPS: RemotePhysicsUnit.WORKER_MESSAGE_GROUPS,
+                MATERIALS_SETTINGS,
+                MATERIALS: definitionHolder.MATERIALS,
+                MATERIAL_GROUPS: definitionHolder.MATERIAL_GROUPS,
+                MATERIAL_NAMES: definitionHolder.MATERIAL_NAMES,
+                SIDE_PRIORITIES: definitionHolder.SIDE_PRIORITIES,
+                PHYSICS_DATA_ATTRIBUTES: definitionHolder.PHYSICS_DATA_ATTRIBUTES
+            })
+        }
     }
 
     // Listener for web worker messages DOC TODO
@@ -67,7 +98,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
             })
             if (this._isRunning) this.start(true)
         }
-        else if (usesWebWorkers && this.isFileServed) SimUtils.warn(SETTINGS.FILE_SERVED_WARN, this._userSettings)
+        else if (usesWebWorkers && this.isFileServed) SimUtils.warn(WARNINGS.FILE_SERVED_WARN, this._userSettings)
     }
 
     // Executes queued operations DOC TODO

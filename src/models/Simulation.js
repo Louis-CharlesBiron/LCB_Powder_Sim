@@ -14,19 +14,20 @@ class Simulation {
     static BRUSH_TYPE_NAMES = SETTINGS.BRUSH_TYPE_NAMES
     static #BRUSHES_X_VALUES = SETTINGS.BRUSHES_X_VALUES
     static #BRUSH_GROUPS = SETTINGS.BRUSH_GROUPS
-    static WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
     static PHYSICS_UNIT_TYPE = SETTINGS.PHYSICS_UNIT_TYPE
     static #INIT_STATES = SETTINGS.INITIALIZED_STATES
     // CACHES
     static #CACHED_MATERIALS_ROWS = []
     static #CACHED_GRID_LINES = null
     static #CACHED_GRID_BORDER = null
-    static #PHYSICS_UNIT_INSTANCES = [null, null]// (R?) yes
+    static #SIGNAL_COUNT = 16
+    static #C_SIGNALS = Int32Array
+    static #C_COUNT = Int32Array
     static #C_GRID_INDEXES = Int32Array
     static #C_GRID_MATERIALS = Uint16Array
-    static #C_FLAGS_SMALL = Uint16Array
-    static #C_PHYSICS_REGULAR = Float32Array
-    static #C_PHYSICS_SMALL = (typeof Float16Array === "undefined" ? Simulation.#C_PHYSICS_REGULAR : Float16Array)
+    static #C_FLAGS = Uint16Array
+    static #C_PHYSICS_DATA = Float32Array
+    static #C_GRAVITY = (typeof Float16Array === "undefined" ? Simulation.#C_PHYSICS_DATA : Float16Array)
     static #C_STEPS_ALIVE = Uint16Array
     static PHYSICS_DATA_ATTRIBUTES = 4
     // DEFAULTS
@@ -77,7 +78,7 @@ class Simulation {
         const arraySize = this._mapGrid.arraySize
         this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1)
         this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR)
-        this._indexCount = new Uint32Array(1)
+        this._indexCount = new Simulation.#C_COUNT(1)
         this.#createIndexArrays(arraySize)
         this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
         this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_SETTINGS)
@@ -343,18 +344,27 @@ class Simulation {
      * Updates whether the physics calculations are offloaded to worker threads
      * @param {Boolean} usesWebWorkers Whether multithreading thread is used. (Defaults to true)
      */
-    updatePhysicsUnitType(usesWebWorkers=true) {// TODO TOFIX TOCHECK
-        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
+    updatePhysicsUnitType(usesWebWorkers) {
+        if (this.#checkInitializationState(WARNINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = +(usesWebWorkers&&!this.isFileServed)
         if ((isWebWorker && this.usingWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
 
-        let instance = Simulation.#PHYSICS_UNIT_INSTANCES[isWebWorker]
-        if (!instance) instance = Simulation.#PHYSICS_UNIT_INSTANCES[isWebWorker] = isWebWorker ? 
-            new RemotePhysicsUnit() :
-            new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
-        
-        this._physicsUnit = instance
+        if (isWebWorker) {
+            const threadCount = usesWebWorkers===true ? 4 : usesWebWorkers
+
+            // TODO
+            setTimeout(()=>{
+
+            this._SAB = this.#initSAB(this._mapGrid.arraySize)
+
+
+
+            }, 500)
+            this._physicsUnit = new RemotePhysicsUnit(threadCount, this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+
+        }
+        else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
     }
 
     /**
@@ -377,7 +387,7 @@ class Simulation {
      * @param {Number?} pixelSize The new map pixel size
      */
     updateMapPixelSize(pixelSize=MapGrid.DEFAULT_PIXEL_SIZE) {
-        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
+        if (this.#checkInitializationState(WARNINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
         pixelSize = pixelSize|0
         if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.updateMapPixelSize(pixelSize))
 
@@ -394,7 +404,7 @@ class Simulation {
      * @param {Number?} height The new height of the map, in local pixels
      */
     updateMapSize(width, height) {
-        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
+        if (this.#checkInitializationState(WARNINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
         width = width|0
         height = height|0
         if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.updateMapSize(width, height))
@@ -457,7 +467,7 @@ class Simulation {
      * @returns The new priority
      */
     updateSidePriority(sidePriority) {
-        if (this.usingWebWorkers) this._physicsUnit.postMessage({type:RemotePhysicsUnit.WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
+        //if (this.usingWebWorkers) this._physicsUnit.postMessage({type:RemotePhysicsUnit.WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
         return this._sidePriority = sidePriority
     }
 
@@ -837,9 +847,9 @@ class Simulation {
     }
 
     #createIndexArrays(arraySize) {
-        this._indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize)
-        this._indexPhysicsData = new Simulation.#C_PHYSICS_REGULAR(arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES)
-        this._indexGravity = new Simulation.#C_PHYSICS_SMALL(arraySize)
+        this._indexFlags = new Simulation.#C_FLAGS(arraySize)
+        this._indexPhysicsData = new Simulation.#C_PHYSICS_DATA(arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES)
+        this._indexGravity = new Simulation.#C_GRAVITY(arraySize)
         this._indexStepsAlive = new Simulation.#C_STEPS_ALIVE(arraySize)
         return [
             this._indexFlags,
@@ -849,10 +859,43 @@ class Simulation {
         ]
     }
 
+    #initSAB(arraySize) {
+        let totalSize = 0
+        const aPD = arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES,
+            offsets = [
+                [Simulation.#C_SIGNALS.BYTES_PER_ELEMENT, Simulation.#SIGNAL_COUNT],
+                [Simulation.#C_GRID_INDEXES.BYTES_PER_ELEMENT],
+                [Simulation.#C_GRID_MATERIALS.BYTES_PER_ELEMENT],
+                [Simulation.#C_COUNT.BYTES_PER_ELEMENT, 1],
+                [Simulation.#C_FLAGS.BYTES_PER_ELEMENT],
+                [Simulation.#C_PHYSICS_DATA.BYTES_PER_ELEMENT, aPD],
+                [Simulation.#C_GRAVITY.BYTES_PER_ELEMENT],
+                [Simulation.#C_STEPS_ALIVE.BYTES_PER_ELEMENT],
+            ].reduce((offsets, b, i)=>{
+                const bytes = b[0], offset = (totalSize+(bytes-1)) & ~(bytes-1), arrSize = b[1]||arraySize 
+                offsets[i] = offset
+                totalSize = offset+arrSize*bytes
+                return offsets
+            }, [])
+
+            console.log(totalSize, arraySize)
+        const sab = new SharedArrayBuffer(totalSize)
+        // TODO maybe _signals = new ...
+        this._gridIndexes = new Simulation.#C_GRID_INDEXES(sab, offsets[1], arraySize)
+        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(sab, offsets[2], arraySize)
+        this._indexCount = new Simulation.#C_COUNT(sab, offsets[3], 1)
+        this._indexFlags = new Simulation.#C_FLAGS(sab, offsets[4], arraySize)
+        this._indexPhysicsData = new Simulation.#C_PHYSICS_DATA(sab, offsets[5], aPD)
+        this._indexGravity = new Simulation.#C_GRAVITY(sab, offsets[6], arraySize)
+        this._indexStepsAlive = new Simulation.#C_STEPS_ALIVE(sab, offsets[7], arraySize)
+
+        return sab
+    }
+
     #getIndexArraysCopy(arraySize=this._mapGrid.arraySize) {
-        const indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize),
-              indexPhysicsData = new Simulation.#C_PHYSICS_REGULAR(arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES),
-              indexGravity = new Simulation.#C_PHYSICS_SMALL(arraySize),
+        const indexFlags = new Simulation.#C_FLAGS(arraySize),
+              indexPhysicsData = new Simulation.#C_PHYSICS_DATA(arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES),
+              indexGravity = new Simulation.#C_GRAVITY(arraySize),
               indexStepsAlive = new Simulation.#C_STEPS_ALIVE(arraySize)
 
         indexFlags.set(this._indexFlags.subarray(0, arraySize))
@@ -875,7 +918,7 @@ class Simulation {
      * @param {Simulation.REPLACE_MODES} replaceMode The replace mode to use 
      */
     load(mapData, useSaveSizes=null, replaceMode=Simulation.REPLACE_MODES.ALL) {
-        if (this.#checkInitializationState(SETTINGS.NOT_INITIALIZED_LOAD_WARN)) return
+        if (this.#checkInitializationState(WARNINGS.NOT_INITIALIZED_LOAD_WARN)) return
         if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.load(mapData, useSaveSizes, replaceMode))
 
         if (mapData) {
