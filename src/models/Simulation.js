@@ -21,13 +21,14 @@ class Simulation {
     static #CACHED_MATERIALS_ROWS = []
     static #CACHED_GRID_LINES = null
     static #CACHED_GRID_BORDER = null
-    static #PHYSICS_UNIT_INSTANCES = [null, null]
+    static #PHYSICS_UNIT_INSTANCES = [null, null]// (R?) yes
     static #C_GRID_INDEXES = Int32Array
     static #C_GRID_MATERIALS = Uint16Array
     static #C_FLAGS_SMALL = Uint16Array
     static #C_PHYSICS_REGULAR = Float32Array
     static #C_PHYSICS_SMALL = (typeof Float16Array === "undefined" ? Simulation.#C_PHYSICS_REGULAR : Float16Array)
     static #C_STEPS_ALIVE = Uint16Array
+    static PHYSICS_DATA_ATTRIBUTES = 4
     // DEFAULTS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
@@ -274,7 +275,7 @@ class Simulation {
             this.saveStep()
             this._physicsUnit.step(
                 this._gridIndexes, this._gridMaterials,
-                this._indexCount, this._indexFlags, this._indexPosX, this._indexPosY, this._indexVelX, this._indexVelY, this._indexGravity, this._indexStepsAlive,
+                this._indexCount, this._indexFlags, this._indexPhysicsData, this._indexGravity, this._indexStepsAlive,
                 this._sidePriority, this._mapGrid.mapWidth,
                 deltaTime
             )
@@ -687,10 +688,7 @@ class Simulation {
         const isStatic = (material & Simulation.MATERIAL_GROUPS.STATIC),
               gridIndexes = this._gridIndexes,
               indexFlags = this._indexFlags,
-              indexPosX = this._indexPosX,
-              indexPosY = this._indexPosY,
-              indexVelX = this._indexVelX,
-              indexVelY = this._indexVelY,
+              indexPhysicsData = this._indexPhysicsData,
               indexGravity = this._indexGravity,
               indexStepsAlive = this._indexStepsAlive,
               indexCount = this._indexCount,
@@ -702,11 +700,12 @@ class Simulation {
         if (oldIndex !== -1) {
             const i = --indexCount[0]
             if (oldIndex !== i) {
-                const x = indexPosX[oldIndex] = indexPosX[i],
-                      y = indexPosY[oldIndex] = indexPosY[i]
+                const oiPD = oldIndex*Simulation.PHYSICS_DATA_ATTRIBUTES, iPD = i*Simulation.PHYSICS_DATA_ATTRIBUTES,
+                x = indexPhysicsData[oiPD] = indexPhysicsData[iPD],
+                y = indexPhysicsData[oiPD+1] = indexPhysicsData[iPD+1]
                 indexFlags[oldIndex] = indexFlags[i]
-                indexVelX[oldIndex] = indexVelX[i]
-                indexVelY[oldIndex] = indexVelY[i]
+                indexPhysicsData[oiPD+2] = indexPhysicsData[iPD+2]
+                indexPhysicsData[oiPD+3] = indexPhysicsData[iPD+3]
                 indexGravity[oldIndex] = indexGravity[i]
                 indexStepsAlive[oldIndex] = indexStepsAlive[i]
                 gridIndexes[(y|0)*mapWidth+(x|0)] = oldIndex
@@ -720,22 +719,23 @@ class Simulation {
                 i = indexCount[0]++,
                 y = (gridIndex/mapWidth)|0,
                 x = gridIndex-y*mapWidth,
-                materialSettings = MaterialSettings.MATERIALS_SETTINGS[material]
+                materialSettings = MaterialSettings.MATERIALS_SETTINGS[material],
+                iPD = i*Simulation.PHYSICS_DATA_ATTRIBUTES
 
             gridMaterials[gridIndex] = material
             indexFlags[i] = materialSettings.flags
-            indexPosX[i] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
-            indexPosY[i] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+            indexPhysicsData[iPD] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+            indexPhysicsData[iPD+1] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
             indexGravity[i] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
             indexStepsAlive[i] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
             if (userSettings.useMouseVelocityForCreation) {
                 const mouse = this.mouse, speed = mouse.speed, coefficient = userSettings.mouseVelocityCoefficient, rad = -CDEUtils.toRad(mouse.dir)
-                indexVelX[i] = Math.cos(rad)*speed*coefficient
-                indexVelY[i] = Math.sin(rad)*speed*coefficient
+                indexPhysicsData[iPD+2] = Math.cos(rad)*speed*coefficient
+                indexPhysicsData[iPD+3] = Math.sin(rad)*speed*coefficient
             } 
             else {
-                indexVelX[i] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
-                indexVelY[i] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+                indexPhysicsData[iPD+2] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+                indexPhysicsData[iPD+3] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
             }
             gridIndexes[gridIndex] = i
         }
@@ -838,18 +838,12 @@ class Simulation {
 
     #createIndexArrays(arraySize) {
         this._indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize)
-        this._indexPosX = new Simulation.#C_PHYSICS_REGULAR(arraySize)
-        this._indexPosY = new Simulation.#C_PHYSICS_REGULAR(arraySize)
-        this._indexVelX = new Simulation.#C_PHYSICS_REGULAR(arraySize)
-        this._indexVelY = new Simulation.#C_PHYSICS_REGULAR(arraySize)
+        this._indexPhysicsData = new Simulation.#C_PHYSICS_REGULAR(arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES)
         this._indexGravity = new Simulation.#C_PHYSICS_SMALL(arraySize)
         this._indexStepsAlive = new Simulation.#C_STEPS_ALIVE(arraySize)
         return [
             this._indexFlags,
-            this._indexPosX,
-            this._indexPosY,
-            this._indexVelX,
-            this._indexVelY,
+            this._indexPhysicsData,
             this._indexGravity,
             this._indexStepsAlive,
         ]
@@ -857,27 +851,18 @@ class Simulation {
 
     #getIndexArraysCopy(arraySize=this._mapGrid.arraySize) {
         const indexFlags = new Simulation.#C_FLAGS_SMALL(arraySize),
-              indexPosX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
-              indexPosY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
-              indexVelX = new Simulation.#C_PHYSICS_REGULAR(arraySize),
-              indexVelY = new Simulation.#C_PHYSICS_REGULAR(arraySize),
+              indexPhysicsData = new Simulation.#C_PHYSICS_REGULAR(arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES),
               indexGravity = new Simulation.#C_PHYSICS_SMALL(arraySize),
               indexStepsAlive = new Simulation.#C_STEPS_ALIVE(arraySize)
 
         indexFlags.set(this._indexFlags.subarray(0, arraySize))
-        indexPosX.set(this._indexPosX.subarray(0, arraySize))
-        indexPosY.set(this._indexPosY.subarray(0, arraySize))
-        indexVelX.set(this._indexVelX.subarray(0, arraySize))
-        indexVelY.set(this._indexVelY.subarray(0, arraySize))
+        indexPhysicsData.set(this._indexPhysicsData.subarray(0, arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES))
         indexGravity.set(this._indexGravity.subarray(0, arraySize))
         indexStepsAlive.set(this._indexStepsAlive.subarray(0, arraySize))
 
         return [
             indexFlags,
-            indexPosX,
-            indexPosY,
-            indexVelX,
-            indexVelY,
+            indexPhysicsData,
             indexGravity,
             indexStepsAlive,
         ]
@@ -931,14 +916,14 @@ class Simulation {
                         this._gridIndexes.set(new Simulation.#C_GRID_INDEXES(count).fill(-1), gridIndex)
                         gridIndex += count
                     } else {
-                        const [material, index, flags, posX, posY, velX, velY, gravity, stepsAlive] = group.split(SETTINGS.EXPORT_DYAMIC_SEPARATOR)
+                        const [material, index, flags, posX, posY, velX, velY, gravity, stepsAlive] = group.split(SETTINGS.EXPORT_DYAMIC_SEPARATOR), indexPhysicsData = this._indexPhysicsData, iPD = index*Simulation.PHYSICS_DATA_ATTRIBUTES 
                         this._gridMaterials[gridIndex] = material
                         this._gridIndexes[gridIndex] = index
                         this._indexFlags[index] = flags
-                        this._indexPosX[index] = posX
-                        this._indexPosY[index] = posY
-                        this._indexVelX[index] = velX
-                        this._indexVelY[index] = velY
+                        indexPhysicsData[iPD] = posX
+                        indexPhysicsData[iPD+1] = posY
+                        indexPhysicsData[iPD+2] = velX
+                        indexPhysicsData[iPD+3] = velY
                         this._indexGravity[index] = gravity
                         this._indexStepsAlive[index] = stepsAlive
                         gridIndex++
@@ -1004,11 +989,12 @@ class Simulation {
         const material = this._gridMaterials[gridIndex], index = this._gridIndexes[gridIndex]
         
         if (index !== -1) {
-            const flags = this._indexFlags[index],
-                posX = this._indexPosX[index],
-                posY = this._indexPosY[index],
-                velX = this._indexVelX[index],
-                velY = this._indexVelY[index],
+            const indexPhysicsData = this._indexPhysicsData, iPD = index*Simulation.PHYSICS_DATA_ATTRIBUTES ,
+                flags = this._indexFlags[index], 
+                posX = indexPhysicsData[iPD],
+                posY = indexPhysicsData[iPD+1],
+                velX = indexPhysicsData[iPD+2],
+                velY = indexPhysicsData[iPD+3],
                 gravity = this._indexGravity[index],
                 stepsAlive = this._indexStepsAlive[index]
 
@@ -1091,10 +1077,7 @@ class Simulation {
 	get lastGridMaterials() {return this._lastGridMaterials}
 	get indexCount() {return this._indexCount}
 	get indexFlags() {return this._indexFlags}
-	get indexPosX() {return this._indexPosX}
-	get indexPosY() {return this._indexPosY}
-	get indexVelX() {return this._indexVelX}
-	get indexVelY() {return this._indexVelY}
+	get indexPhysicsData() {return this._indexPhysicsData}
 	get indexGravity() {return this._indexGravity}
 	get indexStepsAlive() {return this._indexStepsAlive}
 	get stepExtra() {return this._physicsUnit.stepExtra}

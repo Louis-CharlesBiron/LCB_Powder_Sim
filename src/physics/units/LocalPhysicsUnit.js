@@ -10,19 +10,20 @@ class LocalPhysicsUnit extends _PhysicsUnit {
             definitionHolder.MATERIAL_GROUPS,
             definitionHolder.MATERIAL_NAMES,
             definitionHolder.SIDE_PRIORITIES,
+            definitionHolder.PHYSICS_DATA_ATTRIBUTES
         )
     }
 
     step(
         gridIndexes, gridMaterials,
-        indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity, indexStepsAlive,
+        indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
         sidePriority, mapWidth,
         deltaTime
     ) {
         super.step()
         this._physicsCore(
             gridIndexes, gridMaterials,
-            indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity, indexStepsAlive,
+            indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
             sidePriority, mapWidth,
             deltaTime
         )

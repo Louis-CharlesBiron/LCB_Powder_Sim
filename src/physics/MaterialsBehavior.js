@@ -64,9 +64,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
     }
 
     // DOC TODO
-    function applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
-        const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
-
+    function applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if (m_B&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_CONTAMINANT
         if (m_R&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_CONTAMINANT
         if (m_L&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_CONTAMINANT
@@ -74,9 +72,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
     }
 
     // DOC TODO
-    function applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
-        const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
-
+    function applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if (m_B&LIQUIDS||m_R&LIQUIDS||m_L&LIQUIDS||m_T&LIQUIDS) indexFlags[gridIndexes[gi]] |= TRANSFORM_STONE
 
         if (m_B&MELTABLE && nextRandom() <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_LAVA
@@ -101,9 +97,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
 
         
     // DOC TODO
-    function applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
-        const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
-
+    function applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if ((m_B|m_R|m_L|m_T) & FIRE_EXTINGUISH) indexFlags[gridIndexes[gi]] |= nextRandom() <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE ? TRANSFORM_VAPOR : TRANSFORM_AIR
 
         if (m_B&INFLAMMABLE && nextRandom() <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_FIRE

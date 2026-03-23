@@ -1,4 +1,4 @@
-function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
+function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DATA_ATTRIBUTES) {
     // GLOBAL CONSTANTS
     const {STATIC} = MATERIAL_GROUPS,
         RT = createRandomTable()
@@ -61,10 +61,8 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
     }
     
     // DOC TODO
-    function replaceParticleAtIndex(gridIndex, material, particle) {
-        const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount,
-              indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity, indexStepsAlive = particle.indexStepsAlive,
-              isStatic = material & STATIC, oldIndex = gridIndexes[gridIndex]
+    function replaceParticleAtIndex(gridIndex, material, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive) {
+        const isStatic = material & STATIC, oldIndex = gridIndexes[gridIndex], oiPD = oldIndex*PHYSICS_DATA_ATTRIBUTES
 
         if (!isStatic) {
             const y = (gridIndex/MAP_WIDTH)|0,
@@ -72,10 +70,10 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
                   materialSettings = MATERIALS_SETTINGS[material]
         
             indexFlags[oldIndex] = materialSettings.flags
-            indexPosX[oldIndex] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
-            indexPosY[oldIndex] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
-            indexVelX[oldIndex] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
-            indexVelY[oldIndex] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+            indexPhysicsData[oiPD] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+1] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+2] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+3] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
             indexGravity[oldIndex] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
             indexStepsAlive[oldIndex] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
             gridIndexes[gridIndex] = oldIndex
@@ -83,11 +81,12 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
         else if (isStatic) {
             const i = --indexCount[0]
             if (oldIndex !== i) {
-                const x = indexPosX[oldIndex] = indexPosX[i], 
-                      y = indexPosY[oldIndex] = indexPosY[i]
+                const iPD = i*PHYSICS_DATA_ATTRIBUTES
+                x = indexPhysicsData[oiPD] = indexPhysicsData[iPD], 
+                y = indexPhysicsData[oiPD+1] = indexPhysicsData[iPD+1]
                 indexFlags[oldIndex] = indexFlags[i]
-                indexVelX[oldIndex] = indexVelX[i]
-                indexVelY[oldIndex] = indexVelY[i]
+                indexPhysicsData[oiPD+2] = indexPhysicsData[iPD+2]
+                indexPhysicsData[oiPD+3] = indexPhysicsData[iPD+3]
                 indexGravity[oldIndex] = indexGravity[i]
                 indexStepsAlive[oldIndex] = indexStepsAlive[i]
                 gridIndexes[(y|0)*MAP_WIDTH+(x|0)] = oldIndex

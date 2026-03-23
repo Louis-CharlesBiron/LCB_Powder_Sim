@@ -1,5 +1,5 @@
 // DOC TODO
-function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES) {
+function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES, PHYSICS_DATA_ATTRIBUTES) {
     console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
     
     // CONSTANTS //
@@ -52,7 +52,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     } = FLAGS,
 
     // UTILS
-    {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, getSideSelectionPriority, replaceParticleAtIndex, nextRandom} = getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS),
+    {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, getSideSelectionPriority, replaceParticleAtIndex, nextRandom} = getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DATA_ATTRIBUTES),
     {    // MATERIALS BEHAVIOR
         _updateMaterialsBehaviorGlobals,
         applySandBehavior, 
@@ -69,18 +69,6 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     // TIMER
     let timerCount = 0, skipsCount = 0,
     // PARAMS
-    particle = {
-        indexCount: null,
-        gridIndexes: null,
-        gridMaterials: null,
-        indexFlags: null,
-        indexPosX: null,
-        indexPosY: null,
-        indexVelX: null,
-        indexVelY: null,
-        indexGravity: null,
-        indexStepsAlive: null,
-    },
     cache = {dx: null,dy: null,velX: null,velY: null,newX: null,newY: null},
     // CONFIG
     DECAY_THRESHOLDS = [],
@@ -97,7 +85,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     // DOC TODO
     function physicsStep(
         gridIndexes, gridMaterials,
-        indexCount, indexFlags, indexPosX, indexPosY, indexVelX, indexVelY, indexGravity, indexStepsAlive,
+        indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
         sidePriority, mapWidth,
         deltaTime
     ) {
@@ -119,29 +107,20 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
         FIRE_PROPAGATES_VAPOR_CREATION_CHANCE = CONFIG.firePropagatesVaporCreationChance
         FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE = CONFIG.fireExtinguishesVaporCreationChance
 
-        particle.indexCount = indexCount
-        particle.gridIndexes = gridIndexes
-        particle.gridMaterials = gridMaterials
-        particle.indexFlags = indexFlags
-        particle.indexPosX = indexPosX
-        particle.indexPosY = indexPosY
-        particle.indexVelX = indexVelX
-        particle.indexVelY = indexVelY
-        particle.indexGravity = indexGravity
-        particle.indexStepsAlive = indexStepsAlive
-
         // SKIPS (PERF)
         let skip1=0, skip2=0, skip3=0, skip4=0,
             pass1=0, pass2=0, pass3=0
 
         let countIndex = 0, count = indexCount[0]
         for (;countIndex<count;countIndex++) {
-            const ox = indexPosX[countIndex], oy = indexPosY[countIndex], oldX = ox|0, oldY = oy|0, gi = oldY*mapWidth+oldX, i = gridIndexes[gi]
+            const ciPD = countIndex*PHYSICS_DATA_ATTRIBUTES, ox = indexPhysicsData[ciPD], oy = indexPhysicsData[ciPD+1], oldX = ox|0, oldY = oy|0,
+                  gi = oldY*mapWidth+oldX, i = gridIndexes[gi], iPD = i*PHYSICS_DATA_ATTRIBUTES
+
             let transpierceableMain = REG_TRANSPIERCEABLE, transpierceableSec = GASES, mat = gridMaterials[gi], flags = indexFlags[i]
             cache.dx = 0
             cache.dy = 0
-            cache.velX = indexVelX[i]
-            cache.velY = indexVelY[i]
+            cache.velX = indexPhysicsData[iPD+2]
+            cache.velY = indexPhysicsData[iPD+3]
 
             if (i==null || i == -1) console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, SETTINGS.MATERIAL_NAMES[mat])//DEBUG
 
@@ -151,7 +130,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
                 if (nextRandom() <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE) newMat = VAPOR
 
-                replaceParticleAtIndex(gi, newMat, particle)
+                replaceParticleAtIndex(gi, newMat, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive)
                 continue
             }
 
@@ -165,7 +144,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 }
                 else if (isFinalized===0 && hasBottomCollision && ++indexStepsAlive[i] > COLLISION_FINALIZATION_TIME) {
                     indexFlags[i] |= FINALIZED
-                    indexVelY[i] = MATERIALS_SETTINGS[mat].gravity*.45
+                    indexPhysicsData[iPD+3] = MATERIALS_SETTINGS[mat].gravity*.45
                     indexStepsAlive[i] = 0
                 }
             }
@@ -177,7 +156,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
                 if ((flags&TRANSFORM_FIRE) && nextRandom() <= FIRE_PROPAGATES_VAPOR_CREATION_CHANCE) newMat = VAPOR
 
-                mat = replaceParticleAtIndex(gi, newMat, particle)
+                mat = replaceParticleAtIndex(gi, newMat, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive)
                 if (mat&STATIC) continue
                 flags = indexFlags[i] &= ~transformFlag
             }
@@ -189,7 +168,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
 
                     // SKIP IF CONTAINED
-                    if (m_B&SAND_SKIPABLE&&m_BR&SAND_SKIPABLE&&m_BL&SAND_SKIPABLE&&m_R&SAND_SKIPABLE&&m_L&SAND_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
+                    if (m_B&SAND_SKIPABLE&&m_BR&SAND_SKIPABLE&&m_BL&SAND_SKIPABLE&&m_R&SAND_SKIPABLE&&m_L&SAND_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
 
                     // CHECK MAIN DIRECTIONS
                     applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache)
@@ -200,7 +179,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 if (flags&COLLISION_BOTTOM) {
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)], m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)], m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
                     
-                    if (m_B&WATER_SKIPABLE&&m_BR&WATER_SKIPABLE&&m_BL&WATER_SKIPABLE&&m_R&WATER_SKIPABLE&&m_L&WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
+                    if (m_B&WATER_SKIPABLE&&m_BR&WATER_SKIPABLE&&m_BL&WATER_SKIPABLE&&m_R&WATER_SKIPABLE&&m_L&WATER_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     
                     if (nextRandom() <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= INVERTED_WATER
                     applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
@@ -209,7 +188,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             else if (mat === GRAVEL) {
                 if (flags&COLLISION_BOTTOM) {
                     const m_B = gridMaterials[getAdjacencyCoords(oldX, oldY+1)]
-                    if (m_B&GRAVEL_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
+                    if (m_B&GRAVEL_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     applyGravelBehavior(i, m_B, transpierceableMain, indexFlags)
                 }
             }
@@ -217,7 +196,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 transpierceableMain = GASES
                 if (flags&COLLISION_TOP) {
                     const m_T = gridMaterials[getAdjacencyCoords(oldX, oldY-1)], m_TR = gridMaterials[getAdjacencyCoords(oldX+1, oldY-1)], m_TL = gridMaterials[getAdjacencyCoords(oldX-1, oldY-1)], m_R = gridMaterials[getAdjacencyCoords(oldX+1, oldY)], m_L = gridMaterials[getAdjacencyCoords(oldX-1, oldY)]
-                    if (m_T&INVERTED_WATER_SKIPABLE&&m_TR&INVERTED_WATER_SKIPABLE&&m_TL&INVERTED_WATER_SKIPABLE&&m_R&INVERTED_WATER_SKIPABLE&&m_L&INVERTED_WATER_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
+                    if (m_T&INVERTED_WATER_SKIPABLE&&m_TR&INVERTED_WATER_SKIPABLE&&m_TL&INVERTED_WATER_SKIPABLE&&m_R&INVERTED_WATER_SKIPABLE&&m_L&INVERTED_WATER_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     
                     if (nextRandom() <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= WATER
                     applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
@@ -233,9 +212,9 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                           m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)],
                           m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
 
-                    if ((m_B|m_R|m_L|m_T) & CONTAMINABLE) applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
+                    if ((m_B|m_R|m_L|m_T) & CONTAMINABLE) applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags)
 
-                    if (m_B&CONTAMINANT_SKIPABLE&&m_BR&CONTAMINANT_SKIPABLE&&m_BL&CONTAMINANT_SKIPABLE&&m_R&CONTAMINANT_SKIPABLE&&m_L&CONTAMINANT_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
+                    if (m_B&CONTAMINANT_SKIPABLE&&m_BR&CONTAMINANT_SKIPABLE&&m_BL&CONTAMINANT_SKIPABLE&&m_R&CONTAMINANT_SKIPABLE&&m_L&CONTAMINANT_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 } 
             }
@@ -251,9 +230,9 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                           m_BR = gridMaterials[getAdjacencyCoords(oldX+1, oldY+1)],
                           m_BL = gridMaterials[getAdjacencyCoords(oldX-1, oldY+1)]
                     
-                    if ((m_B|m_R|m_L|m_T) & (MELTABLE|LIQUIDS)) applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
+                    if ((m_B|m_R|m_L|m_T) & (MELTABLE|LIQUIDS)) applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags)
 
-                    if (m_B&LAVA_SKIPABLE&&m_BR&LAVA_SKIPABLE&&m_BL&LAVA_SKIPABLE&&m_R&LAVA_SKIPABLE&&m_L&LAVA_SKIPABLE && abs(indexVelX[i]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
+                    if (m_B&LAVA_SKIPABLE&&m_BR&LAVA_SKIPABLE&&m_BL&LAVA_SKIPABLE&&m_R&LAVA_SKIPABLE&&m_L&LAVA_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)
                 } 
             }
@@ -276,7 +255,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                       gi_L = getAdjacencyCoords(oldX-1, oldY), m_L = gridMaterials[gi_L],
                       gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = gridMaterials[gi_T]??mat
 
-                if ((m_B|m_R|m_L|m_T) & (INFLAMMABLE|FIRE_EXTINGUISH)) applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle)
+                if ((m_B|m_R|m_L|m_T) & (INFLAMMABLE|FIRE_EXTINGUISH)) applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags)
 
                 if (flags&COLLISION_TOP) {
                     const m_TR = gridMaterials[getAdjacencyCoords(oldX+1, oldY-1)], m_TL = gridMaterials[getAdjacencyCoords(oldX-1, oldY-1)]
@@ -287,25 +266,25 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             }
 
             // APPLY MOVEMENTS
-            applyForces(i, deltaTime, particle, cache)
+            applyForces(i, iPD, deltaTime, indexFlags, indexGravity, indexPhysicsData, cache)
             const dx = cache.dx, dy = cache.dy
             if (!(dy || dx)) {skip2++;continue}pass2++
 
             // MOVE
-            if (dx) indexPosX[i] = safeTrunc(clamp(ox+dx))
-            if (dy) indexPosY[i] += safeTrunc(dy)
+            if (dx) indexPhysicsData[iPD] = safeTrunc(clamp(ox+dx))
+            if (dy) indexPhysicsData[iPD+1] += safeTrunc(dy)
 
-            const newX = (ox+dx)|0, newY = indexPosY[i]|0, gdx = newX-oldX, gdy = newY-oldY, hasNoGdx = gdx === 0, hasNoGdy = gdy === 0
+            const newX = (ox+dx)|0, newY = indexPhysicsData[iPD+1]|0, gdx = newX-oldX, gdy = newY-oldY, hasNoGdx = gdx === 0, hasNoGdy = gdy === 0
             if (hasNoGdy && hasNoGdx) {skip3++;continue}pass3++
             cache.newX = newX
             cache.newY = newY
 
             // CHECK FOR COLLISION X/Y
-            if (!hasNoGdy) checkCollisionsY(i, mat, gdy, oldX, oldY, transpierceableMain, particle, cache)
-            if (!hasNoGdx) checkCollisionsX(i, gi, mat, gdx, oldX, transpierceableMain, particle, cache)
+            if (!hasNoGdy) checkCollisionsY(i, iPD, mat, gdy, oldX, oldY, transpierceableMain, gridMaterials, indexFlags, indexPhysicsData, cache)
+            if (!hasNoGdx) checkCollisionsX(iPD, gi, mat, gdx, oldX, transpierceableMain, gridMaterials, indexPhysicsData, cache)
             
             // UPDATE GRID
-            updateGrid(i, gi, mat, ox, oy, transpierceableMain, particle, cache)
+            updateGrid(i, gi, mat, ox, oy, transpierceableMain, gridMaterials, gridIndexes, indexPhysicsData, cache)
 
             // TEMP PERF
             const pxSize = 0
@@ -327,17 +306,17 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     }
 
 
-    function applyForces(i, deltaTime, particle, cache) {
-        const indexFlags = particle.indexFlags, indexVelX = particle.indexVelX, flags = indexFlags[i], gravity = particle.indexGravity[i], isBottomGravity = gravity >= 0
+    function applyForces(i, iPD, deltaTime, indexFlags, indexGravity, indexPhysicsData, cache) {
+        const flags = indexFlags[i], gravity = indexGravity[i], isBottomGravity = gravity >= 0
         let velX = cache.velX, velY = cache.velY
 
         // ADD VERTICAL FORCES
-        if (isBottomGravity ? (flags&COLLISION_BOTTOM) === 0 : (flags&COLLISION_TOP) === 0) velY = particle.indexVelY[i] += gravity*deltaTime
+        if (isBottomGravity ? (flags&COLLISION_BOTTOM) === 0 : (flags&COLLISION_TOP) === 0) velY = indexPhysicsData[iPD+3] += gravity*deltaTime
 
         // HORIZONTAL FRICTION
         if (velX) {
             const speed = abs(velX), rate = (BASE_FRICTION+speed*speed*.5*FRICTION_COEFFICIENT)*deltaTime
-            indexVelX[i] = speed>rate ? velX-((velX/speed)*rate) : 0
+            indexPhysicsData[iPD+2] = speed>rate ? velX-((velX/speed)*rate) : 0
         }
 
         cache.velX = velX
@@ -346,23 +325,18 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
         cache.dy += velY*deltaTime
     }
 
-    function checkCollisionsY(i, mat, gdy, oldX, oldY, transpierceableMain, particle, cache) {
-        const gridMaterials = particle.gridMaterials,
-            indexVelY = particle.indexVelY,
-            indexPosY = particle.indexPosY,
-            indexFlags = particle.indexFlags,
-            absGdy = abs(gdy),
-            dirGdy = 1|(gdy>>BIT32)
+    function checkCollisionsY(i, iPD, mat, gdy, oldX, oldY, transpierceableMain, gridMaterials, indexFlags, indexPhysicsData, cache) {
+        const absGdy = abs(gdy), dirGdy = 1|(gdy>>BIT32)
 
         if (absGdy > 1) {// check collision at oldY..newY
             for (let colY=oldY+dirGdy,colI=0; colI<absGdy; colI++,colY+=dirGdy) {
                 const gi_Dest = getAdjacencyCoords(oldX, colY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
                 if (hasCollision) {
-                    cache.newY = (indexPosY[i] = colY-dirGdy)|0
+                    cache.newY = (indexPhysicsData[iPD+1] = colY-dirGdy)|0
                     indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
                     if ((mat&GASES) === 0) {
-                        if (m_Dest && m_Dest !== mat) indexVelY[i] = 2*dirGdy
-                        else if (!m_Dest) indexVelY[i] = 0
+                        if (m_Dest && m_Dest !== mat) indexPhysicsData[iPD+3] = 2*dirGdy
+                        else if (!m_Dest) indexPhysicsData[iPD+3] = 0
                     }
                     break
                 }
@@ -370,49 +344,38 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
         } else {// check collision at destination pos
             const gi_Dest = getAdjacencyCoords(oldX, cache.newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
             if (hasCollision) {
-                cache.newY = (indexPosY[i] = oldY)|0
+                cache.newY = (indexPhysicsData[iPD+1] = oldY)|0
                 indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
                 if ((mat&GASES) === 0) {
-                    if (m_Dest && m_Dest !== mat) indexVelY[i] = 2*dirGdy
-                    else if (!m_Dest) indexVelY[i] = 0
+                    if (m_Dest && m_Dest !== mat) indexPhysicsData[iPD+3] = 2*dirGdy
+                    else if (!m_Dest) indexPhysicsData[iPD+3] = 0
                 }
             }
         }
     }
     
-    function checkCollisionsX(i, gi, mat, gdx, oldX, transpierceableMain, particle, cache) {
-        const gridMaterials = particle.gridMaterials,
-            indexVelX = particle.indexVelX,
-            indexPosX = particle.indexPosX,
-            newX = cache.newX,
-            newY = cache.newY,
-            absGdx = abs(gdx),
-            dirGdx = 1|(gdx>>BIT32)
+    function checkCollisionsX(iPD, gi, mat, gdx, oldX, transpierceableMain, gridMaterials, indexPhysicsData, cache) {
+        const newX = cache.newX, newY = cache.newY, absGdx = abs(gdx), dirGdx = 1|(gdx>>BIT32)
 
         if (absGdx > 1) {// check collision at oldX..newX
             for (let colX=oldX+dirGdx,colI=0; colI<absGdx; colI++,colX+=dirGdx) {
                 const gi_Dest = getAdjacencyCoords(colX, newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
                 if (hasCollision) {
-                    if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) indexVelX[i] = 0
-                    return cache.newX = (indexPosX[i] = colX-dirGdx)|0
+                    if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) indexPhysicsData[iPD+2] = 0
+                    return cache.newX = (indexPhysicsData[iPD] = colX-dirGdx)|0
                 }
             }
         } else {// check collision at destination pos
             const gi_Dest = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[gi_Dest], hasCollision = !(m_Dest & transpierceableMain)
             if (hasCollision) {
-                if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) indexVelX[i] = 0
-                return cache.newX = (indexPosX[i] = oldX)|0
+                if ((mat&GASES) === 0 && (m_Dest & STATIC || gi_Dest === gi)) indexPhysicsData[iPD+2] = 0
+                return cache.newX = (indexPhysicsData[iPD] = oldX)|0
             }
         }
     }
 
-    function updateGrid(i, gi, mat, ox, oy, transpierceableMain, particle, cache) {
-        const gridMaterials = particle.gridMaterials,
-            gridIndexes = particle.gridIndexes,
-            indexPosX = particle.indexPosX,
-            indexPosY = particle.indexPosY,
-            newX = cache.newX,
-            newY = cache.newY
+    function updateGrid(i, gi, mat, ox, oy, transpierceableMain, gridMaterials, gridIndexes, indexPhysicsData, cache) {
+        const newX = cache.newX, newY = cache.newY
 
         const newGridI = getAdjacencyCoords(newX, newY), m_Dest = gridMaterials[newGridI] & transpierceableMain
         if (m_Dest !== 0) {
@@ -423,8 +386,9 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             gridIndexes[gi] = atI
             gridMaterials[gi] = m_Dest
             if (atI !== -1) {
-                indexPosX[atI] = ox
-                indexPosY[atI] = oy
+                const atIPD = atI*PHYSICS_DATA_ATTRIBUTES
+                indexPhysicsData[atIPD] = ox
+                indexPhysicsData[atIPD+1] = oy
             }
         } 
     }
