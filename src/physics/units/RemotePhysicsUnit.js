@@ -4,42 +4,83 @@ class RemotePhysicsUnit extends _PhysicsUnit {
     static DEFAULT_THREAD_COUNT = 4
     static WORKER_RELATIVE_PATH = SETTINGS.WORKER_RELATIVE_PATH
 
-    constructor(threadCount, physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
+    constructor(threadCount, SABDeps, physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
         const instance = _PhysicsUnit.REMOTE_PHYSICS_UNIT_INSTANCE
         if (instance) return instance
 
         super(null)
+        this._initialized = false
         this._threadCount = threadCount||RemotePhysicsUnit.DEFAULT_THREAD_COUNT
         this._queuedBufferOperations = []
         this._workers = []
-        this.#createWorkers(physicsConfig, MATERIALS_SETTINGS, definitionHolder)
+        this._workerDependencies = [
+            physicsConfig,
+            MATERIALS_SETTINGS,
+            definitionHolder
+        ]
+        this._SABDependencies = SABDeps
     }
 
-    step() {
+    initialize() {
+        this._initialized = true
+        this.#createWorkers()
+    }
+
+    updateThreadCount(threadCount) {
+        this._threadCount = threadCount
+        this.#createWorkers()
+    }
+
+    updateSAB(SABDependencies) {
+        this._SABDependencies = SABDependencies
+        this.#createWorkers()
+    }
+
+    step(deltaTime) {
         super.step()
         this.sendToWorkers()
     }
 
-    #createWorkers(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
-        const threadCount = this._threadCount
-        for (let i=0;i<threadCount;i++) {
-            const worker = new Worker(RemotePhysicsUnit.WORKER_RELATIVE_PATH, {type:"classic"})
-            this._workers[i] = worker
+    /** DOC TODO
+     * Sends a command of a certain type to the worker, needing pixels
+     * @param {Simulation.#WORKER_MESSAGE_TYPES} type The worker message type
+     */
+    sendToWorkers(type) {// TODO TOFIX
 
-            worker.postMessage({
-                type: RemotePhysicsUnit.WORKER_MESSAGE_TYPES.INIT,
-                id: i,
-                threadCount,
-                physicsConfig,
-                WORKER_MESSAGE_TYPES: RemotePhysicsUnit.WORKER_MESSAGE_TYPES,
-                WORKER_MESSAGE_GROUPS: RemotePhysicsUnit.WORKER_MESSAGE_GROUPS,
-                MATERIALS_SETTINGS,
-                MATERIALS: definitionHolder.MATERIALS,
-                MATERIAL_GROUPS: definitionHolder.MATERIAL_GROUPS,
-                MATERIAL_NAMES: definitionHolder.MATERIAL_NAMES,
-                SIDE_PRIORITIES: definitionHolder.SIDE_PRIORITIES,
-                PHYSICS_DATA_ATTRIBUTES: definitionHolder.PHYSICS_DATA_ATTRIBUTES
-            })
+        // FOR EACH WORKER, SEND STEP
+
+        this.saveStep()
+        if (this.usingWebWorkers) this._physicsUnit.postMessage({type, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
+        else this._isBlocked = false
+    }
+
+    #createWorkers() {
+        if (this._initialized) {
+            const threadCount = this._threadCount, [physicsConfig, MATERIALS_SETTINGS, definitionHolder] = this._workerDependencies
+            
+            for (let i=0;i<threadCount;i++) {
+                const worker = new Worker(RemotePhysicsUnit.WORKER_RELATIVE_PATH, {type:"classic"})
+                this._workers[i] = worker
+
+                worker.postMessage({
+                    type: RemotePhysicsUnit.WORKER_MESSAGE_TYPES.INIT,
+                    id: i,
+                    threadCount,
+                    workerDependencies: {
+                        physicsConfig,
+                        WORKER_MESSAGE_TYPES: RemotePhysicsUnit.WORKER_MESSAGE_TYPES,
+                        WORKER_MESSAGE_GROUPS: RemotePhysicsUnit.WORKER_MESSAGE_GROUPS,
+                        MATERIALS_SETTINGS,
+                        MATERIALS: definitionHolder.MATERIALS,
+                        MATERIAL_GROUPS: definitionHolder.MATERIAL_GROUPS,
+                        MATERIAL_NAMES: definitionHolder.MATERIAL_NAMES,
+                        SIDE_PRIORITIES: definitionHolder.SIDE_PRIORITIES,
+                        PHYSICS_DATA_ATTRIBUTES: definitionHolder.PHYSICS_DATA_ATTRIBUTES,
+                        CONTAINER_NAMES: definitionHolder.CONTAINER_NAMES
+                    },
+                    SABDependencies: this._SABDependencies,
+                })
+            }
         }
     }
 
@@ -68,38 +109,6 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    /** DOC TODO
-     * Sends a command of a certain type to the worker, needing pixels
-     * @param {Simulation.#WORKER_MESSAGE_TYPES} type The worker message type
-     */
-    sendToWorkers(type) {// TODO TOFIX
-        const pixels = this._gridMaterials //TODO
-        this.saveStep()
-        if (this.usingWebWorkers) this._physicsUnit.postMessage({type, pixels, pxStates}, [pixels.buffer, pxStates.buffer])
-        else this._isBlocked = false
-    }
-
-    /**DOC TODO
-     * Updates whether the physics calculations are offloaded to a worker thread 
-     * @param {Boolean} usesWebWorkers Whether an other thread is used. (Defaults to true)
-     */
-    updatePhysicsUnitType(usesWebWorkers=true) {// TODO TOFIX TOCHECK
-        const isWebWorker = +(usesWebWorkers&&!this.isFileServed)
-        if ((isWebWorker && this.usingWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
-
-        if (isWebWorker) {
-            this._isBlocked = false
-            this._physicsUnit.onmessage=this.#physicsUnitMessage.bind(this)
-            this._physicsUnit.postMessage({
-                type:RemotePhysicsUnit.WORKER_MESSAGE_TYPES.INIT,
-                pixels:this._gridIndexes, pxStepUpdated:this._indexUpdated, pxStates:this._indexStates, sidePriority:this._sidePriority, 
-                mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight,
-                aimedFps:this._CVS.fpsLimit
-            })
-            if (this._isRunning) this.start(true)
-        }
-        else if (usesWebWorkers && this.isFileServed) SimUtils.warn(WARNINGS.FILE_SERVED_WARN, this._userSettings)
-    }
 
     // Executes queued operations DOC TODO
     executeQueuedOperations() {

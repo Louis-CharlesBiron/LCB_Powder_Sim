@@ -29,6 +29,17 @@ class Simulation {
     static #C_PHYSICS_DATA = Float32Array
     static #C_GRAVITY = (typeof Float16Array === "undefined" ? Simulation.#C_PHYSICS_DATA : Float16Array)
     static #C_STEPS_ALIVE = Uint16Array
+    static CONTAINERS = {
+        C_SIGNALS: Simulation.#C_SIGNALS,
+        C_COUNT: Simulation.#C_COUNT,
+        C_GRID_INDEXES: Simulation.#C_GRID_INDEXES,
+        C_GRID_MATERIALS: Simulation.#C_GRID_MATERIALS,
+        C_FLAGS: Simulation.#C_FLAGS,
+        C_PHYSICS_DATA: Simulation.#C_PHYSICS_DATA,
+        C_GRAVITY: Simulation.#C_GRAVITY,
+        C_STEPS_ALIVE: Simulation.#C_STEPS_ALIVE,
+    }
+    static CONTAINER_NAMES = Object.fromEntries(Object.entries(Simulation.CONTAINERS).map(c=>[c[0],c[1].name]))
     static PHYSICS_DATA_ATTRIBUTES = 4
     // DEFAULTS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
@@ -132,8 +143,10 @@ class Simulation {
         // INTERNAL LOAD CALLS
         this.#initialized = Simulation.#INIT_STATES.READY
 
+
         if (this._userSettings.autoSimulationSizing) this.autoFitMapSize(this._userSettings.autoSimulationSizing)
         if (CDEUtils.isFunction(readyCB)) readyCB(this)
+        if (this.usingWebWorkers) this._physicsUnit.initialize()
 
         this.#initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
 
@@ -272,7 +285,8 @@ class Simulation {
      * Runs and displays one physics step
      */
     step(deltaTime=this.CVS.deltaTime) {
-        if (this.useLocalPhysics && !this._physicsUnit.isBlocked) {
+        const available = !this._physicsUnit.isBlocked
+        if (this.useLocalPhysics && available) {
             this.saveStep()
             this._physicsUnit.step(
                 this._gridIndexes, this._gridMaterials,
@@ -282,8 +296,7 @@ class Simulation {
             )
             this.renderPixels()
         }
-        
-        // TODO else if (this.#simulationHasPixelBuffer) this._physicsUnit.send(T.STEP)
+        else if (available) this._physicsUnit.step(deltaTime)
     }
 
     /**
@@ -353,18 +366,42 @@ class Simulation {
         if (isWebWorker) {
             const threadCount = usesWebWorkers===true ? 4 : usesWebWorkers
 
-            // TODO
-            setTimeout(()=>{
-
-            this._SAB = this.#initSAB(this._mapGrid.arraySize)
-
-
-
-            }, 500)
-            this._physicsUnit = new RemotePhysicsUnit(threadCount, this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
-
+            this._physicsUnit = new RemotePhysicsUnit(threadCount, this.#initSAB(), this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
         }
         else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+    }
+
+    #initSAB(arraySize=this._mapGrid.arraySize) {
+        let totalSize = 0
+        const aPD = arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES,
+            offsets = [
+                [Simulation.#C_SIGNALS.BYTES_PER_ELEMENT, Simulation.#SIGNAL_COUNT],
+                [Simulation.#C_GRID_INDEXES.BYTES_PER_ELEMENT],
+                [Simulation.#C_GRID_MATERIALS.BYTES_PER_ELEMENT],
+                [Simulation.#C_COUNT.BYTES_PER_ELEMENT, 1],
+                [Simulation.#C_FLAGS.BYTES_PER_ELEMENT],
+                [Simulation.#C_PHYSICS_DATA.BYTES_PER_ELEMENT, aPD],
+                [Simulation.#C_GRAVITY.BYTES_PER_ELEMENT],
+                [Simulation.#C_STEPS_ALIVE.BYTES_PER_ELEMENT],
+            ].reduce((offsets, b, i)=>{
+                const bytes = b[0], offset = (totalSize+(bytes-1)) & ~(bytes-1), arrSize = b[1]||arraySize 
+                offsets[i] = offset
+                totalSize = offset+arrSize*bytes
+                return offsets
+            }, [])
+
+            console.log(totalSize, arraySize)
+        const SAB = new SharedArrayBuffer(totalSize)
+        // TODO maybe _signals = new ...
+        this._gridIndexes = new Simulation.#C_GRID_INDEXES(SAB, offsets[1], arraySize)
+        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(SAB, offsets[2], arraySize)
+        this._indexCount = new Simulation.#C_COUNT(SAB, offsets[3], 1)
+        this._indexFlags = new Simulation.#C_FLAGS(SAB, offsets[4], arraySize)
+        this._indexPhysicsData = new Simulation.#C_PHYSICS_DATA(SAB, offsets[5], aPD)
+        this._indexGravity = new Simulation.#C_GRAVITY(SAB, offsets[6], arraySize)
+        this._indexStepsAlive = new Simulation.#C_STEPS_ALIVE(SAB, offsets[7], arraySize)
+
+        return {SAB, offsets, arraySize, aPD}
     }
 
     /**
@@ -436,7 +473,7 @@ class Simulation {
             map.mapWidth = width
             map.mapHeight = height
             this.#commonSizeUpdate(()=>this.#updatePixelsFromSize(oldWidth, oldHeight, width, height))
-
+            if (this.usingWebWorkers) this._physicsUnit.updateSAB(this.#initSAB())
         }
     }
 
@@ -859,39 +896,6 @@ class Simulation {
         ]
     }
 
-    #initSAB(arraySize) {
-        let totalSize = 0
-        const aPD = arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES,
-            offsets = [
-                [Simulation.#C_SIGNALS.BYTES_PER_ELEMENT, Simulation.#SIGNAL_COUNT],
-                [Simulation.#C_GRID_INDEXES.BYTES_PER_ELEMENT],
-                [Simulation.#C_GRID_MATERIALS.BYTES_PER_ELEMENT],
-                [Simulation.#C_COUNT.BYTES_PER_ELEMENT, 1],
-                [Simulation.#C_FLAGS.BYTES_PER_ELEMENT],
-                [Simulation.#C_PHYSICS_DATA.BYTES_PER_ELEMENT, aPD],
-                [Simulation.#C_GRAVITY.BYTES_PER_ELEMENT],
-                [Simulation.#C_STEPS_ALIVE.BYTES_PER_ELEMENT],
-            ].reduce((offsets, b, i)=>{
-                const bytes = b[0], offset = (totalSize+(bytes-1)) & ~(bytes-1), arrSize = b[1]||arraySize 
-                offsets[i] = offset
-                totalSize = offset+arrSize*bytes
-                return offsets
-            }, [])
-
-            console.log(totalSize, arraySize)
-        const sab = new SharedArrayBuffer(totalSize)
-        // TODO maybe _signals = new ...
-        this._gridIndexes = new Simulation.#C_GRID_INDEXES(sab, offsets[1], arraySize)
-        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(sab, offsets[2], arraySize)
-        this._indexCount = new Simulation.#C_COUNT(sab, offsets[3], 1)
-        this._indexFlags = new Simulation.#C_FLAGS(sab, offsets[4], arraySize)
-        this._indexPhysicsData = new Simulation.#C_PHYSICS_DATA(sab, offsets[5], aPD)
-        this._indexGravity = new Simulation.#C_GRAVITY(sab, offsets[6], arraySize)
-        this._indexStepsAlive = new Simulation.#C_STEPS_ALIVE(sab, offsets[7], arraySize)
-
-        return sab
-    }
-
     #getIndexArraysCopy(arraySize=this._mapGrid.arraySize) {
         const indexFlags = new Simulation.#C_FLAGS(arraySize),
               indexPhysicsData = new Simulation.#C_PHYSICS_DATA(arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES),
@@ -1113,7 +1117,7 @@ class Simulation {
     get aimedFPS() {return this._CVS.fpsLimit}
     get backStepSavingEnabled() {return Boolean(this._userSettings.backStepSavingCount)}
     get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
-    get usingWebWorkers() {return (Boolean(this._physicsUnit) && !(this._physicsUnit instanceof LocalPhysicsUnit))}
+    get usingWebWorkers() {return this._physicsUnit instanceof RemotePhysicsUnit}
     get isFileServed() {return location.href.startsWith("file")}
     get gridIndexes() {return this._gridIndexes}
 	get gridMaterials() {return this._gridMaterials}
