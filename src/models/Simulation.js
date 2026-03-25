@@ -20,7 +20,7 @@ class Simulation {
     static #CACHED_MATERIALS_ROWS = []
     static #CACHED_GRID_LINES = null
     static #CACHED_GRID_BORDER = null
-    static #SIGNAL_COUNT = 16
+    static SIGNAL_COUNT = 6
     static #C_SIGNALS = Int32Array
     static #C_COUNT = Int32Array
     static #C_GRID_INDEXES = Int32Array
@@ -164,7 +164,6 @@ class Simulation {
         if (loopExtra) loopExtra(deltaTime)
 
         if (!userSettings.drawingDisabled && mouse.clicked && !this.keyboard.isDown(Simulation.PRECISE_PLACE_KEY)) {
-
             if (isRunning) this.#placePixelWithMouse(mouse)
             else if (lastPlacedPos) {
                 const currentPlacePos = this._mapGrid.getLocalMapPixel(mouse.pos)
@@ -175,7 +174,7 @@ class Simulation {
         if (userSettings.showGrid) this.#drawMapGrid()
         if (userSettings.showBorder) this.#drawBorder()
 
-        if (isRunning && this.useLocalPhysics) this.step(deltaTime)
+        if (isRunning && this.#initialized) this.step(deltaTime)
 
         this._offscreenCtx.putImageData(this._imgMap, 0, 0)
         this.ctx.drawImage(this._offscreenCanvas, 0, 0)
@@ -285,18 +284,16 @@ class Simulation {
      * Runs and displays one physics step
      */
     step(deltaTime=this.CVS.deltaTime) {
-        const available = !this._physicsUnit.isBlocked
-        if (this.useLocalPhysics && available) {
+        //const available = !this._physicsUnit.isBlocked TODO
+        if (this.useLocalPhysics) {
             this.saveStep()
             this._physicsUnit.step(
-                this._gridIndexes, this._gridMaterials,
-                this._indexCount, this._indexFlags, this._indexPhysicsData, this._indexGravity, this._indexStepsAlive,
-                this._sidePriority, this._mapGrid.mapWidth,
-                deltaTime
+                this._gridIndexes, this._gridMaterials, this._indexCount, this._indexFlags, this._indexPhysicsData, this._indexGravity, this._indexStepsAlive,
+                this._sidePriority, this._mapGrid.mapWidth, deltaTime
             )
             this.renderPixels()
         }
-        else if (available) this._physicsUnit.step(deltaTime)
+        else this._physicsUnit.step(this._sidePriority, this._mapGrid.mapWidth, deltaTime)
     }
 
     /**
@@ -366,7 +363,15 @@ class Simulation {
         if (isWebWorker) {
             const threadCount = usesWebWorkers===true ? 4 : usesWebWorkers
 
-            this._physicsUnit = new RemotePhysicsUnit(threadCount, this.#initSAB(), this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+            this._physicsUnit = new RemotePhysicsUnit(threadCount, this.#initSAB(), {
+                physicsConfig:this._physicsConfig,
+                MATERIALS_SETTINGS: MaterialSettings.MATERIALS_SETTINGS,
+                definitionHolder: Simulation
+            }, {
+                sidePriority: this._sidePriority,
+                mapWidth: this._mapGrid.mapWidth,
+                deltaTime: 1/60
+            })
         }
         else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
     }
@@ -375,7 +380,7 @@ class Simulation {
         let totalSize = 0
         const aPD = arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES,
             offsets = [
-                [Simulation.#C_SIGNALS.BYTES_PER_ELEMENT, Simulation.#SIGNAL_COUNT],
+                [Simulation.#C_SIGNALS.BYTES_PER_ELEMENT, Simulation.SIGNAL_COUNT],
                 [Simulation.#C_GRID_INDEXES.BYTES_PER_ELEMENT],
                 [Simulation.#C_GRID_MATERIALS.BYTES_PER_ELEMENT],
                 [Simulation.#C_COUNT.BYTES_PER_ELEMENT, 1],
@@ -390,9 +395,8 @@ class Simulation {
                 return offsets
             }, [])
 
-            console.log(totalSize, arraySize)
+        //console.log(totalSize, arraySize) todo cleanup
         const SAB = new SharedArrayBuffer(totalSize)
-        // TODO maybe _signals = new ...
         this._gridIndexes = new Simulation.#C_GRID_INDEXES(SAB, offsets[1], arraySize)
         this._gridMaterials = new Simulation.#C_GRID_MATERIALS(SAB, offsets[2], arraySize)
         this._indexCount = new Simulation.#C_COUNT(SAB, offsets[3], 1)
@@ -401,7 +405,7 @@ class Simulation {
         this._indexGravity = new Simulation.#C_GRAVITY(SAB, offsets[6], arraySize)
         this._indexStepsAlive = new Simulation.#C_STEPS_ALIVE(SAB, offsets[7], arraySize)
 
-        return {SAB, offsets, arraySize, aPD}
+        return {SAB, offsets, sizes:{arraySize, indexPhysicsData:aPD, indexCount:1, signals:Simulation.SIGNAL_COUNT}}
     }
 
     /**

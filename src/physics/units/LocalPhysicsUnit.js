@@ -2,8 +2,7 @@ class LocalPhysicsUnit extends _PhysicsUnit {
 
     // DOC TODO
     constructor(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
-        const instance = _PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE
-        if (instance) return instance
+        if (_PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE) return _PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE
 
         super(null)
         this._physicsCore = createPhysicsCore(

@@ -76,12 +76,7 @@ const SETTINGS = {
     WORKER_RELATIVE_PATH: /*/[[@workerPath]]/*/"./src/physics/units/RemotePhysicsWorker.js"/*/[[@end]]/*/,
     WORKER_MESSAGE_TYPES: {
         INIT:undefined,
-        STEP:1<<0,
-        START_LOOP:1<<2,
-        STOP_LOOP:1<<3,
-        SIDE_PRIORITY:1<<4,
-        MAP_SIZE:1<<5,
-        PIXELS:1<<6,
+        UPDATE_SAB:1<<0,
     },
     WORKER_MESSAGE_GROUPS: {
         GIVES_PIXELS_TO_MAIN: null,
