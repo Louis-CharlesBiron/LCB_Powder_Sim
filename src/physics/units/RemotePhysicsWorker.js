@@ -1,4 +1,4 @@
-importScripts("../PhysicsCore.js")
+importScripts("../PhysicsCoreWorker.js")
 importScripts("../PhysicsUtils.js")
 importScripts("../MaterialsBehavior.js")
 
@@ -69,6 +69,7 @@ self.onmessage=e=>{
 
 function startLoop() {
     const SI = WORKER_DEPENDENCIES.SIGNALS_INDEXES, S = WORKER_DEPENDENCIES.SIGNALS
+
     while (true) {
         // WAIT FOR SIGNAL
         Atomics.wait(signals, SI.SLEEP_STATUS, S.SLEEP_STATUS.DEAD)
@@ -77,16 +78,13 @@ function startLoop() {
         sidePriority = Atomics.load(signals, SI.DATA.SIDE_PRIORITY)
         mapWidth = Atomics.load(signals, SI.DATA.MAP_WIDTH)
         deltaTime = Atomics.load(signals, SI.DATA.DELTATIME)/1000
+        arraySize = Atomics.load(signals, SI.DATA.ARRAY_SIZE)
 
-        //if (!id) console.log(mapWidth, deltaTime)
-
-        // TODO HERE
-
-        //PHYSICS_CORE(// TODO, add chunk
-        //    gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
-        //    data.sidePriority, data.mapWidth, data.deltaTime
-        //)
-
+        PHYSICS_CORE(
+            id, threadCount,
+            gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
+            sidePriority, mapWidth, deltaTime, arraySize
+        )
         //console.log("OK", id)
 
         // ALL STEPS COMPLETED

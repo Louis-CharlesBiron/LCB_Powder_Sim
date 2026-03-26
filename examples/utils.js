@@ -13,7 +13,6 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
           ctrlStep = step[1]??normalStep,
           shiftStep = step[2]??ctrlStep
 
-
     if (nodeName === "INPUT" && type === "number") callback=e=>{
         e.preventDefault()
         const min = +input.min||0, max = +input.max||Infinity, isFowardStep = e.deltaY>0

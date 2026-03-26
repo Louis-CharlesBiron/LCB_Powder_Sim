@@ -12,6 +12,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
             SIDE_PRIORITY: this.#_SI_I++,
             MAP_WIDTH: this.#_SI_I++,
             DELTATIME: this.#_SI_I++,
+            ARRAY_SIZE: this.#_SI_I++,
         }
     }
     static SIGNALS = {
@@ -51,7 +52,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
     }
 
     updateSAB(SABDependencies) {
-        const oldSignals = this._signals
+        ///const oldSignals = this._signals
 
         this._SABDependencies = SABDependencies
         this._signals = new Simulation.CONTAINERS.C_SIGNALS(SABDependencies.SAB, SABDependencies.offsets[0], Simulation.SIGNAL_COUNT)
@@ -65,7 +66,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    async step(sidePriority, mapWidth, deltaTime) {
+    async step(sidePriority, mapWidth, deltaTime, arraySize) {
         super.step()
 
         const SI = RemotePhysicsUnit.SIGNALS_INDEXES, S = RemotePhysicsUnit.SIGNALS,
@@ -78,17 +79,21 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         if (sidePriority != null) Atomics.store(signals, SI.DATA.SIDE_PRIORITY, sidePriority)
         if (mapWidth != null) Atomics.store(signals, SI.DATA.MAP_WIDTH, mapWidth)
         if (deltaTime != null) Atomics.store(signals, SI.DATA.DELTATIME, (deltaTime*1000)|0)
+        if (arraySize != null) Atomics.store(signals, SI.DATA.ARRAY_SIZE, arraySize)
 
         // WAKE WORKERS
         Atomics.store(signals, SI.SLEEP_STATUS, S.SLEEP_STATUS.WAKE)
         Atomics.notify(signals, SI.SLEEP_STATUS, threadCount)
 
         // BARRIER
-        let iterations = 0
+        let iterations = 0// CLEANUP
         const MAX_ITERATIONS = 8000000
 
         while (Atomics.load(signals, SI.COMPLETION_STATUS) < threadCount) {// MAYBE IN OTHER THREAD
-            if (iterations++ > MAX_ITERATIONS) {console.warn("SAVED"); break}
+            if (iterations++ > MAX_ITERATIONS) {
+                //console.warn("SAVED");
+                break
+            }
             if (RemotePhysicsUnit.#LAUNCH_YEILD < 100) {// TODO TOCHECK
                 RemotePhysicsUnit.#LAUNCH_YEILD++
                 await new Promise(resolve=>setTimeout(resolve, 0))
@@ -103,6 +108,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
 
     sendAll(type, data) {// TODO TOFIX
         const threadCount = this._threadCount, workers = this._workers
+        console.log("ASSSSSSSSSS")
         for (let i=0;i<threadCount;i++) workers[i].postMessage({type, ...data})
     }
 
@@ -192,4 +198,5 @@ class RemotePhysicsUnit extends _PhysicsUnit {
     }
 
     get queuedBufferOperations() {return this._queuedBufferOperations}
+    get threadCount() {return this._threadCount}
 }

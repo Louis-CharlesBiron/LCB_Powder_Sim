@@ -9,9 +9,9 @@ const simulation = new Simulation(
     document.getElementById("simulationCanvas"),
     readyCB,
     {
-        //usesWebWorkers: false,
+        usesWebWorkers: 1,
         autoStart: true,
-        aimedFPS: 60,
+        aimedFPS: 30,
     },
     {
         //autoSimulationSizing: 15,
@@ -36,7 +36,7 @@ function readyCB(simulation) {
     //simulation.timerEnabled = true
 
     
-    //simulation.updateMapSize(5, 3)
+    //simulation.updateMapSize(5, 5)
     //simulation.updateMapPixelSize(120)
 
     //simulation.updateMapSize(23, 15)
@@ -114,7 +114,7 @@ function statusLoopCore() {
 
     // MOUSE MATERIAL
     if (simulation.isMouseWithinSimulation && mapPos) {
-        const mouseMaterialText = "("+Simulation.MATERIAL_NAMES[simulation.getPixelAtMapPos(mapPos)]+")"
+        const mouseMaterialText = "("+Simulation.MATERIAL_NAMES[simulation.getMaterialAtMapPos(mapPos)]+")"
         if (mouseMaterialStatus.textContent !== mouseMaterialText) mouseMaterialStatus.textContent = mouseMaterialText
     }
 
@@ -156,7 +156,7 @@ function statusLoopCore() {
     if (isRunningStatus.textContent !== isRunningText) isRunningStatus.textContent = isRunningText
 
     // PHYSICS UNIT TYPE
-    const physicsUnitTypeText = simulation.usingWebWorkers ? "WORKER" : "LOCAL"
+    const physicsUnitTypeText = simulation.usingWebWorkers ? "WORKER ("+simulation.physicsUnit.threadCount+"x)" : "LOCAL"
     if (physicsUnitTypeStatus.textContent !== physicsUnitTypeText) physicsUnitTypeStatus.textContent = physicsUnitTypeText
 
     // TIMESTAMP

@@ -20,7 +20,7 @@ class Simulation {
     static #CACHED_MATERIALS_ROWS = []
     static #CACHED_GRID_LINES = null
     static #CACHED_GRID_BORDER = null
-    static SIGNAL_COUNT = 6
+    static SIGNAL_COUNT = 8
     static #C_SIGNALS = Int32Array
     static #C_COUNT = Int32Array
     static #C_GRID_INDEXES = Int32Array
@@ -258,7 +258,7 @@ class Simulation {
         const pixels = this._gridMaterials, lastPixels = this._lastGridMaterials, p_ll = pixels.length, map = this._mapGrid, enableOptimization = force ? false : lastPixels.length===p_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
         for (let i=0;i<p_ll;i++) {
             const mat = pixels[i]
-            if (enableOptimization && mat===lastPixels[i]) continue
+            if (enableOptimization && mat===lastPixels[i]) {continue}
             const y = (i/w)|0
             this.#updateMapPixel(i-y*w, y, mat) 
         } 
@@ -293,7 +293,10 @@ class Simulation {
             )
             this.renderPixels()
         }
-        else this._physicsUnit.step(this._sidePriority, this._mapGrid.mapWidth, deltaTime)
+        else {
+            this._physicsUnit.step(this._sidePriority, this._mapGrid.mapWidth, deltaTime, this._mapGrid.arraySize)
+            this.renderPixels()
+        }
     }
 
     /**
@@ -332,7 +335,6 @@ class Simulation {
         if (!this._isRunning || force) {
             this._isRunning = true
             this.CVS.start()
-            ///if (this.usingWebWorkers) this.#sendPixelsToWorker(RemotePhysicsUnit.WORKER_MESSAGE_TYPES.START_LOOP) TODO FIX
         }
     }
 
@@ -343,7 +345,6 @@ class Simulation {
         if (this._isRunning) {
             this._isRunning = false
             if (stopCanvas) this.CVS.stop()
-            //if (this.usingWebWorkers) this._physicsUnit.postMessage({type:RemotePhysicsUnit.WORKER_MESSAGE_TYPES.STOP_LOOP}) TODO FIX
         }
     }
     /* SIMULATION CONTROL -end */
@@ -370,7 +371,8 @@ class Simulation {
             }, {
                 sidePriority: this._sidePriority,
                 mapWidth: this._mapGrid.mapWidth,
-                deltaTime: 1/60
+                deltaTime: 1/60,
+                arraySize: this._mapGrid.arraySize,
             })
         }
         else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
@@ -397,8 +399,8 @@ class Simulation {
 
         //console.log(totalSize, arraySize) todo cleanup
         const SAB = new SharedArrayBuffer(totalSize)
-        this._gridIndexes = new Simulation.#C_GRID_INDEXES(SAB, offsets[1], arraySize)
-        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(SAB, offsets[2], arraySize)
+        this._gridIndexes = new Simulation.#C_GRID_INDEXES(SAB, offsets[1], arraySize).fill(-1)
+        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(SAB, offsets[2], arraySize).fill(Simulation.MATERIALS.AIR)
         this._indexCount = new Simulation.#C_COUNT(SAB, offsets[3], 1)
         this._indexFlags = new Simulation.#C_FLAGS(SAB, offsets[4], arraySize)
         this._indexPhysicsData = new Simulation.#C_PHYSICS_DATA(SAB, offsets[5], aPD)
@@ -508,7 +510,6 @@ class Simulation {
      * @returns The new priority
      */
     updateSidePriority(sidePriority) {
-        //if (this.usingWebWorkers) this._physicsUnit.postMessage({type:RemotePhysicsUnit.WORKER_MESSAGE_TYPES.SIDE_PRIORITY, sidePriority})
         return this._sidePriority = sidePriority
     }
 
@@ -517,7 +518,7 @@ class Simulation {
      * @param {[x,y]} mapPos The map pos
      * @returns The material location at the map pos
      */
-    getPixelAtMapPos(mapPos) {
+    getMaterialAtMapPos(mapPos) {// TODO TOCHECK
         const i = this._mapGrid.mapPosToIndex(mapPos)
         return this.usingWebWorkers ? this._lastGridMaterials[i] : this._gridMaterials[i]
     }
@@ -594,8 +595,6 @@ class Simulation {
             oi += oldWidth
             offset += newWidth
         }
-
-        //if (this.usingWebWorkers) this._physicsUnit.postMessage({type:Simulation.#WORKER_MESSAGE_TYPES.MAP_SIZE, mapWidth:this._mapGrid.mapWidth, mapHeight:this._mapGrid.mapHeight, arraySize})
     }
 
     // TODO DOC
@@ -1135,6 +1134,7 @@ class Simulation {
 	get keybindManager() {return this._keybindManager}
 	get cameraManager() {return this._cameraManager}
     get isSecure() {return this.#isSecure}
+    get physicsUnit() {return this._physicsUnit}
 
     set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
 	set brushType(brushType) {return this.updateBrushType(brushType)}
