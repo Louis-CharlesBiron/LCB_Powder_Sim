@@ -91,10 +91,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         const MAX_ITERATIONS = 8000000
 
         while (Atomics.load(signals, SI.COMPLETION_STATUS) < threadCount) {// MAYBE IN OTHER THREAD
-            if (iterations++ > MAX_ITERATIONS) {
-                //console.warn("SAVED");
-                break
-            }
+            if (iterations++ > MAX_ITERATIONS) break
             if (RemotePhysicsUnit.#LAUNCH_YEILD < 200) {// TODO TOCHECK
                 RemotePhysicsUnit.#LAUNCH_YEILD++
                 await new Promise(resolve=>setTimeout(resolve, 0))
@@ -104,10 +101,8 @@ class RemotePhysicsUnit extends _PhysicsUnit {
 
         this._blocked = false
         if (iterations > MAX_ITERATIONS) console.log("DONE (TIMED OUT)")
-        else {// CLEANUP
-            onStepComplete()
-            this.executeQueuedOperations()
-        }
+        onStepComplete()
+        this.executeQueuedOperations()
     }
 
     sendAll(type, data) {// TODO TOFIX

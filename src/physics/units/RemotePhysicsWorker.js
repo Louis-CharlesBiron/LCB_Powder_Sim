@@ -42,7 +42,7 @@ let id,
 
 
 self.onmessage=e=>{
-    const data = e.data, type = data.type, MT = WORKER_DEPENDENCIES.WORKER_MESSAGE_TYPES
+    const data = e.data, type = data.type
 
     // INIT
     if (!type) {
@@ -58,13 +58,6 @@ self.onmessage=e=>{
         PHYSICS_CORE = createPhysicsCore(WORKER_DEPENDENCIES.physicsConfig, WORKER_DEPENDENCIES.MATERIALS_SETTINGS, WORKER_DEPENDENCIES.MATERIALS, WORKER_DEPENDENCIES.MATERIAL_GROUPS, WORKER_DEPENDENCIES.MATERIAL_NAMES, WORKER_DEPENDENCIES.SIDE_PRIORITIES, WORKER_DEPENDENCIES.PHYSICS_DATA_ATTRIBUTES)
         startLoop()
     }
-    // STEP
-    //else if (type === MT.UPDATE_SAB) {
-    //    SABDependencies = data.SABDependencies
-    //    createArrays()
-    //}
-    //    console.log("UIPDATED SAB", type, MT.UPDATE_SAB, data)
-
 }
 
 

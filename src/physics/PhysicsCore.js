@@ -130,7 +130,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             }
 
             // 2ND FALL UNIFORMITY
-            if (ENABLE_2ND_FALL_UNIFORMITY && mat&DEPOSITABLE) {
+            if (ENABLE_2ND_FALL_UNIFORMITY && mat&DEPOSITABLE) {// TODO CHECK && cache.velX
                 const hasBottomCollision = flags&COLLISION_BOTTOM, isFinalized = flags&FINALIZED
 
                 if (isFinalized && hasBottomCollision===0) {

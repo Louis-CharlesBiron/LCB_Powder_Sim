@@ -184,7 +184,11 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             else if (mat === WATER) {
                 transpierceableMain = GASES
                 if (flags&COLLISION_BOTTOM) {
-                    const m_B = Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY+1)), m_R = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)), m_L = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY)), m_BR = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)), m_BL = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
+                    const m_B = getAdjacencyCoords(oldX, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY+1)),
+                        m_R = getAdjacencyCoords(oldX+1, oldY)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)),
+                        m_L = getAdjacencyCoords(oldX-1, oldY)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY)),
+                        m_BR = getAdjacencyCoords(oldX+1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
+                        m_BL = getAdjacencyCoords(oldX-1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
                     
                     if (m_B&WATER_SKIPABLE&&m_BR&WATER_SKIPABLE&&m_BL&WATER_SKIPABLE&&m_R&WATER_SKIPABLE&&m_L&WATER_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     
@@ -324,7 +328,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
         if (absGdy > 1) {// check collision at oldY..newY
             for (let colY=oldY+dirGdy,colI=0; colI<absGdy; colI++,colY+=dirGdy) {
-                const gi_Dest = getAdjacencyCoords(oldX, colY), m_Dest = gi_Dest>ARRAY_SIZE ? null : Atomics.load(gridMaterials, gi_Dest), hasCollision = !(m_Dest & transpierceableMain)
+                const gi_Dest = getAdjacencyCoords(oldX, colY), m_Dest = gi_Dest>ARRAY_SIZE||gi_Dest<0 ? null : Atomics.load(gridMaterials, gi_Dest), hasCollision = !(m_Dest & transpierceableMain)
                 if (hasCollision) {
                     cache.newY = (indexPhysicsData[iPD+1] = colY-dirGdy)|0
                     indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
@@ -336,7 +340,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 }
             }
         } else {// check collision at destination pos
-            const gi_Dest = getAdjacencyCoords(oldX, cache.newY), m_Dest = gi_Dest>ARRAY_SIZE ? null : Atomics.load(gridMaterials, gi_Dest), hasCollision = !(m_Dest & transpierceableMain)
+            const gi_Dest = getAdjacencyCoords(oldX, cache.newY), m_Dest = gi_Dest>ARRAY_SIZE||gi_Dest<0 ? null : Atomics.load(gridMaterials, gi_Dest), hasCollision = !(m_Dest & transpierceableMain)
             if (hasCollision) {
                 cache.newY = (indexPhysicsData[iPD+1] = oldY)|0
                 indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP

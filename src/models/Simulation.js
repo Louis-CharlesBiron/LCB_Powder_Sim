@@ -295,7 +295,6 @@ class Simulation {
         }
         else {
             this._physicsUnit.step(()=>{
-                console.log("SIM STEP RECEIVED")
                 this.renderPixels()
             }, this._sidePriority, this._mapGrid.mapWidth, deltaTime, this._mapGrid.arraySize)
         }
