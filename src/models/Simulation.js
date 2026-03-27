@@ -217,7 +217,7 @@ class Simulation {
      * Draws visual effects on certain materials if visualEffects are enabled 
      */
     #drawVisualEffects() {// OPTIMIZE / TODO
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.#drawVisualEffects())
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.#drawVisualEffects())
 
         const pixels = this._gridMaterials, p_ll = pixels.length, map = this._mapGrid, M = Simulation.MATERIALS, G = Simulation.MATERIAL_GROUPS, SG = Simulation.MATERIAL_STATES_GROUPS, D = Simulation.D,
               w = map.mapWidth, pxSize = map.pixelSize, pxSize2 = pxSize/4, random = Math.random(), batchStroke = this.render.batchStroke.bind(this.render), batchFill = this.render.batchFill.bind(this.render)
@@ -253,12 +253,12 @@ class Simulation {
      * @param {Boolean?} force If true, disables optimization and forces every pixel to get redrawn
      */
     renderPixels(force) {
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.renderPixels(force))
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.renderPixels(force))
 
-        const pixels = this._gridMaterials, lastPixels = this._lastGridMaterials, p_ll = pixels.length, map = this._mapGrid, enableOptimization = force ? false : lastPixels.length===p_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
-        for (let i=0;i<p_ll;i++) {
-            const mat = pixels[i]
-            if (enableOptimization && mat===lastPixels[i]) {continue}
+        const gridMaterials = this._gridMaterials, lastGridMaterials = this._lastGridMaterials, gm_ll = gridMaterials.length, map = this._mapGrid, enableOptimization = force ? false : lastGridMaterials.length===gm_ll&&map.lastPixelSize===map.pixelSize, w = map.mapWidth
+        for (let i=0;i<gm_ll;i++) {
+            const mat = gridMaterials[i]
+            if (enableOptimization && mat===lastGridMaterials[i]) continue
             const y = (i/w)|0
             this.#updateMapPixel(i-y*w, y, mat) 
         } 
@@ -284,7 +284,7 @@ class Simulation {
      * Runs and displays one physics step
      */
     step(deltaTime=this.CVS.deltaTime) {
-        //const available = !this._physicsUnit.isBlocked TODO
+        //const available = !this._physicsUnit.blocked TODO
         if (this.useLocalPhysics) {
             this.saveStep()
             this._physicsUnit.step(
@@ -294,8 +294,10 @@ class Simulation {
             this.renderPixels()
         }
         else {
-            this._physicsUnit.step(this._sidePriority, this._mapGrid.mapWidth, deltaTime, this._mapGrid.arraySize)
-            this.renderPixels()
+            this._physicsUnit.step(()=>{
+                console.log("SIM STEP RECEIVED")
+                this.renderPixels()
+            }, this._sidePriority, this._mapGrid.mapWidth, deltaTime, this._mapGrid.arraySize)
         }
     }
 
@@ -316,7 +318,7 @@ class Simulation {
      * Displays the previous physics step saved
      */
     backStep() {
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.backStep())
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.backStep())
 
         const saves = this.#backStepSaves, b_ll = saves.length
         if (b_ll) {
@@ -378,38 +380,6 @@ class Simulation {
         else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
     }
 
-    #initSAB(arraySize=this._mapGrid.arraySize) {
-        let totalSize = 0
-        const aPD = arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES,
-            offsets = [
-                [Simulation.#C_SIGNALS.BYTES_PER_ELEMENT, Simulation.SIGNAL_COUNT],
-                [Simulation.#C_GRID_INDEXES.BYTES_PER_ELEMENT],
-                [Simulation.#C_GRID_MATERIALS.BYTES_PER_ELEMENT],
-                [Simulation.#C_COUNT.BYTES_PER_ELEMENT, 1],
-                [Simulation.#C_FLAGS.BYTES_PER_ELEMENT],
-                [Simulation.#C_PHYSICS_DATA.BYTES_PER_ELEMENT, aPD],
-                [Simulation.#C_GRAVITY.BYTES_PER_ELEMENT],
-                [Simulation.#C_STEPS_ALIVE.BYTES_PER_ELEMENT],
-            ].reduce((offsets, b, i)=>{
-                const bytes = b[0], offset = (totalSize+(bytes-1)) & ~(bytes-1), arrSize = b[1]||arraySize 
-                offsets[i] = offset
-                totalSize = offset+arrSize*bytes
-                return offsets
-            }, [])
-
-        //console.log(totalSize, arraySize) todo cleanup
-        const SAB = new SharedArrayBuffer(totalSize)
-        this._gridIndexes = new Simulation.#C_GRID_INDEXES(SAB, offsets[1], arraySize).fill(-1)
-        this._gridMaterials = new Simulation.#C_GRID_MATERIALS(SAB, offsets[2], arraySize).fill(Simulation.MATERIALS.AIR)
-        this._indexCount = new Simulation.#C_COUNT(SAB, offsets[3], 1)
-        this._indexFlags = new Simulation.#C_FLAGS(SAB, offsets[4], arraySize)
-        this._indexPhysicsData = new Simulation.#C_PHYSICS_DATA(SAB, offsets[5], aPD)
-        this._indexGravity = new Simulation.#C_GRAVITY(SAB, offsets[6], arraySize)
-        this._indexStepsAlive = new Simulation.#C_STEPS_ALIVE(SAB, offsets[7], arraySize)
-
-        return {SAB, offsets, sizes:{arraySize, indexPhysicsData:aPD, indexCount:1, signals:Simulation.SIGNAL_COUNT}}
-    }
-
     /**
      * Updates map size automatically based on the optimal fit for the provided sizes
      * @param {Number?} pixelSize The desired pixel size
@@ -432,7 +402,7 @@ class Simulation {
     updateMapPixelSize(pixelSize=MapGrid.DEFAULT_PIXEL_SIZE) {
         if (this.#checkInitializationState(WARNINGS.NOT_INITIALIZED_PIXEL_SIZE_WARN)) return
         pixelSize = pixelSize|0
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.updateMapPixelSize(pixelSize))
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.updateMapPixelSize(pixelSize))
 
         const map = this._mapGrid
         if (pixelSize !== map.pixelSize) {
@@ -450,7 +420,7 @@ class Simulation {
         if (this.#checkInitializationState(WARNINGS.NOT_INITIALIZED_MAP_SIZE_WARN)) return
         width = width|0
         height = height|0
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.updateMapSize(width, height))
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.updateMapSize(width, height))
 
         const map = this._mapGrid, oldWidth = map.mapWidth, oldHeight = map.mapHeight
         if ((width && width !== oldWidth) || (height && height !== oldHeight)) {
@@ -703,7 +673,7 @@ class Simulation {
      */
     placePixel(mapPos, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         const i = this._mapGrid.mapPosToIndex(mapPos)
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(i, material, replaceMode))
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(i, material, replaceMode))
 
         this.placePixelAtIndex(i, material, replaceMode)
     }
@@ -718,7 +688,7 @@ class Simulation {
     placePixelAtCoords(x, y, material=this._selectedMaterial, replaceMode=this._replaceMode) {
         const i = this._mapGrid.mapPosToIndexCoords(x, y)
         if (i === -1) return
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(i, material, replaceMode))
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(i, material, replaceMode))
 
         this.placePixelAtIndex(i, material, replaceMode)
     }
@@ -730,7 +700,7 @@ class Simulation {
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     placePixelAtIndex(gridIndex, material=this._selectedMaterial, replaceMode=this._replaceMode) {
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(gridIndex, material, replaceMode))
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.placePixelAtIndex(gridIndex, material, replaceMode))
 
         const gridMaterials = this._gridMaterials, oldMat = gridMaterials[gridIndex]
         if (!oldMat || material === oldMat || (replaceMode != Simulation.REPLACE_MODES.ALL && !(oldMat & replaceMode))) return
@@ -844,7 +814,7 @@ class Simulation {
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
     fillArea(pos1, pos2, material=this._selectedMaterial, replaceMode=this._replaceMode, disableStoppedRendering) {
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.fillArea(pos1, pos2, material, replaceMode, disableStoppedRendering))
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.fillArea(pos1, pos2, material, replaceMode, disableStoppedRendering))
 
         const pixels = this._gridMaterials, p_ll = pixels.length, map = this._mapGrid, w = map.mapWidth, x1 = pos1[0]<0?0:pos1[0], y1 = pos1[1]<0?0:pos1[1], x2 = pos2[0]<0?0:pos2[0], y2 = pos2[1]<0?0:pos2[1]
         for (let i=map.mapPosToIndex([x1, y1]);i<p_ll;i++) {
@@ -874,16 +844,81 @@ class Simulation {
 
     
     /* SAVE / IMPORT / EXPORT */
-    #getGridMaterialsCopy(arraySize=this._mapGrid.arraySize) {
-        const gridMaterialsCopy = new Simulation.#C_GRID_MATERIALS(arraySize)
+    #getGridMaterialsCopy(arraySize=this._mapGrid.arraySize, SABdata) {
+        const gridMaterialsCopy = (SABdata ? 
+            new Simulation.#C_GRID_MATERIALS(SABdata.SAB, SABdata.offset, arraySize) :
+            new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR)
+        ).fill(Simulation.MATERIALS.AIR)
+        
         gridMaterialsCopy.set(this._gridMaterials.subarray(0, arraySize))
         return gridMaterialsCopy
     }
 
-    #getGridIndexesCopy(arraySize=this._mapGrid.arraySize) {
-        const gridIndexesCopy = new Simulation.#C_GRID_INDEXES(arraySize)
+    #getGridIndexesCopy(arraySize=this._mapGrid.arraySize, SABdata) {
+        const gridIndexesCopy = (SABdata ? 
+            new Simulation.#C_GRID_INDEXES(SABdata.SAB, SABdata.offset, arraySize) :
+            new Simulation.#C_GRID_INDEXES(arraySize)
+        ).fill(-1)
+        
         gridIndexesCopy.set(this._gridIndexes.subarray(0, arraySize))
         return gridIndexesCopy
+    }
+
+    #getIndexArraysCopy(arraySize=this._mapGrid.arraySize, SABdata) {
+        const aPD = arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES,
+            indexFlags = SABdata ? new Simulation.#C_FLAGS(SABdata.SAB, SABdata.offsets[0], arraySize) : new Simulation.#C_FLAGS(arraySize), 
+            indexPhysicsData = SABdata ? new Simulation.#C_PHYSICS_DATA(SABdata.SAB, SABdata.offsets[1], aPD) : new Simulation.#C_PHYSICS_DATA(aPD), 
+            indexGravity = SABdata ? new Simulation.#C_GRAVITY(SABdata.SAB, SABdata.offsets[2], arraySize) : new Simulation.#C_GRAVITY(arraySize), 
+            indexStepsAlive = SABdata ? new Simulation.#C_STEPS_ALIVE(SABdata.SAB, SABdata.offsets[3], arraySize) : new Simulation.#C_STEPS_ALIVE(arraySize)
+
+        indexFlags.set(this._indexFlags.subarray(0, arraySize))
+        indexPhysicsData.set(this._indexPhysicsData.subarray(0, aPD))
+        indexGravity.set(this._indexGravity.subarray(0, arraySize))
+        indexStepsAlive.set(this._indexStepsAlive.subarray(0, arraySize))
+
+        return [
+            indexFlags,
+            indexPhysicsData,
+            indexGravity,
+            indexStepsAlive,
+        ]
+    }
+
+    #initSAB(arraySize=this._mapGrid.arraySize) {
+        let totalSize = 0
+        const aPD = arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES,
+            offsets = [
+                [Simulation.#C_SIGNALS.BYTES_PER_ELEMENT, Simulation.SIGNAL_COUNT],
+                [Simulation.#C_GRID_INDEXES.BYTES_PER_ELEMENT],
+                [Simulation.#C_GRID_MATERIALS.BYTES_PER_ELEMENT],
+                [Simulation.#C_COUNT.BYTES_PER_ELEMENT, 1],
+                [Simulation.#C_FLAGS.BYTES_PER_ELEMENT],
+                [Simulation.#C_PHYSICS_DATA.BYTES_PER_ELEMENT, aPD],
+                [Simulation.#C_GRAVITY.BYTES_PER_ELEMENT],
+                [Simulation.#C_STEPS_ALIVE.BYTES_PER_ELEMENT],
+            ].reduce((offsets, b, i)=>{
+                const bytes = b[0], offset = (totalSize+(bytes-1)) & ~(bytes-1), arrSize = b[1]||arraySize 
+                offsets[i] = offset
+                totalSize = offset+arrSize*bytes
+                return offsets
+            }, [])
+
+        const SAB = new SharedArrayBuffer(totalSize)
+
+        this._gridIndexes = this.#getGridIndexesCopy(arraySize, {SAB, offset:offsets[1]})
+        this._gridMaterials = this.#getGridMaterialsCopy(arraySize, {SAB, offset:offsets[2]})
+
+        const count = this._indexCount[0]
+        this._indexCount = new Simulation.#C_COUNT(SAB, offsets[3], 1)
+        this._indexCount[0] = count
+
+        const indexArrays = this.#getIndexArraysCopy(arraySize, {SAB, offsets:offsets.slice(4)})
+        this._indexFlags = indexArrays[0]
+        this._indexPhysicsData = indexArrays[1]
+        this._indexGravity = indexArrays[2]
+        this._indexStepsAlive = indexArrays[3]
+
+        return {SAB, offsets, sizes:{arraySize, indexPhysicsData:aPD, indexCount:1, signals:Simulation.SIGNAL_COUNT}}
     }
 
     #createIndexArrays(arraySize) {
@@ -899,25 +934,6 @@ class Simulation {
         ]
     }
 
-    #getIndexArraysCopy(arraySize=this._mapGrid.arraySize) {
-        const indexFlags = new Simulation.#C_FLAGS(arraySize),
-              indexPhysicsData = new Simulation.#C_PHYSICS_DATA(arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES),
-              indexGravity = new Simulation.#C_GRAVITY(arraySize),
-              indexStepsAlive = new Simulation.#C_STEPS_ALIVE(arraySize)
-
-        indexFlags.set(this._indexFlags.subarray(0, arraySize))
-        indexPhysicsData.set(this._indexPhysicsData.subarray(0, arraySize*Simulation.PHYSICS_DATA_ATTRIBUTES))
-        indexGravity.set(this._indexGravity.subarray(0, arraySize))
-        indexStepsAlive.set(this._indexStepsAlive.subarray(0, arraySize))
-
-        return [
-            indexFlags,
-            indexPhysicsData,
-            indexGravity,
-            indexStepsAlive,
-        ]
-    }
-
     /**
      * Fills the map with saved data.
      * @param {String} mapData The save data as a string in the format created by the function exportAsText()
@@ -926,7 +942,7 @@ class Simulation {
      */
     load(mapData, useSaveSizes=null, replaceMode=Simulation.REPLACE_MODES.ALL) {
         if (this.#checkInitializationState(WARNINGS.NOT_INITIALIZED_LOAD_WARN)) return
-        if (this._physicsUnit.isBlocked) return void this._physicsUnit.addToQueue(()=>this.load(mapData, useSaveSizes, replaceMode))
+        if (this._physicsUnit.blocked) return void this._physicsUnit.addToQueue(()=>this.load(mapData, useSaveSizes, replaceMode))
 
         if (mapData) {
             const [exportType, rawSize, rawData] = mapData.split(Simulation.EXPORT_SEPARATOR), data = rawData.split(","), [saveWidth, saveHeight, pixelSize] = rawSize.split(",").map(x=>+x), isExact = exportType == Simulation.EXPORT_STATES.EXACT
@@ -994,7 +1010,7 @@ class Simulation {
      */
     exportAsText(state=SETTINGS.EXPORT_STATES.COMPACTED, callback) {
         const hasCallback = CDEUtils.isFunction(callback)
-        if (this._physicsUnit.isBlocked && hasCallback) return void this._physicsUnit.addToQueue(()=>callback(this.exportAsText(state)))
+        if (this._physicsUnit.blocked && hasCallback) return void this._physicsUnit.addToQueue(()=>callback(this.exportAsText(state)))
 
         const gridMaterials = this._gridMaterials, g_ll = gridMaterials.length
         let textResult = [], lastMaterial, atI = -1

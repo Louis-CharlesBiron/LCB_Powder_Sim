@@ -1,6 +1,7 @@
 importScripts("../PhysicsCoreWorker.js")
 importScripts("../PhysicsUtils.js")
 importScripts("../MaterialsBehavior.js")
+    console.log("%cCREATED: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
 
 // CONSTANTS
 const ARRAY_MAP = {

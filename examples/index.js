@@ -39,8 +39,8 @@ function readyCB(simulation) {
     //simulation.updateMapSize(5, 5)
     //simulation.updateMapPixelSize(120)
 
-    //simulation.updateMapSize(23, 15)
-    //simulation.updateMapPixelSize(40)
+    simulation.updateMapSize(23, 15)
+    simulation.updateMapPixelSize(40)
 
     //simulation.updateMapSize(400, 300)
     //simulation.updateMapPixelSize(2)

@@ -66,7 +66,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    async step(sidePriority, mapWidth, deltaTime, arraySize) {
+    async step(onStepComplete, sidePriority, mapWidth, deltaTime, arraySize) {
         super.step()
 
         const SI = RemotePhysicsUnit.SIGNALS_INDEXES, S = RemotePhysicsUnit.SIGNALS,
@@ -82,6 +82,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         if (arraySize != null) Atomics.store(signals, SI.DATA.ARRAY_SIZE, arraySize)
 
         // WAKE WORKERS
+        this._blocked = true
         Atomics.store(signals, SI.SLEEP_STATUS, S.SLEEP_STATUS.WAKE)
         Atomics.notify(signals, SI.SLEEP_STATUS, threadCount)
 
@@ -94,21 +95,23 @@ class RemotePhysicsUnit extends _PhysicsUnit {
                 //console.warn("SAVED");
                 break
             }
-            if (RemotePhysicsUnit.#LAUNCH_YEILD < 100) {// TODO TOCHECK
+            if (RemotePhysicsUnit.#LAUNCH_YEILD < 200) {// TODO TOCHECK
                 RemotePhysicsUnit.#LAUNCH_YEILD++
                 await new Promise(resolve=>setTimeout(resolve, 0))
             }
         }
         Atomics.store(signals, SI.SLEEP_STATUS, S.SLEEP_STATUS.DEAD)
-        if (iterations > MAX_ITERATIONS) console.log("DONE (TIMED OUT)")
-        else console.log("DONE")
 
-        //this._isBlocked = true TODO
+        this._blocked = false
+        if (iterations > MAX_ITERATIONS) console.log("DONE (TIMED OUT)")
+        else {// CLEANUP
+            onStepComplete()
+            this.executeQueuedOperations()
+        }
     }
 
     sendAll(type, data) {// TODO TOFIX
         const threadCount = this._threadCount, workers = this._workers
-        console.log("ASSSSSSSSSS")
         for (let i=0;i<threadCount;i++) workers[i].postMessage({type, ...data})
     }
 
@@ -146,6 +149,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
+    // DOC TODO
     killWorkers() {
         const w_ll = this._workers.length
         if (w_ll) {
@@ -156,32 +160,6 @@ class RemotePhysicsUnit extends _PhysicsUnit {
             this._workers = []
         }
     }
-
-
-    #physicsUnitMessage(e) {// TODO TOFIX
-        const data = e.data, type = data.type, T = RemotePhysicsUnit.WORKER_MESSAGE_TYPES, stepExtra = this._stepExtra
-
-        if (type & RemotePhysicsUnit.WORKER_MESSAGE_GROUPS.GIVES_PIXELS_TO_MAIN) {
-            //this._gridMaterials = new Uint16Array(data.pixels) TODO
-            //this._indexStates = new Uint16Array(data.pxStates)
-            this._isBlocked = false
-        }
-
-        if (type === T.STEP) {// RECEIVE STEP RESULTS (is step/sec bound)
-            // DO BUFFER OPERATION
-            this.renderPixels()
-            this.executeQueuedOperations()
-
-            if (stepExtra) stepExtra()
-
-            // PASS BACK PIXELS IF LOOP RUNNING
-            if (this._isRunning) {
-                this._isBlocked = true
-                this.sendAll(T.PIXELS)
-            }
-        }
-    }
-
 
     // Executes queued operations DOC TODO
     executeQueuedOperations() {

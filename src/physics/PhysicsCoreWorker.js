@@ -1,7 +1,5 @@
 // DOC TODO
-function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES, PHYSICS_DATA_ATTRIBUTES) {
-    console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
-    
+function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES, PHYSICS_DATA_ATTRIBUTES) {    
     // CONSTANTS //
     let _FLAGS_I = 0
     const RTSize = CONFIG.$randomTableSize-1,
@@ -80,6 +78,9 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE,
     ENABLE_2ND_FALL_UNIFORMITY
 
+
+    const MOVE_BUFFER = []// TODO
+
     // DOC TODO
     function physicsStep(
         startI, threadCount,
@@ -137,19 +138,19 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             }
 
             // 2ND FALL UNIFORMITY
-            if (ENABLE_2ND_FALL_UNIFORMITY && mat&DEPOSITABLE) {
-                const hasBottomCollision = flags&COLLISION_BOTTOM, isFinalized = flags&FINALIZED
-
-                if (isFinalized && hasBottomCollision===0) {
-                    indexFlags[i] &= ~FINALIZED
-                    indexStepsAlive[i] = 0
-                }
-                else if (isFinalized===0 && hasBottomCollision && ++indexStepsAlive[i] > COLLISION_FINALIZATION_TIME) {
-                    indexFlags[i] |= FINALIZED
-                    indexPhysicsData[iPD+3] = MATERIALS_SETTINGS[mat].gravity*.45
-                    indexStepsAlive[i] = 0
-                }
-            }
+            //if (ENABLE_2ND_FALL_UNIFORMITY && mat&DEPOSITABLE) {
+            //    const hasBottomCollision = flags&COLLISION_BOTTOM, isFinalized = flags&FINALIZED
+//
+            //    if (isFinalized && hasBottomCollision===0) {
+            //        indexFlags[i] &= ~FINALIZED
+            //        indexStepsAlive[i] = 0
+            //    }
+            //    else if (isFinalized===0 && hasBottomCollision && ++indexStepsAlive[i] > COLLISION_FINALIZATION_TIME) {
+            //        indexFlags[i] |= FINALIZED
+            //        indexPhysicsData[iPD+3] = MATERIALS_SETTINGS[mat].gravity*.45
+            //        indexStepsAlive[i] = 0
+            //    }
+            //}
 
             // TRANSFORMS
             const transformFlag = flags & HAS_TRANSFORM
@@ -335,7 +336,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 }
             }
         } else {// check collision at destination pos
-            const gi_Dest = Math.min(getAdjacencyCoords(oldX, cache.newY), ARRAY_SIZE), m_Dest = Atomics.load(gridMaterials, gi_Dest), hasCollision = !(m_Dest & transpierceableMain)
+            const gi_Dest = getAdjacencyCoords(oldX, cache.newY), m_Dest = gi_Dest>ARRAY_SIZE ? null : Atomics.load(gridMaterials, gi_Dest), hasCollision = !(m_Dest & transpierceableMain)
             if (hasCollision) {
                 cache.newY = (indexPhysicsData[iPD+1] = oldY)|0
                 indexFlags[i] |= dirGdy===1 ? COLLISION_BOTTOM : COLLISION_TOP
@@ -397,10 +398,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             } else console.warn("AAAAAAAAAAAAAAAAAAAA")// CLEANUP
         }
 
-        console.warn("UPDATE GRID ERROR")
-        const iPD = i*PHYSICS_DATA_ATTRIBUTES
-        indexPhysicsData[iPD] = ox
-        indexPhysicsData[iPD+1] = oy
+        //console.warn("UPDATE GRID ERROR", i, gi, "|", [ox, oy], [cache.newX, cache.newY], m_Dest)
+        //const iPD = i*PHYSICS_DATA_ATTRIBUTES
+        //indexPhysicsData[iPD] = ox
+        //indexPhysicsData[iPD+1] = oy
     }
 
     return physicsStep

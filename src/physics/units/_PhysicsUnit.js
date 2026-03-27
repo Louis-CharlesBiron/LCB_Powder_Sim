@@ -9,7 +9,7 @@ class _PhysicsUnit {
         else if (!isLocal && !isRemote) return void SimUtils.warn(WARNINGS.ABSTRACT_INTANCIATION(this))
 
         this._stepExtra = _stepExtra
-        this._isBlocked = false // Whether the main thread has the pixel buffer when using webworkers
+        this._blocked = false // Whether the main thread has the pixel buffer when using webworkers
     }
 
     step() {
@@ -18,7 +18,7 @@ class _PhysicsUnit {
     }
 
     get stepExtra() {return this._stepExtra}
-    get isBlocked() {return this._isBlocked}
+    get blocked() {return this._blocked}
 
     set stepExtra(stepExtra) {this._stepExtra = stepExtra}
 }
