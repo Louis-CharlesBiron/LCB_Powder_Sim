@@ -169,10 +169,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 // IF COLLSION BOTTOM
                 if (flags&COLLISION_BOTTOM) {
                     const m_B = getAdjacencyCoords(oldX, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY+1)),
-                        m_R = getAdjacencyCoords(oldX+1, oldY)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)),
-                        m_L = getAdjacencyCoords(oldX-1, oldY)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY)),
-                        m_BR = getAdjacencyCoords(oldX+1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
-                        m_BL = getAdjacencyCoords(oldX-1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
+                          m_R = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)),
+                          m_L = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY)),
+                          m_BR = getAdjacencyCoords(oldX+1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
+                          m_BL = getAdjacencyCoords(oldX-1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
 
                     // SKIP IF CONTAINED
                     if (m_B&SAND_SKIPABLE&&m_BR&SAND_SKIPABLE&&m_BL&SAND_SKIPABLE&&m_R&SAND_SKIPABLE&&m_L&SAND_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
@@ -185,10 +185,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 transpierceableMain = GASES
                 if (flags&COLLISION_BOTTOM) {
                     const m_B = getAdjacencyCoords(oldX, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY+1)),
-                        m_R = getAdjacencyCoords(oldX+1, oldY)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)),
-                        m_L = getAdjacencyCoords(oldX-1, oldY)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY)),
-                        m_BR = getAdjacencyCoords(oldX+1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
-                        m_BL = getAdjacencyCoords(oldX-1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
+                          m_R = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)),
+                          m_L = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY)),
+                          m_BR = getAdjacencyCoords(oldX+1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
+                          m_BL = getAdjacencyCoords(oldX-1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
                     
                     if (m_B&WATER_SKIPABLE&&m_BR&WATER_SKIPABLE&&m_BL&WATER_SKIPABLE&&m_R&WATER_SKIPABLE&&m_L&WATER_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     
@@ -198,7 +198,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             }
             else if (mat === GRAVEL) {
                 if (flags&COLLISION_BOTTOM) {
-                    const m_B = Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY+1))
+                    const m_B = getAdjacencyCoords(oldX, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY+1))
                     if (m_B&GRAVEL_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++ 
                     applyGravelBehavior(i, m_B, transpierceableMain, indexFlags)
                 }
@@ -206,7 +206,12 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             else if (mat === INVERTED_WATER) {
                 transpierceableMain = GASES
                 if (flags&COLLISION_TOP) {
-                    const m_T = Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY-1)), m_TR = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY-1)), m_TL = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY-1)), m_R = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)), m_L = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY))
+                    const m_T = getAdjacencyCoords(oldX, oldY-1)<0 ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY-1))||mat,
+                          m_TR =  getAdjacencyCoords(oldX+1, oldY-1)<0 ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY-1)),
+                          m_TL =  getAdjacencyCoords(oldX-1, oldY-1)<0 ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY-1)),
+                          m_R = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)),
+                          m_L = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY))
+                      
                     if (m_T&INVERTED_WATER_SKIPABLE&&m_TR&INVERTED_WATER_SKIPABLE&&m_TL&INVERTED_WATER_SKIPABLE&&m_R&INVERTED_WATER_SKIPABLE&&m_L&INVERTED_WATER_SKIPABLE && abs(indexPhysicsData[iPD+2]) <= X_VELOCITY_SKIP_THRESHOLD) {skip1++;continue}pass1++
                     
                     if (nextRandom() <= EQUIVALENT_TRANSPIERCE_CHANCE) transpierceableMain |= WATER
@@ -216,12 +221,13 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             else if (mat === CONTAMINANT) {
                 transpierceableMain = GASES
                 if (flags&COLLISION_Y) {
-                    const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = Atomics.load(gridMaterials, gi_B), 
+                    const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = gi_B>ARRAY_SIZE ? null : Atomics.load(gridMaterials, gi_B),
                           gi_R = getAdjacencyCoords(oldX+1, oldY), m_R = Atomics.load(gridMaterials, gi_R),
                           gi_L = getAdjacencyCoords(oldX-1, oldY), m_L = Atomics.load(gridMaterials, gi_L),
-                          gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = Atomics.load(gridMaterials, gi_T)??mat,
-                          m_BR = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
-                          m_BL = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
+                          gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = gi_T<0 ? null : Atomics.load(gridMaterials,gi_T)||mat,
+                          m_BR = getAdjacencyCoords(oldX+1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
+                          m_BL = getAdjacencyCoords(oldX-1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
+
 
                     if ((m_B|m_R|m_L|m_T) & CONTAMINABLE) applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags)
 
@@ -234,12 +240,12 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 if (flags&COLLISION_BOTTOM) {
                     if (nextRandom() <= LAVA_MOVEMENT_CHANCE) {skip4++;continue}
 
-                    const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = Atomics.load(gridMaterials, gi_B), 
+                    const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = gi_B>ARRAY_SIZE ? null : Atomics.load(gridMaterials, gi_B),
                           gi_R = getAdjacencyCoords(oldX+1, oldY), m_R = Atomics.load(gridMaterials, gi_R),
                           gi_L = getAdjacencyCoords(oldX-1, oldY), m_L = Atomics.load(gridMaterials, gi_L),
-                          gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = Atomics.load(gridMaterials, gi_T)??mat,
-                          m_BR = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
-                          m_BL = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
+                          gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = gi_T<0 ? null : Atomics.load(gridMaterials,gi_T)||mat,
+                          m_BR = getAdjacencyCoords(oldX+1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY+1)),
+                          m_BL = getAdjacencyCoords(oldX-1, oldY+1)>ARRAY_SIZE ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY+1))
                     
                     if ((m_B|m_R|m_L|m_T) & (MELTABLE|LIQUIDS)) applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags)
 
@@ -252,7 +258,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 if (flags&COLLISION_TOP) {
                     if (nextRandom() <= VAPOR_MOVEMENT_CHANCE) {skip4++;continue}
 
-                    const m_T = Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY-1))??mat, m_R = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)), m_L = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY))
+                    const m_T = getAdjacencyCoords(oldX, oldY-1)<0 ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX, oldY-1))||mat,
+                          m_R = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY)),
+                          m_L = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY))
+
                     if (m_T&VAPOR_SKIPABLE&&m_R&VAPOR_SKIPABLE&&m_L&VAPOR_SKIPABLE) {skip1++;continue}pass1++
 
                     applyVaporBehavior(i, m_T, m_R, m_L, transpierceableMain, indexFlags, cache)
@@ -261,15 +270,17 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             else if (mat === FIRE) {
                 transpierceableMain = AIR|VAPOR
 
-                const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = Atomics.load(gridMaterials, gi_B), 
+                const gi_B = getAdjacencyCoords(oldX, oldY+1), m_B = gi_B>ARRAY_SIZE ? null : Atomics.load(gridMaterials, gi_B),
                       gi_R = getAdjacencyCoords(oldX+1, oldY), m_R = Atomics.load(gridMaterials, gi_R),
                       gi_L = getAdjacencyCoords(oldX-1, oldY), m_L = Atomics.load(gridMaterials, gi_L),
-                      gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = Atomics.load(gridMaterials, gi_T)??mat
+                      gi_T = getAdjacencyCoords(oldX, oldY-1), m_T = gi_T<0 ? null : Atomics.load(gridMaterials,gi_T)||mat
+
 
                 if ((m_B|m_R|m_L|m_T) & (INFLAMMABLE|FIRE_EXTINGUISH)) applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags)
 
                 if (flags&COLLISION_TOP) {
-                    const m_TR = Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY-1)), m_TL = Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY-1))
+                    const m_TR =  getAdjacencyCoords(oldX+1, oldY-1)<0 ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX+1, oldY-1)),
+                          m_TL =  getAdjacencyCoords(oldX-1, oldY-1)<0 ? null : Atomics.load(gridMaterials, getAdjacencyCoords(oldX-1, oldY-1))
 
                     if (m_T&FIRE_SKIPABLE&&m_TR&FIRE_SKIPABLE&&m_TL&FIRE_SKIPABLE&&m_R&FIRE_SKIPABLE&&m_L&FIRE_SKIPABLE) {skip1++;continue}pass1++
                     applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache)

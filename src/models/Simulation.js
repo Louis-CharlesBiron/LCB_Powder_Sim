@@ -783,7 +783,7 @@ class Simulation {
             if (x+2 < this._mapGrid.mapWidth) this.placePixelAtCoords(x+2, y, material, replaceMode)
                 this.placePixelAtCoords(x, y-2, material, replaceMode)
                 this.placePixelAtCoords(x, y+2, material, replaceMode)
-                this.fillArea([x-1,y-1], [x+1,y+1], material, replaceMode, tru)
+                this.fillArea([x-1,y-1], [x+1,y+1], material, replaceMode, true)
         } else if (brushType & Simulation.#BRUSH_GROUPS.X) {
             const offset = (Simulation.#BRUSHES_X_VALUES[brushType]/2)|0
             this.fillArea([x-offset,y-offset], [x+offset,y+offset], material, replaceMode, true)
