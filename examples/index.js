@@ -9,7 +9,7 @@ const simulation = new Simulation(
     document.getElementById("simulationCanvas"),
     readyCB,
     {
-        usesWebWorkers: 1,
+        usesWebWorkers: 4,
         autoStart: true,
         aimedFPS: 60,
     },
@@ -28,7 +28,7 @@ function readyCB(simulation) {
     console.log("%cSIMULATION LOADED", "font-size:9.5px;color:#9c9c9c;")
     if (!(simulation instanceof Simulation)) return
 
-    simulation.updateSelectedMaterial(Simulation.MATERIALS.SAND)
+    simulation.updateSelectedMaterial(Simulation.MATERIALS.WATER)
     //simulation.updateSidePriority(Simulation.SIDE_PRIORITIES.LEFT)
     //simulation.updateSidePriority(1)
     //simulation.showSkips = true
@@ -44,10 +44,12 @@ function readyCB(simulation) {
 
     //simulation.updateMapSize(400, 300)
     //simulation.updateMapPixelSize(2)
+    //simulation.showGrid = false
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
     
-    //simulation.updateMapSize(231, 149)
-    //simulation.updateMapPixelSize(4)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X55)
+    simulation.updateMapSize(231, 149)
+    simulation.updateMapPixelSize(4)
+    simulation.updateBrushType(Simulation.BRUSH_TYPES.X25)
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(975, 600)

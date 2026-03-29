@@ -123,7 +123,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
             //DEBUG
             if (countIndex >= count) console.warn("YOOO", countIndex, count)
             if (i==null || i === -1) {
-                console.log("SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, mat)
+                console.log("T:"+startI, "SYNC ERROR gi:", gi, [ox, oy], [oldX, oldY], "i:", i, "|", countIndex, mat)
                 break
             }
 
@@ -289,7 +289,8 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
             // APPLY MOVEMENTS
             applyForces(i, iPD, deltaTime, indexFlags, indexGravity, indexPhysicsData, cache)
-            const dx = cache.dx, dy = cache.dy
+            const dx = cache.dx,
+                  dy = cache.dy
             if (!(dy || dx)) {skip2++;continue}pass2++
 
             // MOVE
@@ -400,6 +401,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
 
             if (oldTargetMat === targetMat) {
                 const atI = Atomics.load(gridIndexes, newGridI)
+                
                 Atomics.store(gridIndexes, newGridI, i)
 
                 Atomics.store(gridIndexes, gi, atI)
@@ -409,8 +411,8 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                     indexPhysicsData[atIPD] = ox
                     indexPhysicsData[atIPD+1] = oy
                 }
-                return
-            } else console.warn("AAAAAAAAAAAAAAAAAAAA")// CLEANUP
+            }
+            else console.warn("AAAAAAAAAAAAAAAAAAAA")// CLEANUP
         }
 
         //console.warn("UPDATE GRID ERROR", i, gi, "|", [ox, oy], [cache.newX, cache.newY], m_Dest)

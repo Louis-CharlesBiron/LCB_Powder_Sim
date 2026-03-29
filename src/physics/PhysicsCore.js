@@ -386,7 +386,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
                 indexPhysicsData[atIPD] = ox
                 indexPhysicsData[atIPD+1] = oy
             }
-        } else console.warn("BBBBBBBBBBBBBBBBB")
+        }
     }
 
     // UTILS //
