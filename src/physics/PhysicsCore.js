@@ -1,4 +1,7 @@
-// DOC TODO
+/**
+ * Create a function to compute physics steps and the context for it
+ * @returns The function that computes physics steps
+ */
 function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES, PHYSICS_DATA_ATTRIBUTES) {
     console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
     
@@ -79,7 +82,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE,
     ENABLE_2ND_FALL_UNIFORMITY
 
-    // DOC TODO
+    // Computes a physics step
     function physicsStep(
         gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
         sidePriority, mapWidth, deltaTime
@@ -390,7 +393,9 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     }
 
     // UTILS //
-    // DOC TODO
+    /**
+     * Starts a log timer
+     */
     function handleTimerPre() {
         if (timerCount++ > CONFIG.maxLogCount) {
             console.clear()

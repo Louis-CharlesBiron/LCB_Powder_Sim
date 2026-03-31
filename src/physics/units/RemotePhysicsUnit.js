@@ -26,6 +26,13 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
+    /**
+     * A physics unit uses workers to compute the physics steps of using the main thread
+     * @param {*} threadCount 
+     * @param {*} SABDeps 
+     * @param {*} workerDependencies 
+     * @param {*} initUpdatables 
+     */
     constructor(threadCount, SABDeps, workerDependencies, initUpdatables) {
         if (_PhysicsUnit.REMOTE_PHYSICS_UNIT_INSTANCE) return _PhysicsUnit.REMOTE_PHYSICS_UNIT_INSTANCE
 
@@ -41,16 +48,27 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         this._SABDependencies = SABDeps
     }
 
+    /**
+     * Initializes the physics unit
+     */
     initialize() {
         this._initialized = true
         this.#createWorkers()
     }
 
+    /**
+     * Updates the number of worker used
+     * @param {Number} threadCount The number of workers to use
+     */
     updateThreadCount(threadCount) {
         this._threadCount = threadCount
         this.#createWorkers()
     }
 
+    /**
+     * Updates the sharedArrayBuffer and updates workers
+     * @param {Object} SABDependencies Object containing the new SharedArrayBuffer, the offsets and array sizes
+     */
     updateSAB(SABDependencies) {
         ///const oldSignals = this._signals
 
@@ -66,6 +84,10 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
+    /**
+     * Runs a physics step on the workers
+     * @param {Function} onStepComplete 
+     */
     async step(onStepComplete, sidePriority, mapWidth, deltaTime, arraySize) {
         super.step()
 
@@ -105,11 +127,19 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         this.executeQueuedOperations()
     }
 
+    /**
+     * Sends a message to all workers
+     * @param {WORKER_MESSAGE_TYPES} type The type of the message
+     * @param {Object} data The data to send
+     */
     sendAll(type, data) {// TODO TOFIX
         const threadCount = this._threadCount, workers = this._workers
         for (let i=0;i<threadCount;i++) workers[i].postMessage({type, ...data})
     }
 
+    /**
+     * Creates and initializes workers
+     */
     #createWorkers() {
         this.killWorkers()
         if (this._initialized) {
@@ -144,7 +174,9 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    // DOC TODO
+    /**
+     *  Terminates all workers
+     */
     killWorkers() {
         const w_ll = this._workers.length
         if (w_ll) {
@@ -156,7 +188,9 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    // Executes queued operations DOC TODO
+    /**
+     * Executes queued operations
+     */
     executeQueuedOperations() {
         const queued = this._queuedBufferOperations, q_ll = queued.length
         for (let i=0;i<q_ll;i++) {
@@ -165,7 +199,10 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    // DOC TODO
+    /**
+     * Adds an operation to the queue
+     * @param {Function} callback 
+     */
     addToQueue(callback) {
         this._queuedBufferOperations.push(callback)
     }

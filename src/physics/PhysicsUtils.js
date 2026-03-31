@@ -10,40 +10,56 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         MAP_WIDTH,
         CLAMP_MAX
 
+    // Wrapper function to update the utils globals
     function _updatePhysicsUtilsGlobals(mapWidth, spRandom, spLeft, spRight) {
         CLAMP_MAX = (MAP_WIDTH = mapWidth)-1
         SP_RANDOM = spRandom
         SP_LEFT = spLeft
         SP_RIGHT = spRight
     }
-
     
     let _rIndex=0
-    // TODO DOC
+    /**
+     * Returns the next number from the random table 
+     */
     function nextRandom() {
         return RT[_rIndex++&RTSize]
     }
 
     const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
-    // DOC TODO
+    /**
+     * If necessary, truncates the provided number to make it fit into a Float32Array without rounding 
+     * @param {Number} num The number to truncate 
+     */
     function safeTrunc(num) {
         FLOAT32_TRUNC_ARR[0] = num
         if (FLOAT32_TRUNC_ARR[0] > num) UINT32_TRUNC_ARR[0]--
         return FLOAT32_TRUNC_ARR[0]
     }
 
-    // DOC TODO
     const BIT32 = 31
+    /**
+     * A binary implementation of Math.abs
+     */
     function abs(num) {
        return (num^(num>>BIT32))-(num>>BIT32)
     }
 
-    // DOC TODO
+    /**
+     * Clamps the provided number between the provided boundaries
+     * @param {Number} num The number to clamp
+     * @param {Number} min The minimum boundary
+     * @param {Number} max The maximum boundary
+     */
     function clamp(num, min=0, max=CLAMP_MAX) {
         return num < min ? min : num > max ? max : num
     }
 
-    // DOC TODO
+    /**
+     * Returns the 1D grid value equivalent to the provided coordinates
+     * @param {Number} x The x value
+     * @param {Number} y The y value
+     */
     function getAdjacencyCoords(x, y) {
         return y*MAP_WIDTH+clamp(x, 0, CLAMP_MAX)
     }
@@ -60,7 +76,13 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         return Math.floor(Math.random()*((max-min)*precision+1))/precision+min
     }
     
-    // DOC TODO
+    /**
+     * Replaces the particle at the provided index, with the provided material
+     * @param {Number} gridIndex The gridIndex value
+     * @param {Number} material The material to place
+     * @param {TypedArrays} ...[arrays] The data arrays 
+     * @returns The placed material
+     */
     function replaceParticleAtIndex(gridIndex, material, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive) {
         const oldIndex = gridIndexes[gridIndex], oiPD = oldIndex*PHYSICS_DATA_ATTRIBUTES
 
@@ -96,6 +118,13 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         return gridMaterials[gridIndex] = material
     }
     
+     /**
+     * (Thread safe version of replaceParticleAtIndex) Replaces the particle at the provided index, with the provided material
+     * @param {Number} gridIndex The gridIndex value
+     * @param {Number} material The material to place
+     * @param {TypedArrays} ...[arrays] The data arrays 
+     * @returns The placed material
+     */
     function workerReplaceParticleAtIndex(gridIndex, material, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive) {
         const oldIndex = Atomics.load(gridIndexes, gridIndex), oiPD = oldIndex*PHYSICS_DATA_ATTRIBUTES
 
@@ -133,7 +162,9 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         return material
     }
 
-    // DOC TODO
+    /**
+     * Returns whether the side priority should be left 
+     */
     function getSideSelectionPriority() {
         if (SP_RANDOM) return RT[_rIndex++&RTSize] < .5
         else if (SP_LEFT) return true
@@ -141,7 +172,10 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
     }
 
     
-    // DOC TODO
+    /**
+     * Creates the random table
+     * @returns The created table
+     */
     function createRandomTable() {
         const table = new Float32Array(RTSize), random = Math.random
         for (let i=0;i<RTSize;i++) table[i] = random()

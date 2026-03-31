@@ -1,6 +1,11 @@
 class LocalPhysicsUnit extends _PhysicsUnit {
 
-    // DOC TODO
+    /**
+     * A physics unit that directly attaches to the main thread
+     * @param {Object} physicsConfig A physics configuration object 
+     * @param {Object} MATERIALS_SETTINGS A physics configuration object
+     * @param {Simulation} definitionHolder The Simulation class, including its static members
+     */
     constructor(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
         if (_PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE) return _PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE
 
@@ -16,6 +21,7 @@ class LocalPhysicsUnit extends _PhysicsUnit {
         )
     }
 
+    // Runs a physics step
     step(
         gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
         sidePriority, mapWidth, deltaTime

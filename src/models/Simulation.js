@@ -566,7 +566,6 @@ class Simulation {
         }
     }
 
-    // TODO DOC
     #updateIndexCount() {
         const gridIndexes = this._gridIndexes, gi_ll = gridIndexes.length
         let count = 0

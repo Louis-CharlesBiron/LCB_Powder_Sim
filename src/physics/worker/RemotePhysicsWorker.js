@@ -75,6 +75,7 @@ function startLoop() {
         deltaTime = Atomics.load(signals, SI.DATA.DELTATIME)/1000
         arraySize = Atomics.load(signals, SI.DATA.ARRAY_SIZE)
 
+        // RUN PHYSICS STEP
         PHYSICS_CORE(
             id, threadCount,
             gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
@@ -89,7 +90,7 @@ function startLoop() {
 }
 
 
-// DOC TODO
+// Creates the data arrays views based on the received SAB, offsets and array sizes 
 function createArrays() {
     const {SAB, offsets, sizes} = SABDependencies, C = WORKER_DEPENDENCIES.CONTAINER_NAMES
     signals = new ARRAY_MAP[C.C_SIGNALS](SAB, offsets[0], sizes.signals)

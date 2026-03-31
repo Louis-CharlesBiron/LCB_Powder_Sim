@@ -1,4 +1,7 @@
-// DOC TODO
+/**
+ * Create a function to compute physics steps and the context for it
+ * @returns The function that computes physics steps
+ */
 function createPhysicsCoreWorker(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES, PHYSICS_DATA_ATTRIBUTES) {    
     // CONSTANTS //
     let _FLAGS_I = 0
@@ -78,10 +81,7 @@ function createPhysicsCoreWorker(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL
     FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE,
     ENABLE_2ND_FALL_UNIFORMITY
 
-
-    const MOVE_BUFFER = []// TODO
-
-    // DOC TODO
+    // Computes a physics step
     function physicsStep(
         startI, threadCount,
         gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,

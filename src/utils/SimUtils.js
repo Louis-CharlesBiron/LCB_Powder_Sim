@@ -11,7 +11,11 @@ class SimUtils {
         return newSettings
     }
 
-    // DOC TODO
+    /**
+     * Dynamically adds setters/getters to the provided class' prototype 
+     * @param {Class} targetClass The class to modify 
+     * @param {Object} attributes An object such as: {exposedName:"height", path?:["_mapGrid", "_height"]}
+     */
     static addGettersSetters(targetClass, attributes) {
         attributes.forEach(({exposedName, path})=>{
             path ??= "_"+exposedName
@@ -35,7 +39,10 @@ class SimUtils {
         })
     }
 
-    // DOC TODO
+    /**
+     * Returns the biggest decimal point among the provided numbers
+     * @param  {...Number} nums A list of numbers
+     */
     static getMaxDecimals(...nums) {
         return Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
     }
