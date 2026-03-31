@@ -21,27 +21,39 @@
     "mergeOrder": [
         "[*]canvasDotEffect.js",
         "[%]cde.js",
+        "warnings.js",
+        "CameraManager.js",
+        "SimUtils.js",
+        "KeybindManager.js",
         "settings.js",
+        "colorSettings.js",
+        "userSettings.js",
+        "worldStartSettings.js",
+        "physicsSettings.js",
+        "MaterialsSettings.js",
         "defaultKeybinds.js",
-        "LocalPhysicsUnit.js",
+        "PhysicsUtils.js",
+        "MaterialsBehavior.js",
         "PhysicsCore.js",
+        "PhysicsCoreWorker.js",
+        "_PhysicsUnit.js",
+        "LocalPhysicsUnit.js",
+        "RemotePhysicsUnit.js",
         "MapGrid.js",
         "Simulation.js"
     ],
     "UMDExpose": [
-        "SETTINGS",
-        "DEFAULT_KEYBINDS",
-        "PhysicsCore",
-        "MapGrid",
         "Simulation",
         "FPSCounter",
-        "CDEUtils"
+        "CDEUtils",
+        "SimUtils",
+        "createPhysicsCoreWorker"
     ],
     "dependencies": [],
     "workers":[
         {
-            "file": "RemotePhysicsUnit.js",
-            "importExpressions": ["SETTINGS", "PhysicsCore"]
+            "file": "RemotePhysicsWorker.js",
+            "importExpressions": ["createPhysicsCoreWorker"]
         }
     ],
     "workerMocks": ["DOMParser", "IntersectionObserver", "HTMLVideoElement", "HTMLAudioElement", "SVGImageElement", "HTMLImageElement", "HTMLCanvasElement", "document"],

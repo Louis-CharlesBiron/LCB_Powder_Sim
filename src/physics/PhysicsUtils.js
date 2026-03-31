@@ -67,7 +67,7 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         if (material & STATIC) {
             const i = --indexCount[0]
             if (oldIndex !== i) {
-                const iPD = i*PHYSICS_DATA_ATTRIBUTES
+                const iPD = i*PHYSICS_DATA_ATTRIBUTES,
                 x = indexPhysicsData[oiPD] = indexPhysicsData[iPD], 
                 y = indexPhysicsData[oiPD+1] = indexPhysicsData[iPD+1]
                 indexFlags[oldIndex] = indexFlags[i]

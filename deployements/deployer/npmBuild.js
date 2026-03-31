@@ -13,7 +13,10 @@ const TERSER_CONFIG = {
             unsafe: false,
             passes: 2,
         },
-        mangle: false,
+        mangle: {
+            keep_classnames: true,
+            keep_fnames: true,
+        },
         format: {
             comments: "some",
             "shebang": true

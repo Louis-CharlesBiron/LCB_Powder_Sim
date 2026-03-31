@@ -73,7 +73,7 @@ const SETTINGS = {
     BRUSH_GROUPS: {},
     BRUSHES_X_VALUES: [],
     
-    WORKER_RELATIVE_PATH: /*/[[@workerPath]]/*/"./src/physics/units/RemotePhysicsWorker.js"/*/[[@end]]/*/,
+    WORKER_RELATIVE_PATH: /*/[[@workerPath]]/*/"./src/physics/worker/RemotePhysicsWorker.js"/*/[[@end]]/*/,
     WORKER_MESSAGE_TYPES: {
         INIT:undefined,
         UPDATE_SAB:1<<0,

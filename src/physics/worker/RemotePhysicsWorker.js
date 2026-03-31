@@ -1,4 +1,4 @@
-importScripts("../PhysicsCoreWorker.js")
+importScripts("./PhysicsCoreWorker.js")
 importScripts("../PhysicsUtils.js")
 importScripts("../MaterialsBehavior.js")
     console.log("%cCREATED: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
@@ -38,7 +38,8 @@ let id,
 // UPDATABLE
     sidePriority,
     mapWidth,
-    deltaTime
+    deltaTime,
+    arraySize
 
 
 self.onmessage=e=>{
@@ -55,7 +56,7 @@ self.onmessage=e=>{
         SABDependencies = data.SABDependencies
 
         createArrays()
-        PHYSICS_CORE = createPhysicsCore(WORKER_DEPENDENCIES.physicsConfig, WORKER_DEPENDENCIES.MATERIALS_SETTINGS, WORKER_DEPENDENCIES.MATERIALS, WORKER_DEPENDENCIES.MATERIAL_GROUPS, WORKER_DEPENDENCIES.MATERIAL_NAMES, WORKER_DEPENDENCIES.SIDE_PRIORITIES, WORKER_DEPENDENCIES.PHYSICS_DATA_ATTRIBUTES)
+        PHYSICS_CORE = createPhysicsCoreWorker(WORKER_DEPENDENCIES.physicsConfig, WORKER_DEPENDENCIES.MATERIALS_SETTINGS, WORKER_DEPENDENCIES.MATERIALS, WORKER_DEPENDENCIES.MATERIAL_GROUPS, WORKER_DEPENDENCIES.MATERIAL_NAMES, WORKER_DEPENDENCIES.SIDE_PRIORITIES, WORKER_DEPENDENCIES.PHYSICS_DATA_ATTRIBUTES)
         startLoop()
     }
 }

@@ -9,7 +9,7 @@ const simulation = new Simulation(
     document.getElementById("simulationCanvas"),
     readyCB,
     {
-        usesWebWorkers: 4,
+        usesWebWorkers: 1,
         autoStart: true,
         aimedFPS: 60,
     },
@@ -49,7 +49,7 @@ function readyCB(simulation) {
     
     simulation.updateMapSize(231, 149)
     simulation.updateMapPixelSize(4)
-    simulation.updateBrushType(Simulation.BRUSH_TYPES.X25)
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X25)
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(975, 600)
