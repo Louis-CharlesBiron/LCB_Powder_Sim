@@ -1,0 +1,367 @@
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Louis-CharlesBiron/LCB_Powder_Sim?link=https%3A%2F%2Fgithub.com%2FLouis-CharlesBiron%2FLCB_Powder_Sim%2Fcommits%2Fmain%2F&label=Commit%20Activity)](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/commits/main/)
+![GitHub Created At](https://img.shields.io/github/created-at/Louis-CharlesBiron/LCB_Powder_Sim?label=Since&color=orange)
+[![NPM Version](https://img.shields.io/npm/v/lcb-ps?label=Version&color=%237761c0)](https://www.npmjs.com/package/lcb-ps)
+[![NPM Downloads](https://img.shields.io/npm/d18m/lcb-ps?label=NPM%20Downloads&color=%231cc959)](https://www.npmjs.com/package/lcb-ps)
+![NPM License](https://img.shields.io/npm/l/lcb-ps?label=License&color=cadetblue)
+
+# LCB Powder Simulator
+**<u>LCB Powder Simulator</u> is an efficient, fully native JS powder simulation that runs on the [Canvas 2d API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API) and [cdejs](https://github.com/Louis-CharlesBiron/canvasDotEffect).**
+
+# Table of Contents
+- [Web Interface](#web-interface) ([direct link here](https://louis-charlesbiron.github.io/LCB_Powder_Sim))
+- [Other deployements](#other-deployements)
+- [Getting started](#modules--packages)
+- [Documentation](#documentation)
+    - [Simulation Class](#simulation-class)
+    - [MapGrid Class](#mapgrid-class)
+    - [Simulation API](#simulation-api)
+    - [Materials](#materials)
+    - [Brushes](#brushes)
+    - [Saves](#saves)
+- [Visual Examples](#visual-examples)
+- [NPX Commands](#npx-commands)
+- [Credits](#credits)
+
+# [Web Interface](#table-of-contents)
+A quick and simple Web page to test out the simulation without installing anything!
+
+Link: [https://louis-charlesbiron.github.io/LCB_Powder_Sim](https://louis-charlesbiron.github.io/LCB_Powder_Sim)
+
+
+# [Other deployements](#table-of-contents)
+
+## **Desktop App**:
+### - Download Instructions
+- Coming soon!
+
+### - Info
+- Toggleable transparent app background for cool effect :) 
+- Allows for a fullscreen experience
+- More accessible UI (because bigger)
+- Runs on [NeutralinoJS](https://github.com/neutralinojs/neutralinojs)
+
+----
+
+## **Chrome Extension**:
+### - Download Instructions
+- Coming soon!
+
+### - Info
+- A Nice little distraction in the top right of your browser
+- More compact UI
+
+ 
+
+# [Modules / Packages](#table-of-contents)
+
+For those who know how to code a bit and want have more control over the simulation, here are the **NPM** and **native browser build** releases as well as [Documentation](#documentation) bellow!
+
+## **NPM**:
+
+### Use a quick template (recommended):
+- ESM (with Vite) -> `npx lcb-ps template yourProjectName`
+
+- UMD (vanilla) -> `npx lcb-ps browser-template yourProjectName`
+
+### Or create the project yourself:
+
+- Get the **ESM** version by running `npm install lcb-ps`
+
+- Or simply copy the following *package.json* file and run `npm install`
+
+##### - Minimal example `package.json`
+```json 
+{
+    "name": "project-name",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+      "dev": "vite"
+    },
+    "dependencies": {
+      "lcb-js": "^1.0.4"
+    },
+    "devDependencies": {
+      "vite": "^7.3.1"
+    }
+}
+```
+
+##### - /!\ <u>For web workers to work</u>, **add** this `vite.config.js`
+```js
+export default {
+  optimizeDeps: {
+    exclude: ["lcb-ps"]
+  }
+}
+```
+
+**- Note:** if you are using this librairy [NPM](https://www.npmjs.com/package/lcb-js) version of this librairy, using [Vite](https://vite.dev/) or any other bundler is recommended.
+
+
+## **Browser Build**:
+Get the **UMD** version by downloading these two files:
+- [lcbPS.min.js](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/blob/main/deployements/codeBuilds/umd/lcbPS.min.js)
+- [RemotePhysicsUnit.min.js](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/blob/main/deployements/codeBuilds/umd/RemotePhysicsUnit.min.js)
+
+(*Or the unminified versions: [Raw builds](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/tree/main/deployements/codeBuilds/umd/raw)*)
+
+Again, a fully Node.js-less template is available by running `npx lcb-ps browser-template yourProjectName`
+
+----
+
+## **Getting Started with Modules / Packages**
+
+**1. Get the library files**. (`npm install lcb-ps` or [UMD builds](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/tree/main/deployements/codeBuilds/umd))
+
+*If using UMD version*: Place ***both*** files in the folder of your choice.
+
+```
+libFolder/
+├─ lcbPS.min.js
+└─ RemotePhysicsUnit.min.js
+```
+Then place *only* the librairy file in your HTML
+```HTML
+    <!-- Only if you're using the browser/UMD version! -->
+    <script src="lcbPS.min.js"></script>
+```
+
+**2.** In your HTML file, **place a canvas element** to display the simulation on. (*See [cdejs](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#getting-started--minimal-setup) for more info*)
+```HTML
+<canvas id="simulationCanvasId"></canvas>
+```
+
+**3.** In a JS file, **create a new Simulation instance**, and link it to the previous HTML canvas element.
+```js
+const {Simulation} = lcbPS
+
+// Create the simulation
+const simulation = new Simulation(document.getElementById("simulationCanvasId"))
+```
+
+**This will create a fully functionnal powder simulation using default settings!** [See UMD Template](https://github.com/Louis-CharlesBiron/LCB_Powder_Sim/tree/main/examples/UMDTemplate)
+
+ 
+# [Documentation](#table-of-contents)
+This section explains what are the available functions and types to control certain aspect of the simulation.
+
+## [Simulation Class](#table-of-contents)
+The `Simulation` class is the core of the simulation and manages all rendering and world manipulation (except for physics).
+#### **The Simulation constructor takes the following parameters:**
+###### - `new Simulation(CVS, readyCB?, worldStartSettings?, userSettings?, colorSettings?)`
+- **CVS** -> A [CDEJS `Canvas`](https://github.com/Louis-CharlesBiron/canvasDotEffect?tab=readme-ov-file#canvas) instance.
+- **readyCB**? -> A callback ran once the simulation is started. `(simulation)=>{}`
+- **worldStartSettings**? -> An object defining the simulation start settings. (Defaults to `DEFAULT_WORLD_START_SETTINGS`)
+- **userSettings**? -> An object defining the user settings. (Defaults to `DEFAULT_USER_SETTINGS`)
+- **colorSettings**? -> An object defining the color settings. (Defaults to `DEFAULT_COLOR_SETTINGS`)
+
+#### **Noteworthy attributes**
+- `pixels` -> The array containing all materials (might not be directly available when using workers)
+- `backStepSavingMaxCount` -> The amount of back step saved (Defaults to `DEFAULT_BACK_STEP_SAVING_COUNT`)
+- `isMouseWithinSimulation` -> Whether the mouse is inside the simulation bounding box
+- `isRunning` -> Whether the simulation is currently running
+- `selectedMaterial` -> The material used by default for world manipulation (Defaults to `MATERIALS.SAND`)
+- `brushType` -> The shape used to draw materials on the simulation with mouse (Defaults to `BRUSH_TYPES.PIXEL`)
+- `sidePriority` -> The side prioritised first by the physics (Defaults to `SIDE_PRIORITIES.RANDOM`)
+- `loopExtra` -> A callback called on each rendered frame (Defaults to `null`)
+- `stepExtra` -> A callback called on each physics step (Defaults to `null`)
+
+ 
+**WorldStartSettings**:
+- `autoStart` -> Whether the simulation automatically starts once instanciated. (Defaults to true)
+- `usesWebWorkers` -> Whether the physics calculations are offloaded to a worker thread. (RECOMMENDED) (Defaults to true)
+- `aimedFPS` -> The desired frame per seconds. (Defaults to `60`) (Put `null` for V-Sync)
+- `zoom` -> The base zoom value. (Defaults to `1`)
+
+***Note***: The following world start settings are only work when `autoSimulationSizing` is not set.
+- `cameraCenterPos` -> The camera center position. (Defaults to the center of the map)
+- `mapWidth` -> The base width of the map. (Defaults to `MapGrid.DEFAULT_MAP_WIDTH`)
+- `mapHeight` -> The base height of the map. (Defaults to `MapGrid.DEFAULT_MAP_HEIGHT`)
+- `mapPixelSize` -> The base size of the map pixels. (Defaults to `MapGrid.DEFAULT_MAP_PIXEL_SIZE`)
+
+**UserSettings**:
+- `autoSimulationSizing` -> If a number, automatically resizes the simulation based the provided number, as pixel size. Disabled otherwise.
+- `dragAndZoomCanvasEnabled` -> Whether the user can use left click to move around and wheel to zoom (Defaults to true)
+- `warningsDisabled` -> Hides warning messages from console (Defaults to false)
+- `showBorder` -> If true, displays the bounding box of the simulation (Defaults to true)
+- `showGrid` -> If true, displays a grid over the simulation to delimit pixels (Defaults to true)
+- `zoomInIncrement` / `zoomOutIncrement` -> Defines the **increment** value for zooming in/out (Defaults to `0.25` / **`-0.2`**)
+- `minZoomThreshold` / `maxZoomThreshold` -> Defines the min/max zoom threshold values (Defaults to `0.1` / `Infinity`)
+- `smoothDrawingEnabled` -> Whether to fill gaps between mouse event for smoother drawing (Defaults to true)
+- `visualEffectsEnabled` -> Whether to display some visual effect (Defaults to true) [MAY AFFECT PERFORMANCE]
+- `drawingDisabled` -> Whether the user can draw with the mouse. (Defaults to false)
+
+**ColorSettings**:
+This object allows the color customization of the grid and materials.
+- `grid`, `border` -> The color of the grid and border of the map. `[r,g,b,a]`
+- `AIR`, `SAND`, `WATER`, **...** -> The color of each material. (*The key must be in UPPERCASE*) `[r,g,b,a]`
+
+## [MapGrid Class](#table-of-contents)
+The `MapGrid` class **is mostly used internally** to handle the simulation world space / dimensions.
+
+It still provides informative world functions such as `getLocalMapPixel`, `getAdjacency`, `indexToMapPos`, `mapPosToIndex` as well as the mapWidth / mapHeight in both local and global pixels.
+ 
+# [Simulation API](#table-of-contents)
+
+### **The simulation programming interface**
+This section will go over pretty much all available functions to control the simulation.
+
+## - Simulation setup
+- `readyCB` -> A callback ran once the simulation is started. `(simulation)=>{}`
+(Defined in the Simulation's constructor)
+
+This can be used to update map properties / import a world as soon as the simulation is started.
+
+## - Simulation configurations
+#### - `updateMapSize(width?, height?)` -> Updates the map dimensions.
+- `width` The new width of the map (*local px*)
+- `height` The new height of the map (*local px*)
+#### - `updateMapPixelSize(pixelSize?)` -> Updates the map pixel size. (Defaults to `MapGrid.DEFAULT_PIXEL_SIZE`)
+- `pixelSize` The new map pixel size (*global px*)
+#### - `autoFitMapSize(pixelSize?, globalWidth?, globalHeight?)` ->Updates map size and pixel size automatically based on the optimal fit for the provided sizes. 
+- `pixelSize` The desired map pixel size (*global px*) (Defaults to `DEFAULT_MAP_RESOLUTIONS.DEFAULT`)
+- `globalWidth` The width to cover (*global px*) (Defaults to the canvas width)
+- `globalHeight` The height to cover (*global px*) (Defaults to the canvas height)
+
+#### - `updateSidePriority(sidePriority)` -> Updates the side prioritised first by the physics.
+- `sidePriority` The new side priority. One of `SIDE_PRIORITIES`. (Defaults to `SIDE_PRIORITIES.RANDOM`)
+
+#### - `updatePhysicsUnitType` -> Updates whether the physics calculations are offloaded to a worker thread.
+- `usesWebWorkers` Whether an other thread is used. (Defaults to `true`)
+
+
+## - Simulation Control
+#### - `start(force?)` -> Sets the state of the simulation to be running.
+- `force` If true, forces the start even if simulation is already running.
+#### - `stop()` -> Sets the state of the simulation to be stopped.
+#### - `step()` -> Runs and displays one physics step.
+#### - `backstep()` -> Displays the previous physics step saved. (*Does not actually run physics backwards*)
+
+## - User Control
+#### - `updateSelectedMaterial(material)` -> Updates the material used by default for world manipulations.
+- `material` The materials to select. One of `MATERIALS`
+#### - `updateBrushType(brushType)` -> Updates the shape used to draw materials on the simulation with mouse.
+- `brushType` The brush type to use -> One of `BRUSH_TYPES`
+#### - `updateReplaceMode(replaceMode)` -> Updates the material(s) allowed to be replaced when drawing on the simulation.
+- `replaceMode` The material(s) allowed to be replaced, as an `int` -> One of `REPLACE_MODES` 
+#### - `updateColors(colorSettings)` -> Updates the colors used for the grid and/or the materials.
+- `colorSettings` The colors to update
+
+## - World Interation
+#### - `placePixel(mapPos, material?, replaceMode?)` (*Similarly `placePixelAtCoords`, `placePixelAtIndex`*) -> Places a pixel on the map.
+- `mapPos` The map position of the pixel (`[x,y]`)
+- `material` The material used, one of `MATERIALS`. (Defaults to the selected material)
+- `replaceMode` The material(s) allowed to be replaced, as an `int`. (Defaults to the current replace mode)
+#### - `placePixelsWithBrush(x, y, brushType?, material?, replaceMode?)` -> Places pixels at the specified coordinates, according to the provided brush pattern.
+- `x` The X value of the center positions
+- `y` The Y value of the center positions
+- `brushType` The brush type used, one of `BRUSH_TYPES`. (Defaults to the current brush type)
+- `material` The material used, one of `MATERIALS`. (Defaults to the selected material)
+- `replaceMode` The material(s) allowed to be replaced, as an `int`. (Defaults to the current replace mode)
+     
+#### - `clear()` -> Fills the simulation with air
+#### - `fill(material?)` -> Fills the entire simulation with a specific material.
+- `material` The material used, one of `MATERIALS`. (Defaults to the selected material)
+#### - `fillArea(pos1, pos2, material?, replaceMode?)` -> Fills the specified area of the map with a specific material.
+- `pos1` The top-left pos of the area (`[leftX, topY]`)
+- `pos2` The bottom-right pos of the area (`[rightX, bottomY]`)
+- `material` The material used, one of `MATERIALS`. (Defaults to the selected material)
+- `replaceMode` The material(s) allowed to be replaced, as an `int`. (Defaults to the current replace mode)
+
+## - Persistence
+#### - `load(mapData, useSaveSizes)` -> Fills the map with saved data.
+- `mapData` The save data. (`String`, `Uint16Array`, `Object`)
+    - Either **a string in the format given by the function `exportAsText()`**
+    - *Or a `Uint16Array` containing the material value for each index*
+    - *Or an `Object` containing the material value for each index `{"index": material}`*
+- `useSaveSizes?` Whether to resize the map size and pixel size to the save's values
+     
+#### - `exportAsText(disableCompacting?, callback?)` -> Exports the simulation map as text.
+- `disableCompacting` Whether to disable the text compacting (*not recommended for large maps*) (Defaults to `false`)
+- `callback` If using web workers, use this callback to retrieve the return value `(stringValue)=>{...}`
+
+## - Others
+#### - `getPixelAtMapPos(mapPos)` -> Returns the material at the provided local pos.
+- `mapPos` The map pos (`[x,y]`)
+#### - `updateImgMapFromPixels(force?)` -> Updates the display image map according to the pixels array (Basically, **renders a frame**)
+- `force` If true, disables optimization and forces every pixel to get redrawn (*mostly used internally*)
+
+ 
+# [Materials](#table-of-contents)
+There are multiple material enums available each describing different properties:
+
+### - Materials types (`MATERIALS`)
+- `AIR` -> Represents an empty pixel.
+- `SAND` -> Falls in air and liquids, forms pile of itself.
+- `WATER` -> Falls in air, spreads horizonally once grounded.
+- `STONE` -> A solid block that stands still, and doesn't interact.
+- `GRAVEL` -> Falls in air in liquids, but doesn't form pile of itself.
+- `INVERTED_WATER` -> Water, but with inverted gravity.
+- `CONTAMINANT` -> Acts like water, but spreads in other liquids.
+- `LAVA` -> Acts like water, but slowed down. Transforms into stone when in contact with liquids. Slowly melts away some other materials.
+- `ELECTRICITY` -> TODO. Can interact with some materials.
+- `COPPER` -> Similar to stone, but can get lit by electricity.
+### - Material groups (`MATERIAL_GROUPS`)
+- `TRANSPIERCEABLE` -> A group of materials some other can fall through. (*AIR, WATER, INVERTED_WATER, CONTAMINANT*)
+- `LIQUIDS` -> A group of liquids. (*WATER, INVERTED_WATER, CONTAMINANT*)
+- `CONTAMINABLE` -> A group of materials that can be contaminated. (*WATER, INVERTED_WATER*)
+- `MELTABLE` -> A group of materials that can be melted. (*SAND, GRAVEL*)
+
+### - Material states (`MATERIAL_STATES`)
+- `EMPTY` -> No states
+- `COPPER`:
+    - `LIT` -> Represents lit copper
+    - `ORIGIN` -> Represents lit copper in direct contact with electricity 
+    - `DISABLED` -> Represents unlit copper
+
+# [Brushes](#table-of-contents)
+
+All brushes available are given in the `BRUSH_TYPES` enum:
+- `PIXEL` -> Draws a single pixel.
+- `VERTICAL_CROSS` -> Draws pixels in a `+` symbol.
+- `LINE3` ->  Draws pixels in a `|` symbol.
+- `ROW3` -> Draws pixels in a `-` symbol.
+- `BIG_DOT` -> Draws pixels in a fat dot symbol.
+- `X3` -> Draws pixels in a 3x3 square.
+- `X5` -> Draws pixels in a 5x5 square.
+- `X15` -> Draws pixels in a 15x15 square.
+- `X25` -> Draws pixels in a 25x25 square.
+- `X55` -> Draws pixels in a 55x55 square.
+- `X99` -> Draws pixels in a 99x99 square.
+
+ 
+# [Visual Examples](#table-of-contents)
+
+### Create your own isolated interactive worlds!
+
+![Cool img idk](examples/images/image1.gif)
+
+![Cool img2 idk](examples/images/image2.png)
+
+# [Npx Commands](#table-of-contents)
+
+### The main command interface: `npx lcb-ps <commandName> <params?>`
+
+This is the global *lcb-ps* command. It provides access to all regular *lcb-ps* commands and some more. It also provides basic command autocompletion upon receiving an incomplete command name.
+
+### Commands:
+
+This is the list of commands available through the `lcb-ps` command.
+  - `template` ->  Creates a simple ESM project template. (*`npx lcb-js template <folderPath?>`*)
+  - `browser-template` ->  Creates a simple UMD project template. (*`npx lcb-js browser-template <folderPath?>`*)
+  - `documentation` ->  Opens the documentation (*`npx lcb-js documentation`*)
+  - `help` ->  Shows commands syntax (*`npx lcb-js help`*)
+  - `list` ->  Shows all available commands and aliases (*`npx lcb-js list`*)
+  - `version` ->  Returns the installed version of the librairy (*`npx lcb-js version`*)
+
+
+## [Credits](#table-of-contents)
+
+Made by [Louis-Charles Biron](https://github.com/Louis-CharlesBiron) !
+
+Every uncredited line of code and documentation in this repository was written by me, by hand and with passion!
+
+Except for:
+- [coi-serviceworker.min.js](https://github.com/gzuidhof/coi-serviceworker)

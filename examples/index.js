@@ -9,12 +9,11 @@ const simulation = new Simulation(
     document.getElementById("simulationCanvas"),
     readyCB,
     {
-        usesWebWorkers: 1,
-        autoStart: true,
+        usesWebWorkers: false,
         aimedFPS: 60,
     },
     {
-        //autoSimulationSizing: 15,
+        autoSimulationSizing: 15,
         showBorder: true,
         showGrid: true,
         visualEffectsEnabled: true,
@@ -47,8 +46,8 @@ function readyCB(simulation) {
     //simulation.showGrid = false
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
     
-    simulation.updateMapSize(231, 149)
-    simulation.updateMapPixelSize(4)
+    //simulation.updateMapSize(231, 149)
+    //simulation.updateMapPixelSize(4)
     //simulation.updateBrushType(Simulation.BRUSH_TYPES.X25)
 
     //simulation.updateMapPixelSize(1)

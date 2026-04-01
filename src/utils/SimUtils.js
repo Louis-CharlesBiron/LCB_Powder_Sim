@@ -65,6 +65,8 @@ class SimUtils {
      * @param {Object} userSettings The userSettings object
      */
     static warn(warningMessage, userSettings) {
-        if (!userSettings?.warningsDisabled) console.warn(warningMessage)
+        const hasWarningsDisabled = userSettings?.warningsDisabled
+        if (!hasWarningsDisabled) console.warn(warningMessage)
+        else if (hasWarningsDisabled === 1) console.info("WARN:", warningMessage)
     }
 }

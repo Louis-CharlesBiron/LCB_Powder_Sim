@@ -40,7 +40,7 @@ let id,
     indexPhysicsData,
     indexGravity,
     indexStepsAlive,
-// UPDATABLE
+// UPDATABLES
     sidePriority,
     mapWidth,
     deltaTime,

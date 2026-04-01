@@ -1,4 +1,4 @@
-import {readFileSync} from "fs"
+import {copyFileSync, existsSync, mkdir, mkdirSync, readdirSync, readFileSync, statSync} from "fs"
 import {basename, join} from "path"
 import {minify_sync} from "terser"
 
@@ -20,6 +20,7 @@ export const CONFIG_PATH_FROM_DEPLOYER = "../codeBuilds/buildConfig.json",
       BUILD_TIME_LOG_NAME = "Merging",
       RENAME_TIME_LOG_NAME = "Renaming",
       NPM_TIME_LOG_NAME = "Building npm",
+      APPS_TIME_LOG_NAME = "Building apps",
 
       NAME_UMD = CONFIG.buildNameUMD,
       DIST_UMD = join(DIST, CONFIG.UMDFolderName),
@@ -41,7 +42,14 @@ export const CONFIG_PATH_FROM_DEPLOYER = "../codeBuilds/buildConfig.json",
       DTS_DELETE_FOLDERS = [
             join(DTS, CONFIG.UMDFolderName),
             join(DTS, CONFIG.ESMFolderName),
-      ]
+      ],
+
+      APPS_ROOT = "../apps",
+      APP_DESKTOP_ROOT = join(APPS_ROOT, "desktop"),
+      APP_BROWSER_ROOT = join(APPS_ROOT, "browser"),
+      APP_DESKTOP_MIN_LIB_DIST = join(APP_DESKTOP_ROOT, "src", "assets", "lcb-ps"),
+      APP_BROWSER_MIN_LIB_DIST = join(APP_BROWSER_ROOT, "src", "lcb-ps")
+
 
 /**
  * Minifies the provided content based on the provided terserConfig
@@ -70,4 +78,17 @@ export function getFileNameMinified(fileName) {
 export function stem(fileName, returnExtension) {
     const fileNameInfo = basename(fileName).match(/[./a-z0-9_ -]+/gi)[0].split(".")
     return returnExtension ? fileNameInfo : fileNameInfo[0]
+}
+
+/**
+ * A shallow copyFolder function. Only copies the folder and the first layer of FILES in it
+ * @param {String} source The source directory path
+ * @param {String} destination The destination directory path
+ */
+export function shallowCopyFolder(source, destination) {
+    if (!existsSync(destination)) mkdirSync(destination)
+    readdirSync(source).forEach(x=>{
+        const src = join(source, x)
+        if (statSync(src).isFile()) copyFileSync(src, join(destination, x))
+    })
 }
