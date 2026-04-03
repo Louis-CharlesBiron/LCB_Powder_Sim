@@ -1,14 +1,20 @@
 :root {
-    --no_of: hidden !important;
+    --app-width: 780px;
+    --app-height: 580px;
+    --cvsHeight: 78%;
+    --tabsHeight: 25%;
+    --tabsCount: 0;
 }
+
 html, body {
-    width: 780px;
-    height: 580px;
+    width: var(--app-width);
+    height: var(--app-height);
     background-color: rgb(0, 0, 0);
     margin: 0px;
     user-select: none;
-    overflow: var(--no_of);
+    overflow: hidden;
     font-family: monospace;
+    transition: 0.4s all;
 }
 #version {
     position: absolute;
@@ -28,5 +34,59 @@ html, body {
 
 .cvsParent {
     width: 100%;
-    height: 90%;
+    height: var(--cvsHeight);
+}
+
+.bottom {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - var(--cvsHeight));
+    width: 100%;
+    color: aliceblue;
+}
+
+.tabs {
+    width: 100%;
+    height: var(--tabsHeight);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.tabs > span {
+    width: calc(100% / var(--tabsCount));
+    height: 100%;
+    border: 2px solid aliceblue;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.tabs > span[data-selected=true] {
+    cursor: default;
+    background-color: rgba(240, 248, 255, 0.25);
+}
+
+.tabContent {
+    width: 100%;
+    height: calc(100% - var(--tabsHeight));
+}
+
+.tabContent > div {
+    display: none;
+    width: 100%;
+    height: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.tabContent > div[data-displayed=true] {
+    display: flex;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
 }

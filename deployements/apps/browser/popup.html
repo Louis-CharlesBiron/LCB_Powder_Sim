@@ -15,6 +15,97 @@
             <canvas id="simulationCanvas"></canvas>
          </div>
 
+         <div class="bottom">
+            <div class="tabs">
+
+               <span data-content="0" data-selected="true">Materials</span>
+               <span data-content="1">Brushes</span>
+               <span data-content="2">Map</span>
+               <span data-content="3">Settings</span>
+               <span data-content="4">Saves</span>
+               <span data-content="5">Misc</span>
+               <span data-content="6">Physics</span>
+
+            </div>
+
+            <div class="tabContent">
+
+               <div data-content="0" data-displayed="true">
+                  <span class="tabContentHeader">Materials</span>
+                  
+                  <div>
+                     <div id="materialsList"></div>
+                  </div>
+               </div>
+               <div data-content="1">
+                  <span class="tabContentHeader">Brushes</span>
+                  
+                  <div>
+                     <div id="brushesList"></div>
+                  </div>
+               </div>
+               <div data-content="2">
+                  <span class="tabContentHeader">Map settings</span>
+
+                  <div>
+                     <div>
+                        <button>Start</button>
+                        <button>Stop</button>
+                        <button>clear</button>
+                        <button><</button>
+                        <button>></button>
+                     </div>
+
+                     <div class="col">
+                        <span>Show Grid: <input type="checkbox" id=""></span>
+                        <span>Show Border: <input type="checkbox" id=""></span>
+                     </div>
+
+                     <div class="col">
+                        <span>Width: <input type="number" id=""></span>
+                        <span>Height: <input type="number" id=""></span>
+                        <span>Pixel Size: <input type="number" id=""></span>
+                     </div>
+                  </div>
+               </div>
+               <div data-content="3">
+                  <span class="tabContentHeader">General settings</span>
+
+                  <div>
+                     <div class="col">
+                        <span>Show status: <input type="checkbox" id=""></span>
+                        <span>Show brush: <input type="checkbox" id=""></span>
+                        <span>Show cursor: <input type="checkbox" id=""></span>
+                        <span>Enable drag and zoom: <input type="checkbox" id=""></span>
+                        <span>Enable multithreading: <input type="checkbox" id=""></span>
+                        <span>Enable map persistence: <input type="checkbox" id=""></span>
+                        <span>Use mouse velocity for creation: <input type="checkbox" id=""></span>
+                     </div>
+                  </div>
+               </div>
+               <div data-content="4">
+                  <span class="tabContentHeader">Import / Export</span>
+                  
+                  <div>
+                     <button id="saveButton">Save</button>
+                     <button id="loadButton">Load</button>
+                  </div>
+
+                  <div>
+                     <input id="exportValueInput" type="text" placeholder="Save export to copy..." readonly>
+                     <input id="loadValueInput" type="text" placeholder="Load to input...">
+                  </div>
+               </div>
+               <div data-content="5">
+                  6
+               </div>
+               <div data-content="6">
+                  6
+               </div>
+
+            </div>
+         </div>
+
       </div>
       
       <script src="src/lcb-ps/lcbPS.min.js"></script>
