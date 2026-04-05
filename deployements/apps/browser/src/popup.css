@@ -1,15 +1,22 @@
 :root {
     --app-width: 780px;
     --app-height: 580px;
-    --cvsHeight: 78%;
+    --cvsHeight: 75%;
     --tabsHeight: 25%;
+    --drawerControlButtonWidth: 4%;
     --tabsCount: 0;
+
+    --d0: 0, 0, 0;
+    --d4: 34, 32, 32;
+    --d5: 54, 52, 52;
+    --l1: 240 248 255;
+    --l4: 55 55 55;
 }
 
 html, body {
     width: var(--app-width);
     height: var(--app-height);
-    background-color: rgb(0, 0, 0);
+    background-color: rgb(var(--d0));
     margin: 0px;
     user-select: none;
     overflow: hidden;
@@ -18,10 +25,11 @@ html, body {
 }
 #version {
     position: absolute;
-    right: 2px;
-    bottom: 0;
+    left: 1px;
+    top: 0;
     z-index: 10;
-    color: rgb(55 55 55);
+    color: rgba(var(--l1) / .5);
+    letter-spacing: -1px;
 }
 
 .main {
@@ -37,12 +45,19 @@ html, body {
     height: var(--cvsHeight);
 }
 
-.bottom {
+#bottom {
     display: flex;
     flex-direction: column;
-    height: calc(100% - var(--cvsHeight));
+    height: var(--tabsHeight);
     width: 100%;
-    color: aliceblue;
+    color: rgb(var(--l1));
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    transition: 0.4s all;
+}
+#bottom[data-closed=true] {
+    bottom: -147px;
 }
 
 .tabs {
@@ -51,12 +66,13 @@ html, body {
     display: flex;
     flex-direction: row;
     align-items: center;
+    position: relative;
 }
 
-.tabs > span {
+.tabs > span, #drawerControl {
     width: calc(100% / var(--tabsCount));
     height: 100%;
-    border: 2px solid aliceblue;
+    border: 2px solid rgb(var(--l1));
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -65,9 +81,21 @@ html, body {
     cursor: pointer;
 }
 
-.tabs > span[data-selected=true] {
-    cursor: default;
-    background-color: rgba(240, 248, 255, 0.25);
+#drawerControl {
+    position: absolute;
+    width: 3%;
+    height: 26px;
+    color: var(--l1);
+    background-color: rgba(var(--l1) / 0.2);
+    right: 0;
+    top: -29px;
+    font-weight: bold;
+    padding: 0px;
+}
+
+[data-selected=true] {
+    cursor: default !important;
+    background-color: rgba(var(--l1) / 0.325) !important;
 }
 
 .tabContent {
@@ -79,14 +107,79 @@ html, body {
     display: none;
     width: 100%;
     height: 100%;
-    flex-direction: row;
-    justify-content: space-between;
+    position: relative;
 }
 .tabContent > div[data-displayed=true] {
     display: flex;
+    justify-content: center;
 }
 
 .col {
     display: flex;
     flex-direction: column;
+}
+
+.tabContentHeader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    font-size: 13px;
+    padding: 1px 3px;
+    border-right: 2px solid rgb(var(--l1));
+    border-bottom: 2px solid rgb(var(--l1));
+    display: none; /* TODO TEMP  */
+}
+
+.tabInputsParent {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+.bigList {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    height: 90%;
+}
+
+.smallBoxParent {
+    width: 75px;
+    background: #222020;
+    height: 70px;
+    border: 2px solid aliceblue;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    text-align: center;
+    border-radius: 4px;
+    margin-right: 12px;
+    transform: scale(0.9);
+    position: relative;
+    padding-top: 5px;
+    cursor: pointer;
+}
+
+.smallBoxIcon {
+    width: 55%;
+    height: 55%;
+    outline: 2px solid rgb(var(--l1));
+    border-radius: 2px;
+}
+
+*::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb {
+    opacity: 0.2 !important;
+    background-color: rgba(var(--d5), 1);
 }

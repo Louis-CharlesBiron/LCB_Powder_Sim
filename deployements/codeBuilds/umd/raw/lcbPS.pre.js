@@ -8900,7 +8900,11 @@ class SimUtils {
         return newSettings
     }
 
-    // DOC TODO
+    /**
+     * Dynamically adds setters/getters to the provided class' prototype 
+     * @param {Class} targetClass The class to modify 
+     * @param {Object} attributes An object such as: {exposedName:"height", path?:["_mapGrid", "_height"]}
+     */
     static addGettersSetters(targetClass, attributes) {
         attributes.forEach(({exposedName, path})=>{
             path ??= "_"+exposedName
@@ -8924,7 +8928,10 @@ class SimUtils {
         })
     }
 
-    // DOC TODO
+    /**
+     * Returns the biggest decimal point among the provided numbers
+     * @param  {...Number} nums A list of numbers
+     */
     static getMaxDecimals(...nums) {
         return Math.max(...nums.map(num=>(num+"").split(".")?.[1]?.length||0))
     }
@@ -8947,7 +8954,9 @@ class SimUtils {
      * @param {Object} userSettings The userSettings object
      */
     static warn(warningMessage, userSettings) {
-        if (!userSettings?.warningsDisabled) console.warn(warningMessage)
+        const hasWarningsDisabled = userSettings?.warningsDisabled
+        if (!hasWarningsDisabled) console.warn(warningMessage)
+        else if (hasWarningsDisabled === 1) console.info("WARN:", warningMessage)
     }
 }
 
@@ -9674,40 +9683,56 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         MAP_WIDTH,
         CLAMP_MAX
 
+    // Wrapper function to update the utils globals
     function _updatePhysicsUtilsGlobals(mapWidth, spRandom, spLeft, spRight) {
         CLAMP_MAX = (MAP_WIDTH = mapWidth)-1
         SP_RANDOM = spRandom
         SP_LEFT = spLeft
         SP_RIGHT = spRight
     }
-
     
     let _rIndex=0
-    // TODO DOC
+    /**
+     * Returns the next number from the random table 
+     */
     function nextRandom() {
         return RT[_rIndex++&RTSize]
     }
 
     const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
-    // DOC TODO
+    /**
+     * If necessary, truncates the provided number to make it fit into a Float32Array without rounding 
+     * @param {Number} num The number to truncate 
+     */
     function safeTrunc(num) {
         FLOAT32_TRUNC_ARR[0] = num
         if (FLOAT32_TRUNC_ARR[0] > num) UINT32_TRUNC_ARR[0]--
         return FLOAT32_TRUNC_ARR[0]
     }
 
-    // DOC TODO
     const BIT32 = 31
+    /**
+     * A binary implementation of Math.abs
+     */
     function abs(num) {
        return (num^(num>>BIT32))-(num>>BIT32)
     }
 
-    // DOC TODO
+    /**
+     * Clamps the provided number between the provided boundaries
+     * @param {Number} num The number to clamp
+     * @param {Number} min The minimum boundary
+     * @param {Number} max The maximum boundary
+     */
     function clamp(num, min=0, max=CLAMP_MAX) {
         return num < min ? min : num > max ? max : num
     }
 
-    // DOC TODO
+    /**
+     * Returns the 1D grid value equivalent to the provided coordinates
+     * @param {Number} x The x value
+     * @param {Number} y The y value
+     */
     function getAdjacencyCoords(x, y) {
         return y*MAP_WIDTH+clamp(x, 0, CLAMP_MAX)
     }
@@ -9724,7 +9749,13 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         return Math.floor(Math.random()*((max-min)*precision+1))/precision+min
     }
     
-    // DOC TODO
+    /**
+     * Replaces the particle at the provided index, with the provided material
+     * @param {Number} gridIndex The gridIndex value
+     * @param {Number} material The material to place
+     * @param {TypedArrays} ...[arrays] The data arrays 
+     * @returns The placed material
+     */
     function replaceParticleAtIndex(gridIndex, material, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive) {
         const oldIndex = gridIndexes[gridIndex], oiPD = oldIndex*PHYSICS_DATA_ATTRIBUTES
 
@@ -9760,6 +9791,13 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         return gridMaterials[gridIndex] = material
     }
     
+     /**
+     * (Thread safe version of replaceParticleAtIndex) Replaces the particle at the provided index, with the provided material
+     * @param {Number} gridIndex The gridIndex value
+     * @param {Number} material The material to place
+     * @param {TypedArrays} ...[arrays] The data arrays 
+     * @returns The placed material
+     */
     function workerReplaceParticleAtIndex(gridIndex, material, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive) {
         const oldIndex = Atomics.load(gridIndexes, gridIndex), oiPD = oldIndex*PHYSICS_DATA_ATTRIBUTES
 
@@ -9797,7 +9835,9 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
         return material
     }
 
-    // DOC TODO
+    /**
+     * Returns whether the side priority should be left 
+     */
     function getSideSelectionPriority() {
         if (SP_RANDOM) return RT[_rIndex++&RTSize] < .5
         else if (SP_LEFT) return true
@@ -9805,7 +9845,10 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DA
     }
 
     
-    // DOC TODO
+    /**
+     * Creates the random table
+     * @returns The created table
+     */
     function createRandomTable() {
         const table = new Float32Array(RTSize), random = Math.random
         for (let i=0;i<RTSize;i++) table[i] = random()
@@ -9829,6 +9872,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE,
         FIRE_INFLAMMATION_CHANCE
 
+    // Wrapper function to update the utils globals
     function _updateMaterialsBehaviorGlobals(contaminationChance, lavaMeltChance, fireExtinguishesVaporCreationChance, fireInflammationChance) {
         CONTAMINATION_CHANCE = contaminationChance
         LAVA_MELT_CHANCE = lavaMeltChance
@@ -9836,7 +9880,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         FIRE_INFLAMMATION_CHANCE = fireInflammationChance
     }
 
-    // DOC TODO
+    // Defines the SAND behavior
     function applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] &= ~COLLISION_BOTTOM
         else {
@@ -9845,7 +9889,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         }
     }
     
-    // DOC TODO
+    // Defines the general liquid behavior
     function applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] &= ~COLLISION_BOTTOM
         else {
@@ -9860,12 +9904,12 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         }
     }
 
-    // DOC TODO
+    // Defines the GRAVEL behavior
     function applyGravelBehavior(i, m_B, transpierceableMain, indexFlags) {
         if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
     }
 
-    // DOC TODO
+    // Defines the INVERTED_WATER behavior
     function applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_T & transpierceableMain) indexFlags[i] ^= COLLISION_TOP
         else {
@@ -9880,7 +9924,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         }
     }
 
-    // DOC TODO
+    // Defines the CONTAMINANT behavior
     function applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if (m_B&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_CONTAMINANT
         if (m_R&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_CONTAMINANT
@@ -9888,7 +9932,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         if (m_T&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_CONTAMINANT
     }
 
-    // DOC TODO
+    // Defines the LAVA behavior
     function applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if (m_B&LIQUIDS||m_R&LIQUIDS||m_L&LIQUIDS||m_T&LIQUIDS) indexFlags[gridIndexes[gi]] |= TRANSFORM_STONE
 
@@ -9898,7 +9942,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         if (m_T&MELTABLE && nextRandom() <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_LAVA
     }
 
-    // DOC TODO
+    // Defines the VAPOR behavior
     function applyVaporBehavior(i, m_T, m_R, m_L, transpierceableMain, indexFlags, cache) {
         if (m_T & transpierceableMain) indexFlags[i] ^= COLLISION_TOP
         else {
@@ -9911,9 +9955,8 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
             }
         }
     }
-
         
-    // DOC TODO
+    // Defines the FIRE behavior
     function applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if ((m_B|m_R|m_L|m_T) & FIRE_EXTINGUISH) indexFlags[gridIndexes[gi]] |= nextRandom() <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE ? TRANSFORM_VAPOR : TRANSFORM_AIR
 
@@ -9936,7 +9979,10 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
     }
 }
 
-// DOC TODO
+/**
+ * Create a function to compute physics steps and the context for it
+ * @returns The function that computes physics steps
+ */
 function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES, PHYSICS_DATA_ATTRIBUTES) {
     console.log("%cCONTEXT: "+self.constructor.name, "font-size:10px;color:#9c9c9c;")
     
@@ -10017,7 +10063,7 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE,
     ENABLE_2ND_FALL_UNIFORMITY
 
-    // DOC TODO
+    // Computes a physics step
     function physicsStep(
         gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
         sidePriority, mapWidth, deltaTime
@@ -10328,7 +10374,9 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     }
 
     // UTILS //
-    // DOC TODO
+    /**
+     * Starts a log timer
+     */
     function handleTimerPre() {
         if (timerCount++ > CONFIG.maxLogCount) {
             console.clear()
@@ -10340,7 +10388,10 @@ function createPhysicsCore(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUP
     return physicsStep
 }
 
-// DOC TODO
+/**
+ * Create a function to compute physics steps and the context for it
+ * @returns The function that computes physics steps
+ */
 function createPhysicsCoreWorker(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL_GROUPS, MATERIAL_NAMES, SIDE_PRIORITIES, PHYSICS_DATA_ATTRIBUTES) {    
     // CONSTANTS //
     let _FLAGS_I = 0
@@ -10420,10 +10471,7 @@ function createPhysicsCoreWorker(CONFIG, MATERIALS_SETTINGS, MATERIALS, MATERIAL
     FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE,
     ENABLE_2ND_FALL_UNIFORMITY
 
-
-    const MOVE_BUFFER = []// TODO
-
-    // DOC TODO
+    // Computes a physics step
     function physicsStep(
         startI, threadCount,
         gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
@@ -10793,7 +10841,12 @@ class _PhysicsUnit {
 
 class LocalPhysicsUnit extends _PhysicsUnit {
 
-    // DOC TODO
+    /**
+     * A physics unit that directly attaches to the main thread
+     * @param {Object} physicsConfig A physics configuration object 
+     * @param {Object} MATERIALS_SETTINGS A physics configuration object
+     * @param {Simulation} definitionHolder The Simulation class, including its static members
+     */
     constructor(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
         if (_PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE) return _PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE
 
@@ -10809,6 +10862,7 @@ class LocalPhysicsUnit extends _PhysicsUnit {
         )
     }
 
+    // Runs a physics step
     step(
         gridIndexes, gridMaterials, indexCount, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive,
         sidePriority, mapWidth, deltaTime
@@ -10850,6 +10904,13 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
+    /**
+     * A physics unit uses workers to compute the physics steps of using the main thread
+     * @param {*} threadCount 
+     * @param {*} SABDeps 
+     * @param {*} workerDependencies 
+     * @param {*} initUpdatables 
+     */
     constructor(threadCount, SABDeps, workerDependencies, initUpdatables) {
         if (_PhysicsUnit.REMOTE_PHYSICS_UNIT_INSTANCE) return _PhysicsUnit.REMOTE_PHYSICS_UNIT_INSTANCE
 
@@ -10865,16 +10926,27 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         this._SABDependencies = SABDeps
     }
 
+    /**
+     * Initializes the physics unit
+     */
     initialize() {
         this._initialized = true
         this.#createWorkers()
     }
 
+    /**
+     * Updates the number of worker used
+     * @param {Number} threadCount The number of workers to use
+     */
     updateThreadCount(threadCount) {
         this._threadCount = threadCount
         this.#createWorkers()
     }
 
+    /**
+     * Updates the sharedArrayBuffer and updates workers
+     * @param {Object} SABDependencies Object containing the new SharedArrayBuffer, the offsets and array sizes
+     */
     updateSAB(SABDependencies) {
         ///const oldSignals = this._signals
 
@@ -10890,6 +10962,10 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
+    /**
+     * Runs a physics step on the workers
+     * @param {Function} onStepComplete 
+     */
     async step(onStepComplete, sidePriority, mapWidth, deltaTime, arraySize) {
         super.step()
 
@@ -10929,11 +11005,19 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         this.executeQueuedOperations()
     }
 
+    /**
+     * Sends a message to all workers
+     * @param {WORKER_MESSAGE_TYPES} type The type of the message
+     * @param {Object} data The data to send
+     */
     sendAll(type, data) {// TODO TOFIX
         const threadCount = this._threadCount, workers = this._workers
         for (let i=0;i<threadCount;i++) workers[i].postMessage({type, ...data})
     }
 
+    /**
+     * Creates and initializes workers
+     */
     #createWorkers() {
         this.killWorkers()
         if (this._initialized) {
@@ -10968,7 +11052,9 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    // DOC TODO
+    /**
+     *  Terminates all workers
+     */
     killWorkers() {
         const w_ll = this._workers.length
         if (w_ll) {
@@ -10980,7 +11066,9 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    // Executes queued operations DOC TODO
+    /**
+     * Executes queued operations
+     */
     executeQueuedOperations() {
         const queued = this._queuedBufferOperations, q_ll = queued.length
         for (let i=0;i<q_ll;i++) {
@@ -10989,7 +11077,10 @@ class RemotePhysicsUnit extends _PhysicsUnit {
         }
     }
 
-    // DOC TODO
+    /**
+     * Adds an operation to the queue
+     * @param {Function} callback 
+     */
     addToQueue(callback) {
         this._queuedBufferOperations.push(callback)
     }
@@ -11158,6 +11249,7 @@ class Simulation {
     // DEFAULTS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
+    static DEFAULT_REPLACE_MODE = Simulation.REPLACE_MODES.ALL
     static DEFAULT_WORLD_START_SETTINGS = DEFAULT_WORLD_START_SETTINGS
     static DEFAULT_USER_SETTINGS = DEFAULT_USER_SETTINGS
     static DEFAULT_PHYSICS_SETTINGS = DEFAULT_PHYSICS_SETTINGS
@@ -11212,13 +11304,24 @@ class Simulation {
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
         this.updatePhysicsUnitType(this._worldStartSettings.usesWebWorkers)
 
+        // EVENTS
+        this._onMapSizeChanged = null
+        this._onMapPixelSizeChanged = null
+        this._onSidePriorityChanged = null
+        this._onSelectedMaterialChanged = null
+        this._onBrushTypeChanged = null
+        this._onReplaceModeChanged = null
+        this._onPhysicsUnitTypeChanged = null
+        this._onStopped = null
+        this._onStarted = null
+
         // DISPLAY
         this._userSettings = SimUtils.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
         this.showCursor = this._userSettings.showCursor
         this._colorSettings = SimUtils.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
-        this._selectedMaterial = Simulation.MATERIALS.SAND
-        this._brushType = Simulation.BRUSH_TYPES.PIXEL
-        this._replaceMode = Simulation.REPLACE_MODES.ALL
+        this._selectedMaterial = this.updateSelectedMaterial(Simulation.DEFAULT_MATERIAL)
+        this._brushType = this.updateBrushType(Simulation.DEFAULT_BRUSH_TYPE)
+        this._replaceMode = this.updateReplaceMode(Simulation.DEFAULT_REPLACE_MODE)
 
         this._mapGridRenderStyles = this._CVS.render.profile1.update(this._colorSettings.grid, null, null, null, 1)
         this._mapBorderRenderStyles = this._CVS.render.profile2.update(this._colorSettings.border, null, null, null, 2)
@@ -11234,7 +11337,8 @@ class Simulation {
         const cameraCenterPos = this._worldStartSettings.cameraCenterPos
         if (cameraCenterPos !== undefined) this._CVS.centerViewAt(cameraCenterPos||this._mapGrid.getCenter(true))
         if (this._worldStartSettings.zoom) this._CVS.zoomAtPos(this._CVS.getCenter(), this._worldStartSettings.zoom)
-        
+
+
         // CANVAS
         this._CVS.loopingCB = this.#main.bind(this)
         this._CVS.setMouseMove()
@@ -11448,6 +11552,7 @@ class Simulation {
     start(force) {
         if (this.#initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this.#initialized = Simulation.#INIT_STATES.INITIALIZED)
         if (!this._isRunning || force) {
+            if (CDEUtils.isFunction(this._onStarted)) this._onStarted(true)
             this._isRunning = true
             this.CVS.start()
         }
@@ -11458,6 +11563,7 @@ class Simulation {
      */
     stop(stopCanvas) {
         if (this._isRunning) {
+            if (CDEUtils.isFunction(this._onStopped)) this._onStopped(false)
             this._isRunning = false
             if (stopCanvas) this.CVS.stop()
         }
@@ -11491,6 +11597,8 @@ class Simulation {
             })
         }
         else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+
+        if (CDEUtils.isFunction(this._onPhysicsUnitTypeChanged)) this._onPhysicsUnitTypeChanged(this._physicsUnit)
     }
 
     /**
@@ -11521,6 +11629,7 @@ class Simulation {
         if (pixelSize !== map.pixelSize) {
             map.pixelSize = pixelSize
             this.#commonSizeUpdate(()=>this.#updateCachedMapPixelsRows())
+            if (CDEUtils.isFunction(this._onMapPixelSizeChanged)) this._onMapPixelSizeChanged(this._mapGrid.pixelSize, this._mapGrid)
         }
     }
 
@@ -11563,6 +11672,8 @@ class Simulation {
             map.mapHeight = height
             this.#commonSizeUpdate(()=>this.#updatePixelsFromSize(oldWidth, oldHeight, width, height))
             if (this.usingWebWorkers) this._physicsUnit.updateSAB(this.#initSAB())
+
+            if (CDEUtils.isFunction(this._onMapSizeChanged)) this._onMapSizeChanged(this._mapGrid.dimensions, this._mapGrid, this._mapGrid)
         }
     }
 
@@ -11593,6 +11704,7 @@ class Simulation {
      * @returns The new priority
      */
     updateSidePriority(sidePriority) {
+        if (CDEUtils.isFunction(this._onSidePriorityChanged)) this._onSidePriorityChanged(sidePriority)
         return this._sidePriority = sidePriority
     }
 
@@ -11612,7 +11724,10 @@ class Simulation {
      */
     updateSelectedMaterial(material) {
         material = +material
-        if (Simulation.MATERIAL_NAMES[material]) return this._selectedMaterial = material
+        if (Simulation.MATERIAL_NAMES[material]) {
+            if (CDEUtils.isFunction(this._onSelectedMaterialChanged)) this._onSelectedMaterialChanged(material)
+            return this._selectedMaterial = material
+        }
         return this._selectedMaterial
     }
 
@@ -11622,7 +11737,10 @@ class Simulation {
      */
     updateBrushType(brushType) {
         brushType = +brushType
-        if (Object.values(Simulation.BRUSH_TYPES).includes(brushType)) return this._brushType = brushType
+        if (Object.values(Simulation.BRUSH_TYPES).includes(brushType)) {
+            if (CDEUtils.isFunction(this._onBrushTypeChanged)) this._onBrushTypeChanged(brushType)
+            return this._brushType = brushType
+        }
         return this._brushType
     }
 
@@ -11632,7 +11750,10 @@ class Simulation {
      */
     updateReplaceMode(replaceMode) {
         replaceMode = +replaceMode
-        if (!isNaN(replaceMode)) return this._replaceMode = replaceMode
+        if (!isNaN(replaceMode)) {
+            if (CDEUtils.isFunction(this._replaceMode)) this._replaceMode(replaceMode)
+            return this._replaceMode = replaceMode
+        }
         return this._replaceMode
     }
 
@@ -11680,7 +11801,6 @@ class Simulation {
         }
     }
 
-    // TODO DOC
     #updateIndexCount() {
         const gridIndexes = this._gridIndexes, gi_ll = gridIndexes.length
         let count = 0
@@ -12264,6 +12384,15 @@ class Simulation {
 	get cameraManager() {return this._cameraManager}
     get isSecure() {return this.#isSecure}
     get physicsUnit() {return this._physicsUnit}
+    get onMapSizeChanged() {return this._onMapSizeChanged}
+	get onMapPixelSizeChanged() {return this._onMapPixelSizeChanged}
+	get onSidePriorityChanged() {return this._onSidePriorityChanged}
+	get onSelectedMaterialChanged() {return this._onSelectedMaterialChanged}
+	get onBrushTypeChanged() {return this._onBrushTypeChanged}
+	get onReplaceModeChanged() {return this._onReplaceModeChanged}
+	get onPhysicsUnitTypeChanged() {return this._onPhysicsUnitTypeChanged}
+	get onStarted() {return this._onStarted}
+	get onStopped() {return this._onStopped}
 
     set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
 	set brushType(brushType) {return this.updateBrushType(brushType)}
@@ -12271,6 +12400,15 @@ class Simulation {
 	set replaceMode(replaceMode) {return this.updateReplaceMode(replaceMode)}
     set aimedFPS(aimedFPS) {this._CVS.fpsLimit = aimedFPS}
 	set stepExtra(stepExtra) {this._physicsUnit.stepExtra = stepExtra}
+	set onMapSizeChanged(_onMapSizeChanged) {this._onMapSizeChanged = _onMapSizeChanged}
+	set onMapPixelSizeChanged(_onMapPixelSizeChanged) {this._onMapPixelSizeChanged = _onMapPixelSizeChanged}
+	set onSidePriorityChanged(_onSidePriorityChanged) {this._onSidePriorityChanged = _onSidePriorityChanged}
+	set onSelectedMaterialChanged(_onSelectedMaterialChanged) {this._onSelectedMaterialChanged = _onSelectedMaterialChanged}
+	set onBrushTypeChanged(_onBrushTypeChanged) {this._onBrushTypeChanged = _onBrushTypeChanged}
+	set onReplaceModeChanged(_onReplaceModeChanged) {this._onReplaceModeChanged = _onReplaceModeChanged}
+	set onPhysicsUnitTypeChanged(_onPhysicsUnitTypeChanged) {this._onPhysicsUnitTypeChanged = _onPhysicsUnitTypeChanged}
+	set onStarted(_onStarted) {this._onStarted = _onStarted}
+	set onStopped(_onStopped) {this._onStopped = _onStopped}
     set autoSimulationSizing(autoSimulationSizing) {
         this._userSettings.autoSimulationSizing = autoSimulationSizing
         if (autoSimulationSizing) this.autoFitMapSize(autoSimulationSizing)

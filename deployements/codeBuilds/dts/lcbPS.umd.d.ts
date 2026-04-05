@@ -1,12 +1,12 @@
 declare function getPhysicsUtils(RTSize: any, MATERIALS_SETTINGS: any, MATERIAL_GROUPS: any, PHYSICS_DATA_ATTRIBUTES: any): {
     _updatePhysicsUtilsGlobals: (mapWidth: any, spRandom: any, spLeft: any, spRight: any) => void;
-    safeTrunc: (num: any) => number;
+    safeTrunc: (num: number) => number;
     abs: (num: any) => number;
-    clamp: (num: any, min?: number, max?: any) => any;
-    getAdjacencyCoords: (x: any, y: any) => any;
+    clamp: (num: number, min?: number, max?: number) => number;
+    getAdjacencyCoords: (x: number, y: number) => number;
     random: (min: number, max: number, decimals?: number | null) => number;
-    replaceParticleAtIndex: (gridIndex: any, material: any, indexCount: any, gridMaterials: any, gridIndexes: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any) => any;
-    workerReplaceParticleAtIndex: (gridIndex: any, material: any, indexCount: any, gridMaterials: any, gridIndexes: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any) => any;
+    replaceParticleAtIndex: (gridIndex: number, material: number, indexCount: any, gridMaterials: any, gridIndexes: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any) => number;
+    workerReplaceParticleAtIndex: (gridIndex: number, material: number, indexCount: any, gridMaterials: any, gridIndexes: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any) => number;
     getSideSelectionPriority: () => boolean;
     nextRandom: () => number;
 };
@@ -21,7 +21,15 @@ declare function getMaterialsBehavior(MATERIAL_GROUPS: any, FLAGS: any, getSideS
     applyVaporBehavior: (i: any, m_T: any, m_R: any, m_L: any, transpierceableMain: any, indexFlags: any, cache: any) => void;
     applyFireBehavior: (gi: any, m_B: any, m_R: any, m_L: any, m_T: any, gi_B: any, gi_R: any, gi_L: any, gi_T: any, gridIndexes: any, indexFlags: any) => void;
 };
+/**
+ * Create a function to compute physics steps and the context for it
+ * @returns The function that computes physics steps
+ */
 declare function createPhysicsCore(CONFIG: any, MATERIALS_SETTINGS: any, MATERIALS: any, MATERIAL_GROUPS: any, MATERIAL_NAMES: any, SIDE_PRIORITIES: any, PHYSICS_DATA_ATTRIBUTES: any): (gridIndexes: any, gridMaterials: any, indexCount: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any, sidePriority: any, mapWidth: any, deltaTime: any) => void;
+/**
+ * Create a function to compute physics steps and the context for it
+ * @returns The function that computes physics steps
+ */
 declare function createPhysicsCoreWorker(CONFIG: any, MATERIALS_SETTINGS: any, MATERIALS: any, MATERIAL_GROUPS: any, MATERIAL_NAMES: any, SIDE_PRIORITIES: any, PHYSICS_DATA_ATTRIBUTES: any): (startI: any, threadCount: any, gridIndexes: any, gridMaterials: any, indexCount: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any, sidePriority: any, mapWidth: any, deltaTime: any, arraySize: any) => void;
 declare class CDEUtils {
     static DEFAULT_ACCEPTABLE_DIFFERENCE: number;
@@ -6073,8 +6081,17 @@ declare class SimUtils {
     * @returns The merged object
     */
     static getAdjustedSettings(inputSettings: any, defaultSettings: any): any;
-    static addGettersSetters(targetClass: any, attributes: any): void;
-    static getMaxDecimals(...nums: any[]): number;
+    /**
+     * Dynamically adds setters/getters to the provided class' prototype
+     * @param {Class} targetClass The class to modify
+     * @param {Object} attributes An object such as: {exposedName:"height", path?:["_mapGrid", "_height"]}
+     */
+    static addGettersSetters(targetClass: Class, attributes: any): void;
+    /**
+     * Returns the biggest decimal point among the provided numbers
+     * @param  {...Number} nums A list of numbers
+     */
+    static getMaxDecimals(...nums: number[]): number;
     /**
      * Returns a random number within the min and max range
      * @param {Number} min: the minimal possible value (included)
@@ -6679,7 +6696,13 @@ declare class _PhysicsUnit {
     get blocked(): boolean;
 }
 declare class LocalPhysicsUnit extends _PhysicsUnit {
-    constructor(physicsConfig: any, MATERIALS_SETTINGS: any, definitionHolder: any);
+    /**
+     * A physics unit that directly attaches to the main thread
+     * @param {Object} physicsConfig A physics configuration object
+     * @param {Object} MATERIALS_SETTINGS A physics configuration object
+     * @param {Simulation} definitionHolder The Simulation class, including its static members
+     */
+    constructor(physicsConfig: any, MATERIALS_SETTINGS: any, definitionHolder: Simulation);
     _physicsCore: (gridIndexes: any, gridMaterials: any, indexCount: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any, sidePriority: any, mapWidth: any, deltaTime: any) => void;
     step(gridIndexes: any, gridMaterials: any, indexCount: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any, sidePriority: any, mapWidth: any, deltaTime: any): void;
 }
@@ -6716,6 +6739,13 @@ declare class RemotePhysicsUnit extends _PhysicsUnit {
             COMPLETED: number;
         };
     };
+    /**
+     * A physics unit uses workers to compute the physics steps of using the main thread
+     * @param {*} threadCount
+     * @param {*} SABDeps
+     * @param {*} workerDependencies
+     * @param {*} initUpdatables
+     */
     constructor(threadCount: any, SABDeps: any, workerDependencies: any, initUpdatables: any);
     _signals: Int32Array<any>;
     _initialized: boolean;
@@ -6725,14 +6755,44 @@ declare class RemotePhysicsUnit extends _PhysicsUnit {
     _initUpdatables: any;
     _workerDependencies: any;
     _SABDependencies: any;
+    /**
+     * Initializes the physics unit
+     */
     initialize(): void;
-    updateThreadCount(threadCount: any): void;
+    /**
+     * Updates the number of worker used
+     * @param {Number} threadCount The number of workers to use
+     */
+    updateThreadCount(threadCount: number): void;
+    /**
+     * Updates the sharedArrayBuffer and updates workers
+     * @param {Object} SABDependencies Object containing the new SharedArrayBuffer, the offsets and array sizes
+     */
     updateSAB(SABDependencies: any): void;
-    step(onStepComplete: any, sidePriority: any, mapWidth: any, deltaTime: any, arraySize: any): Promise<void>;
-    sendAll(type: any, data: any): void;
+    /**
+     * Runs a physics step on the workers
+     * @param {Function} onStepComplete
+     */
+    step(onStepComplete: Function, sidePriority: any, mapWidth: any, deltaTime: any, arraySize: any): Promise<void>;
+    /**
+     * Sends a message to all workers
+     * @param {WORKER_MESSAGE_TYPES} type The type of the message
+     * @param {Object} data The data to send
+     */
+    sendAll(type: WORKER_MESSAGE_TYPES, data: any): void;
+    /**
+     *  Terminates all workers
+     */
     killWorkers(): void;
+    /**
+     * Executes queued operations
+     */
     executeQueuedOperations(): void;
-    addToQueue(callback: any): void;
+    /**
+     * Adds an operation to the queue
+     * @param {Function} callback
+     */
+    addToQueue(callback: Function): void;
     get queuedBufferOperations(): any[];
     get threadCount(): any;
     #private;
@@ -6921,6 +6981,7 @@ declare class Simulation {
     static PHYSICS_DATA_ATTRIBUTES: number;
     static DEFAULT_MATERIAL: number;
     static DEFAULT_BRUSH_TYPE: number;
+    static DEFAULT_REPLACE_MODE: number;
     static DEFAULT_WORLD_START_SETTINGS: {
         autoStart: boolean;
         usesWebWorkers: number;
@@ -7236,12 +7297,21 @@ declare class Simulation {
     _physicsConfig: any;
     _isRunning: boolean;
     _sidePriority: number;
+    _onMapSizeChanged: any;
+    _onMapPixelSizeChanged: any;
+    _onSidePriorityChanged: any;
+    _onSelectedMaterialChanged: any;
+    _onBrushTypeChanged: any;
+    _onReplaceModeChanged: any;
+    _onPhysicsUnitTypeChanged: any;
+    _onStopped: any;
+    _onStarted: any;
     _userSettings: any;
     set showCursor(showCursor: any);
     _colorSettings: any;
-    _selectedMaterial: number;
-    _brushType: number;
-    _replaceMode: number;
+    _selectedMaterial: any;
+    _brushType: any;
+    _replaceMode: any;
     _mapGridRenderStyles: RenderStyles;
     _mapBorderRenderStyles: RenderStyles;
     _imgMap: any;
@@ -7358,20 +7428,7 @@ declare class Simulation {
         COPPER: number;
         VAPOR: number;
         FIRE: number;
-    }): number | {
-        AIR: number;
-        SAND: number;
-        WATER: number;
-        STONE: number;
-        GRAVEL: number;
-        INVERTED_WATER: number;
-        CONTAMINANT: number;
-        LAVA: number;
-        ELECTRICITY: number;
-        COPPER: number;
-        VAPOR: number;
-        FIRE: number;
-    };
+    }): any;
     /**
      * Updates the shape used to draw materials on the simulation with mouse.
      * @param {Simulation.BRUSH_TYPES} brushType The brush type to use
@@ -7388,28 +7445,14 @@ declare class Simulation {
         X25: number;
         X55: number;
         X99: number;
-    }): number | {
-        PIXEL: number;
-        VERTICAL_CROSS: number;
-        LINE3: number;
-        ROW3: number;
-        BIG_DOT: number;
-        X3: number;
-        X5: number;
-        X15: number;
-        X25: number;
-        X55: number;
-        X99: number;
-    };
+    }): any;
     /**
      * Updates the mask used to draw materials on the simulation with mouse.
      * @param {Simulation.REPLACE_MODES} replaceMode The replace mode to use
      */
     updateReplaceMode(replaceMode: {
         ALL: number;
-    }): number | {
-        ALL: number;
-    };
+    }): any;
     /**
      * Updates the colors used for the grid and/or the materials.
      * @param {Object} colorSettings The colors to update. (Materials keys need to be in UPPERCASE)
@@ -7610,12 +7653,12 @@ declare class Simulation {
     set sidePriority(sidePriority: number);
     get sidePriority(): number;
     get backStepSaves(): any[];
-    set selectedMaterial(_selectedMaterial: number);
-    get selectedMaterial(): number;
-    set brushType(brushType: number);
-    get brushType(): number;
-    set replaceMode(replaceMode: number);
-    get replaceMode(): number;
+    set selectedMaterial(_selectedMaterial: any);
+    get selectedMaterial(): any;
+    set brushType(brushType: any);
+    get brushType(): any;
+    set replaceMode(replaceMode: any);
+    get replaceMode(): any;
     get hasReplaceMode(): boolean;
     get physicsConfig(): any;
     get worldStartSettings(): any;
@@ -7644,6 +7687,24 @@ declare class Simulation {
     get cameraManager(): CameraManager;
     get isSecure(): boolean;
     get physicsUnit(): LocalPhysicsUnit | RemotePhysicsUnit;
+    set onMapSizeChanged(_onMapSizeChanged: any);
+    get onMapSizeChanged(): any;
+    set onMapPixelSizeChanged(_onMapPixelSizeChanged: any);
+    get onMapPixelSizeChanged(): any;
+    set onSidePriorityChanged(_onSidePriorityChanged: any);
+    get onSidePriorityChanged(): any;
+    set onSelectedMaterialChanged(_onSelectedMaterialChanged: any);
+    get onSelectedMaterialChanged(): any;
+    set onBrushTypeChanged(_onBrushTypeChanged: any);
+    get onBrushTypeChanged(): any;
+    set onReplaceModeChanged(_onReplaceModeChanged: any);
+    get onReplaceModeChanged(): any;
+    set onPhysicsUnitTypeChanged(_onPhysicsUnitTypeChanged: any);
+    get onPhysicsUnitTypeChanged(): any;
+    set onStarted(_onStarted: any);
+    get onStarted(): any;
+    set onStopped(_onStopped: any);
+    get onStopped(): any;
     set autoSimulationSizing(autoSimulationSizing: any);
     set dragAndZoomCanvasEnabled(dragAndZoomCanvasEnabled: any);
     #private;

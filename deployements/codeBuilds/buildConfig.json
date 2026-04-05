@@ -47,7 +47,8 @@
         "FPSCounter",
         "CDEUtils",
         "SimUtils",
-        "createPhysicsCoreWorker"
+        "createPhysicsCoreWorker",
+        "Color"
     ],
     "dependencies": [],
     "workers":[

@@ -44,6 +44,7 @@ class Simulation {
     // DEFAULTS
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
+    static DEFAULT_REPLACE_MODE = Simulation.REPLACE_MODES.ALL
     static DEFAULT_WORLD_START_SETTINGS = DEFAULT_WORLD_START_SETTINGS
     static DEFAULT_USER_SETTINGS = DEFAULT_USER_SETTINGS
     static DEFAULT_PHYSICS_SETTINGS = DEFAULT_PHYSICS_SETTINGS
@@ -98,13 +99,24 @@ class Simulation {
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
         this.updatePhysicsUnitType(this._worldStartSettings.usesWebWorkers)
 
+        // EVENTS
+        this._onMapSizeChanged = null
+        this._onMapPixelSizeChanged = null
+        this._onSidePriorityChanged = null
+        this._onSelectedMaterialChanged = null
+        this._onBrushTypeChanged = null
+        this._onReplaceModeChanged = null
+        this._onPhysicsUnitTypeChanged = null
+        this._onStopped = null
+        this._onStarted = null
+
         // DISPLAY
         this._userSettings = SimUtils.getAdjustedSettings(userSettings, Simulation.DEFAULT_USER_SETTINGS)
         this.showCursor = this._userSettings.showCursor
         this._colorSettings = SimUtils.getAdjustedSettings(colorSettings, Simulation.DEFAULT_COLOR_SETTINGS)
-        this._selectedMaterial = Simulation.MATERIALS.SAND
-        this._brushType = Simulation.BRUSH_TYPES.PIXEL
-        this._replaceMode = Simulation.REPLACE_MODES.ALL
+        this._selectedMaterial = this.updateSelectedMaterial(Simulation.DEFAULT_MATERIAL)
+        this._brushType = this.updateBrushType(Simulation.DEFAULT_BRUSH_TYPE)
+        this._replaceMode = this.updateReplaceMode(Simulation.DEFAULT_REPLACE_MODE)
 
         this._mapGridRenderStyles = this._CVS.render.profile1.update(this._colorSettings.grid, null, null, null, 1)
         this._mapBorderRenderStyles = this._CVS.render.profile2.update(this._colorSettings.border, null, null, null, 2)
@@ -120,7 +132,8 @@ class Simulation {
         const cameraCenterPos = this._worldStartSettings.cameraCenterPos
         if (cameraCenterPos !== undefined) this._CVS.centerViewAt(cameraCenterPos||this._mapGrid.getCenter(true))
         if (this._worldStartSettings.zoom) this._CVS.zoomAtPos(this._CVS.getCenter(), this._worldStartSettings.zoom)
-        
+
+
         // CANVAS
         this._CVS.loopingCB = this.#main.bind(this)
         this._CVS.setMouseMove()
@@ -191,7 +204,7 @@ class Simulation {
                 const brush = this._brushType, size = this._mapGrid.pixelSize, ps25 = size*.25, brushColor = this._colorSettings.brush, BT = Simulation.BRUSH_TYPES,
                       x = localCenterPos[0]*size, y = localCenterPos[1]*size
 
-                if (brush&Simulation.#BRUSH_GROUPS.X || brush === BT.PIXEL) {// SQUARE
+                if (brush&Simulation.#BRUSH_GROUPS.X || brush === BT.PIXEL) {
                     const side = (((Simulation.#BRUSHES_X_VALUES[brush&Simulation.#BRUSH_GROUPS.X]||1)/2)|0)*size
                     this.render.stroke(Render.getPositionsRect([x-side, y-side], [x+side+size, y+side+size]), brushColor)
                 }
@@ -209,8 +222,6 @@ class Simulation {
                 this.render.stroke(Render.getPositionsRect([x+ps25, y+ps25], [x+ps25*3, y+ps25*3]), this._colorSettings.brushInner)
             }
         }
-        
-        
     }
 
     /**
@@ -334,6 +345,7 @@ class Simulation {
     start(force) {
         if (this.#initialized !== Simulation.#INIT_STATES.INITIALIZED) setTimeout(()=>this.#initialized = Simulation.#INIT_STATES.INITIALIZED)
         if (!this._isRunning || force) {
+            if (CDEUtils.isFunction(this._onStarted)) this._onStarted(true)
             this._isRunning = true
             this.CVS.start()
         }
@@ -344,6 +356,7 @@ class Simulation {
      */
     stop(stopCanvas) {
         if (this._isRunning) {
+            if (CDEUtils.isFunction(this._onStopped)) this._onStopped(false)
             this._isRunning = false
             if (stopCanvas) this.CVS.stop()
         }
@@ -377,6 +390,8 @@ class Simulation {
             })
         }
         else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+
+        if (CDEUtils.isFunction(this._onPhysicsUnitTypeChanged)) this._onPhysicsUnitTypeChanged(this._physicsUnit)
     }
 
     /**
@@ -407,6 +422,7 @@ class Simulation {
         if (pixelSize !== map.pixelSize) {
             map.pixelSize = pixelSize
             this.#commonSizeUpdate(()=>this.#updateCachedMapPixelsRows())
+            if (CDEUtils.isFunction(this._onMapPixelSizeChanged)) this._onMapPixelSizeChanged(this._mapGrid.pixelSize, this._mapGrid)
         }
     }
 
@@ -449,6 +465,8 @@ class Simulation {
             map.mapHeight = height
             this.#commonSizeUpdate(()=>this.#updatePixelsFromSize(oldWidth, oldHeight, width, height))
             if (this.usingWebWorkers) this._physicsUnit.updateSAB(this.#initSAB())
+
+            if (CDEUtils.isFunction(this._onMapSizeChanged)) this._onMapSizeChanged(this._mapGrid.dimensions, this._mapGrid, this._mapGrid)
         }
     }
 
@@ -479,6 +497,7 @@ class Simulation {
      * @returns The new priority
      */
     updateSidePriority(sidePriority) {
+        if (CDEUtils.isFunction(this._onSidePriorityChanged)) this._onSidePriorityChanged(sidePriority)
         return this._sidePriority = sidePriority
     }
 
@@ -498,7 +517,10 @@ class Simulation {
      */
     updateSelectedMaterial(material) {
         material = +material
-        if (Simulation.MATERIAL_NAMES[material]) return this._selectedMaterial = material
+        if (Simulation.MATERIAL_NAMES[material]) {
+            if (CDEUtils.isFunction(this._onSelectedMaterialChanged)) this._onSelectedMaterialChanged(material)
+            return this._selectedMaterial = material
+        }
         return this._selectedMaterial
     }
 
@@ -508,7 +530,10 @@ class Simulation {
      */
     updateBrushType(brushType) {
         brushType = +brushType
-        if (Object.values(Simulation.BRUSH_TYPES).includes(brushType)) return this._brushType = brushType
+        if (Object.values(Simulation.BRUSH_TYPES).includes(brushType)) {
+            if (CDEUtils.isFunction(this._onBrushTypeChanged)) this._onBrushTypeChanged(brushType)
+            return this._brushType = brushType
+        }
         return this._brushType
     }
 
@@ -518,7 +543,10 @@ class Simulation {
      */
     updateReplaceMode(replaceMode) {
         replaceMode = +replaceMode
-        if (!isNaN(replaceMode)) return this._replaceMode = replaceMode
+        if (!isNaN(replaceMode)) {
+            if (CDEUtils.isFunction(this._replaceMode)) this._replaceMode(replaceMode)
+            return this._replaceMode = replaceMode
+        }
         return this._replaceMode
     }
 
@@ -1149,6 +1177,15 @@ class Simulation {
 	get cameraManager() {return this._cameraManager}
     get isSecure() {return this.#isSecure}
     get physicsUnit() {return this._physicsUnit}
+    get onMapSizeChanged() {return this._onMapSizeChanged}
+	get onMapPixelSizeChanged() {return this._onMapPixelSizeChanged}
+	get onSidePriorityChanged() {return this._onSidePriorityChanged}
+	get onSelectedMaterialChanged() {return this._onSelectedMaterialChanged}
+	get onBrushTypeChanged() {return this._onBrushTypeChanged}
+	get onReplaceModeChanged() {return this._onReplaceModeChanged}
+	get onPhysicsUnitTypeChanged() {return this._onPhysicsUnitTypeChanged}
+	get onStarted() {return this._onStarted}
+	get onStopped() {return this._onStopped}
 
     set selectedMaterial(_selectedMaterial) {return this.updateSelectedMaterial(_selectedMaterial)}
 	set brushType(brushType) {return this.updateBrushType(brushType)}
@@ -1156,6 +1193,15 @@ class Simulation {
 	set replaceMode(replaceMode) {return this.updateReplaceMode(replaceMode)}
     set aimedFPS(aimedFPS) {this._CVS.fpsLimit = aimedFPS}
 	set stepExtra(stepExtra) {this._physicsUnit.stepExtra = stepExtra}
+	set onMapSizeChanged(_onMapSizeChanged) {this._onMapSizeChanged = _onMapSizeChanged}
+	set onMapPixelSizeChanged(_onMapPixelSizeChanged) {this._onMapPixelSizeChanged = _onMapPixelSizeChanged}
+	set onSidePriorityChanged(_onSidePriorityChanged) {this._onSidePriorityChanged = _onSidePriorityChanged}
+	set onSelectedMaterialChanged(_onSelectedMaterialChanged) {this._onSelectedMaterialChanged = _onSelectedMaterialChanged}
+	set onBrushTypeChanged(_onBrushTypeChanged) {this._onBrushTypeChanged = _onBrushTypeChanged}
+	set onReplaceModeChanged(_onReplaceModeChanged) {this._onReplaceModeChanged = _onReplaceModeChanged}
+	set onPhysicsUnitTypeChanged(_onPhysicsUnitTypeChanged) {this._onPhysicsUnitTypeChanged = _onPhysicsUnitTypeChanged}
+	set onStarted(_onStarted) {this._onStarted = _onStarted}
+	set onStopped(_onStopped) {this._onStopped = _onStopped}
     set autoSimulationSizing(autoSimulationSizing) {
         this._userSettings.autoSimulationSizing = autoSimulationSizing
         if (autoSimulationSizing) this.autoFitMapSize(autoSimulationSizing)
