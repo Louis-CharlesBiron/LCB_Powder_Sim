@@ -23,7 +23,7 @@ const simulation = new Simulation(
 
 function onSimulationReady(simulation) {
         console.log("%cSIMULATION LOADED !", "font-size:9.5px;color:#9c9c9c;")
-        simulation.updateBrushType(Simulation.BRUSH_TYPES.DOT)
+        simulation.updateBrushType(Simulation.BRUSH_TYPES.VERTICAL_CROSS)
         simulation.updateMapPixelSize(4)
-        simulation.updateMapSize(195, 108)
+        simulation.updateMapSize(195, 109)
 }

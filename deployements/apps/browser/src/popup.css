@@ -1,7 +1,7 @@
 :root {
     --app-width: 780px;
     --app-height: 580px;
-    --cvsHeight: 75%;
+    --cvsHeight: 100%;
     --tabsHeight: 25%;
     --drawerControlButtonWidth: 4%;
     --tabsCount: 0;
@@ -11,6 +11,18 @@
     --d5: 54, 52, 52;
     --l1: 240 248 255;
     --l4: 55 55 55;
+}
+
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}input[type="number"] {-moz-appearance: textfield;}
+
+*::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb {
+    opacity: 0.2 !important;
+    background-color: rgba(var(--d5), 1);
 }
 
 html, body {
@@ -30,6 +42,7 @@ html, body {
     z-index: 10;
     color: rgba(var(--l1) / .5);
     letter-spacing: -1px;
+    font-size: 10px !important;
 }
 
 .main {
@@ -174,12 +187,89 @@ html, body {
     border-radius: 2px;
 }
 
-*::-webkit-scrollbar {
-    width: 4px !important;
-    height: 4px !important;
+button, input[type="number"] {
+    border: 2px solid rgb(var(--l1));
+    height: 25px;
+    background-color: rgb(var(--d0));
+    color: rgb(var(--l1));
+    border-radius: 3px;
+    font-weight: bold;
+    line-height: 0px;
+    cursor: pointer;
+    margin: 0px 5px;
+    text-align: center;
 }
 
-*::-webkit-scrollbar-thumb {
-    opacity: 0.2 !important;
-    background-color: rgba(var(--d5), 1);
+input[type="number"] {
+    width: 50px;
+    cursor: text;
+    outline: none;
 }
+
+.crow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.mapSection > div {
+    width: 33%;
+    height: 100%;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+
+.mapSection > div > span {
+    width: 60%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+span {
+    font-size: 14px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+/* Fancy Checkbox */
+.checkboxParent {
+    width: 34px;
+    height: 17px;
+    position: relative;
+    display: inline-block;
+    margin-left: 8px;
+    /* transform: scale(0.9); */
+}
+.checkCore {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #afb7cd;
+    transition: 0.4s;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    border-radius: 6px;
+}
+.checkCore:before {
+    position: absolute;
+    content: "";
+    height: 9px;
+    width: 9px;
+    left: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 5px;
+}
+.checkboxParent > input {display: none;}
+.checkboxParent > input + .checkCore:before {background-color: rgb(var(--l1));}
+.checkboxParent > input:checked + .checkCore:before {transform: translateX(16px);}
+.checkboxParent > input:checked + .checkCore {background-color: #5fadeb;}

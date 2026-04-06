@@ -9456,7 +9456,8 @@ const DEFAULT_KEYBINDS = {
             simulation.stop()
         },
         keys:[TypingDevice.KEYS.ESCAPE],
-        triggerType: TypingDevice.TRIGGER_TYPES.ONCE
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
     },
     FULL_STOP: {
         callback:simulation=>{
@@ -11409,7 +11410,7 @@ class Simulation {
                 const brush = this._brushType, size = this._mapGrid.pixelSize, ps25 = size*.25, brushColor = this._colorSettings.brush, BT = Simulation.BRUSH_TYPES,
                       x = localCenterPos[0]*size, y = localCenterPos[1]*size
 
-                if (brush&Simulation.#BRUSH_GROUPS.X || brush === BT.PIXEL) {// SQUARE
+                if (brush&Simulation.#BRUSH_GROUPS.X || brush === BT.PIXEL) {
                     const side = (((Simulation.#BRUSHES_X_VALUES[brush&Simulation.#BRUSH_GROUPS.X]||1)/2)|0)*size
                     this.render.stroke(Render.getPositionsRect([x-side, y-side], [x+side+size, y+side+size]), brushColor)
                 }
@@ -11427,8 +11428,6 @@ class Simulation {
                 this.render.stroke(Render.getPositionsRect([x+ps25, y+ps25], [x+ps25*3, y+ps25*3]), this._colorSettings.brushInner)
             }
         }
-        
-        
     }
 
     /**

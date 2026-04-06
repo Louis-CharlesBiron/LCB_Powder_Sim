@@ -47,24 +47,29 @@
                <div data-content="2">
                   <span class="tabContentHeader">Map settings</span>
 
-                  <div class="tabInputsParent">
-                     <div>
-                        <button>Start</button>
-                        <button>Stop</button>
-                        <button>clear</button>
-                        <button><</button>
-                        <button>></button>
+                  <div class="tabInputsParent mapSection">
+                     <div class="col">
+                        <div class="crow">
+                           <button id="startButton">►</button>
+                           <button id="stopButton">⏹</button>
+                           <button id="clearButton">Clear</button>
+                        </div>
+                        <div class="crow">
+                           <button id="backStepButton"><</button>
+                           <button id="stepButton">></button>           
+                        </div>
                      </div>
 
                      <div class="col">
-                        <span>Show Grid: <input type="checkbox" id=""></span>
-                        <span>Show Border: <input type="checkbox" id=""></span>
+                        <span>Show Grid: <label class="checkboxParent"><input id="c_showGrid" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Show Border: <label class="checkboxParent"><input id="c_showBorder" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Auto Sizing: <label class="checkboxParent"><input id="c_autoSizing" type="checkbox"><span class="checkCore"></span></label></span>
                      </div>
 
                      <div class="col">
-                        <span>Width: <input type="number" id=""></span>
-                        <span>Height: <input type="number" id=""></span>
-                        <span>Pixel Size: <input type="number" id=""></span>
+                        <span>Width: <input type="number" step="1" min="1" max="800" id="c_width"></span>
+                        <span>Height: <input type="number" step="1" min="1" max="600" id="c_height"></span>
+                        <span>Pixel Size: <input type="number"step="1" min="1" max="200" id="c_pixelSize"></span>
                      </div>
                   </div>
 
@@ -76,6 +81,7 @@
                      <div class="col">
                         <span>Show status: <input type="checkbox" id=""></span>
                         <span>Show brush: <input type="checkbox" id=""></span>
+                        <span>Show FPS: <input type="checkbox" id=""></span>
                         <span>Show cursor: <input type="checkbox" id=""></span>
                         <span>Enable drag and zoom: <input type="checkbox" id=""></span>
                         <span>Enable multithreading: <input type="checkbox" id=""></span>

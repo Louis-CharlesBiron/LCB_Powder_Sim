@@ -72,7 +72,8 @@ const DEFAULT_KEYBINDS = {
             simulation.stop()
         },
         keys:[TypingDevice.KEYS.ESCAPE],
-        triggerType: TypingDevice.TRIGGER_TYPES.ONCE
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
     },
     FULL_STOP: {
         callback:simulation=>{

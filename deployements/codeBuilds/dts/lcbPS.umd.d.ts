@@ -6407,6 +6407,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_7 as keys };
         import triggerType_7 = ONCE;
         export { triggerType_7 as triggerType };
+        let preventDefault_2: boolean;
+        export { preventDefault_2 as preventDefault };
     }
     namespace FULL_STOP {
         export function callback_8(simulation: any): void;
@@ -6417,8 +6419,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_8 as keys };
         import triggerType_8 = ONCE;
         export { triggerType_8 as triggerType };
-        let preventDefault_2: boolean;
-        export { preventDefault_2 as preventDefault };
+        let preventDefault_3: boolean;
+        export { preventDefault_3 as preventDefault };
     }
     namespace CLEAR {
         export function callback_9(simulation: any): void;
@@ -6429,8 +6431,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_9 as keys };
         import triggerType_9 = ONCE;
         export { triggerType_9 as triggerType };
-        let preventDefault_3: boolean;
-        export { preventDefault_3 as preventDefault };
+        let preventDefault_4: boolean;
+        export { preventDefault_4 as preventDefault };
     }
     namespace DISABLE_WORKERS {
         export function callback_10(simulation: any): void;
@@ -6441,8 +6443,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_10 as keys };
         import triggerType_10 = ONCE;
         export { triggerType_10 as triggerType };
-        let preventDefault_4: boolean;
-        export { preventDefault_4 as preventDefault };
+        let preventDefault_5: boolean;
+        export { preventDefault_5 as preventDefault };
     }
     namespace ENABLE_WORKERS {
         export function callback_11(simulation: any): void;
@@ -6453,8 +6455,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_11 as keys };
         import triggerType_11 = ONCE;
         export { triggerType_11 as triggerType };
-        let preventDefault_5: boolean;
-        export { preventDefault_5 as preventDefault };
+        let preventDefault_6: boolean;
+        export { preventDefault_6 as preventDefault };
     }
     namespace SELECT_SAND {
         export function callback_12(simulation: any): void;
@@ -6464,8 +6466,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_12 as keys };
         import triggerType_12 = ONCE;
         export { triggerType_12 as triggerType };
-        let preventDefault_6: boolean;
-        export { preventDefault_6 as preventDefault };
+        let preventDefault_7: boolean;
+        export { preventDefault_7 as preventDefault };
     }
     namespace SELECT_WATER {
         export function callback_13(simulation: any): void;
@@ -6476,8 +6478,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_13 as keys };
         import triggerType_13 = ONCE;
         export { triggerType_13 as triggerType };
-        let preventDefault_7: boolean;
-        export { preventDefault_7 as preventDefault };
+        let preventDefault_8: boolean;
+        export { preventDefault_8 as preventDefault };
     }
     namespace SELECT_STONE {
         export function callback_14(simulation: any): void;
@@ -6488,8 +6490,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_14 as keys };
         import triggerType_14 = ONCE;
         export { triggerType_14 as triggerType };
-        let preventDefault_8: boolean;
-        export { preventDefault_8 as preventDefault };
+        let preventDefault_9: boolean;
+        export { preventDefault_9 as preventDefault };
     }
     namespace SELECT_GRAVEL {
         export function callback_15(simulation: any): void;
@@ -6500,8 +6502,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_15 as keys };
         import triggerType_15 = ONCE;
         export { triggerType_15 as triggerType };
-        let preventDefault_9: boolean;
-        export { preventDefault_9 as preventDefault };
+        let preventDefault_10: boolean;
+        export { preventDefault_10 as preventDefault };
     }
     namespace SELECT_INVERTED_WATER {
         export function callback_16(simulation: any): void;
@@ -6512,8 +6514,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_16 as keys };
         import triggerType_16 = ONCE;
         export { triggerType_16 as triggerType };
-        let preventDefault_10: boolean;
-        export { preventDefault_10 as preventDefault };
+        let preventDefault_11: boolean;
+        export { preventDefault_11 as preventDefault };
     }
     namespace SELECT_CONTAMINANT {
         export function callback_17(simulation: any): void;
@@ -6524,8 +6526,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_17 as keys };
         import triggerType_17 = ONCE;
         export { triggerType_17 as triggerType };
-        let preventDefault_11: boolean;
-        export { preventDefault_11 as preventDefault };
+        let preventDefault_12: boolean;
+        export { preventDefault_12 as preventDefault };
     }
     namespace SELECT_LAVA {
         export function callback_18(simulation: any): void;
@@ -6536,8 +6538,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_18 as keys };
         import triggerType_18 = ONCE;
         export { triggerType_18 as triggerType };
-        let preventDefault_12: boolean;
-        export { preventDefault_12 as preventDefault };
+        let preventDefault_13: boolean;
+        export { preventDefault_13 as preventDefault };
     }
     namespace SELECT_VAPOR {
         export function callback_19(simulation: any): void;
@@ -6548,8 +6550,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_19 as keys };
         import triggerType_19 = ONCE;
         export { triggerType_19 as triggerType };
-        let preventDefault_13: boolean;
-        export { preventDefault_13 as preventDefault };
+        let preventDefault_14: boolean;
+        export { preventDefault_14 as preventDefault };
     }
     namespace SELECT_FIRE {
         export function callback_20(simulation: any): void;
@@ -6560,8 +6562,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_20 as keys };
         import triggerType_20 = ONCE;
         export { triggerType_20 as triggerType };
-        let preventDefault_14: boolean;
-        export { preventDefault_14 as preventDefault };
+        let preventDefault_15: boolean;
+        export { preventDefault_15 as preventDefault };
     }
     namespace SELECT_AIR {
         export function callback_21(simulation: any): void;
@@ -6572,8 +6574,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_21 as keys };
         import triggerType_21 = ONCE;
         export { triggerType_21 as triggerType };
-        let preventDefault_15: boolean;
-        export { preventDefault_15 as preventDefault };
+        let preventDefault_16: boolean;
+        export { preventDefault_16 as preventDefault };
     }
     namespace BRUSH_PIXEL {
         export function callback_22(simulation: any): void;
@@ -6584,8 +6586,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_22 as keys };
         import triggerType_22 = ONCE;
         export { triggerType_22 as triggerType };
-        let preventDefault_16: boolean;
-        export { preventDefault_16 as preventDefault };
+        let preventDefault_17: boolean;
+        export { preventDefault_17 as preventDefault };
     }
     namespace BRUSH_VERTICAL_CROSS {
         export function callback_23(simulation: any): void;
@@ -6596,8 +6598,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_23 as keys };
         import triggerType_23 = ONCE;
         export { triggerType_23 as triggerType };
-        let preventDefault_17: boolean;
-        export { preventDefault_17 as preventDefault };
+        let preventDefault_18: boolean;
+        export { preventDefault_18 as preventDefault };
     }
     namespace BRUSH_X3 {
         export function callback_24(simulation: any): void;
@@ -6608,8 +6610,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_24 as keys };
         import triggerType_24 = ONCE;
         export { triggerType_24 as triggerType };
-        let preventDefault_18: boolean;
-        export { preventDefault_18 as preventDefault };
+        let preventDefault_19: boolean;
+        export { preventDefault_19 as preventDefault };
     }
     namespace BRUSH_BIG_DOT {
         export function callback_25(simulation: any): void;
@@ -6620,8 +6622,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_25 as keys };
         import triggerType_25 = ONCE;
         export { triggerType_25 as triggerType };
-        let preventDefault_19: boolean;
-        export { preventDefault_19 as preventDefault };
+        let preventDefault_20: boolean;
+        export { preventDefault_20 as preventDefault };
     }
     namespace BRUSH_X5 {
         export function callback_26(simulation: any): void;
@@ -6632,8 +6634,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_26 as keys };
         import triggerType_26 = ONCE;
         export { triggerType_26 as triggerType };
-        let preventDefault_20: boolean;
-        export { preventDefault_20 as preventDefault };
+        let preventDefault_21: boolean;
+        export { preventDefault_21 as preventDefault };
     }
     namespace BRUSH_X15 {
         export function callback_27(simulation: any): void;
@@ -6644,8 +6646,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_27 as keys };
         import triggerType_27 = ONCE;
         export { triggerType_27 as triggerType };
-        let preventDefault_21: boolean;
-        export { preventDefault_21 as preventDefault };
+        let preventDefault_22: boolean;
+        export { preventDefault_22 as preventDefault };
     }
     namespace BRUSH_X25 {
         export function callback_28(simulation: any): void;
@@ -6656,8 +6658,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_28 as keys };
         import triggerType_28 = ONCE;
         export { triggerType_28 as triggerType };
-        let preventDefault_22: boolean;
-        export { preventDefault_22 as preventDefault };
+        let preventDefault_23: boolean;
+        export { preventDefault_23 as preventDefault };
     }
     namespace BRUSH_X55 {
         export function callback_29(simulation: any): void;
@@ -6668,8 +6670,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_29 as keys };
         import triggerType_29 = ONCE;
         export { triggerType_29 as triggerType };
-        let preventDefault_23: boolean;
-        export { preventDefault_23 as preventDefault };
+        let preventDefault_24: boolean;
+        export { preventDefault_24 as preventDefault };
     }
     namespace BRUSH_X99 {
         export function callback_30(simulation: any): void;
@@ -6680,8 +6682,8 @@ declare namespace DEFAULT_KEYBINDS {
         export { keys_30 as keys };
         import triggerType_30 = ONCE;
         export { triggerType_30 as triggerType };
-        let preventDefault_24: boolean;
-        export { preventDefault_24 as preventDefault };
+        let preventDefault_25: boolean;
+        export { preventDefault_25 as preventDefault };
     }
 }
 declare class _PhysicsUnit {
@@ -7114,6 +7116,7 @@ declare class Simulation {
             callback: (simulation: any) => void;
             keys: string[];
             triggerType: number;
+            preventDefault: boolean;
         };
         FULL_STOP: {
             callback: (simulation: any) => void;
