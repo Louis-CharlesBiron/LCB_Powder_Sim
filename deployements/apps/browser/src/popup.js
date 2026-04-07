@@ -1,5 +1,7 @@
 const {Simulation, FPSCounter, CDEUtils, Color} = lcbPS
 
+console.log("Hey! \nIf you want to directly use the simulation API, use the global 'simulation' variable!")
+
 //Display version
 chrome.management.getSelf(e=>document.getElementById("version").textContent="v"+e.versionName)
 

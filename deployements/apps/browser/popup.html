@@ -80,14 +80,23 @@
 
                   <div class="tabInputsParent">
                      <div class="col">
-                        <span>Show status: <input type="checkbox" id=""></span>
-                        <span>Show brush: <input type="checkbox" id=""></span>
-                        <span>Show FPS: <input type="checkbox" id=""></span>
-                        <span>Show cursor: <input type="checkbox" id=""></span>
-                        <span>Enable drag and zoom: <input type="checkbox" id=""></span>
-                        <span>Enable multithreading: <input type="checkbox" id=""></span>
-                        <span>Enable map persistence: <input type="checkbox" id=""></span>
-                        <span>Use mouse velocity for creation: <input type="checkbox" id=""></span>
+                        <span>Show status: <label class="checkboxParent"><input id="c_showStatus" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Show FPS: <label class="checkboxParent"><input id="c_showFPS" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Show Cursor: <label class="checkboxParent"><input id="c_showCursor" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Show Brush: <label class="checkboxParent"><input id="c_showBrush" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Smooth drawing: <label class="checkboxParent"><input id="c_smoothDrawing" type="checkbox"><span class="checkCore"></span></label></span>
+                     </div>
+                     <div class="col">
+                        <span>Drag and zoom: <label class="checkboxParent"><input id="c_dragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Multithreading: <label class="checkboxParent"><input id="c_useWorkers" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Map persistence: <label class="checkboxParent"><input id="c_mapPersistence" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Create from mouse velocity: <label class="checkboxParent"><input id="c_createFromMouseVel" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Backstep saving optimization: <label class="checkboxParent"><input id="c_backstepSavingOptimization" type="checkbox"><span class="checkCore"></span></label></span>
+                     </div>
+                     <div class="col">
+                        <span>Max dynamic materials: <input type="number" step="1000" min="0" max="1000000" id="c_maxDynamicMaterials"></span>
+                        <span>Max backstep saves: <input type="number" step="10" min="0" max="100000" id="c_maxBackstepSaves"></span>
+                        <span>Max FPS: <input type="number" step="4" min="5" max="240" id="c_maxFPS"></span>
                      </div>
                   </div>
 
