@@ -12423,7 +12423,7 @@ export class Simulation {
         }
     }
     set showCursor(showCursor) {
-        if (showCursor) this.CVS.setCursorStyle(showCursor||Canvas.CURSOR_STYLES.DEFAULT)
+        if (showCursor) this.CVS.setCursorStyle(typeof showCursor === "boolean" ? Canvas.CURSOR_STYLES.DEFAULT : showCursor)
         else this.CVS.setCursorStyle(Canvas.CURSOR_STYLES.NONE)
         this._userSettings.showCursor = showCursor
     }

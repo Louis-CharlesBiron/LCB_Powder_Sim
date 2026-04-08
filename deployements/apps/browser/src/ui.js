@@ -1,14 +1,14 @@
+const STORAGE_TYPE = "sync"
+
 // Open/close drawer
-const drawerControl = document.getElementById("drawerControl"), drawer = document.getElementById("bottom")
 drawerControl.onclick=()=>{
-    const isClosed = drawer.dataset.closed === "true"
+    const isClosed = bottom.dataset.closed === "true"
     drawerControl.textContent = isClosed ? "∨" : "∧" 
-    drawer.dataset.closed = isClosed ? false : true
+    bottom.dataset.closed = isClosed ? false : true
 }
 
 // TABS SWITCHING
 const tabs = document.querySelectorAll(".tabs > span"), tabContents = document.querySelectorAll(".tabContent > div")
-
 function selectTab(e) {
     const dataset = e.target.dataset
 
@@ -20,7 +20,6 @@ function selectTab(e) {
 }
 
 tabs.forEach(el=>el.onclick=selectTab)
-
 
 // CSS VARIABLES
 const root = document.querySelector(":root").style
@@ -35,7 +34,6 @@ document.querySelectorAll(".tabInputsParent").forEach(el=>{
 })
 
 // MATERIALS TAB
-const materialsList = document.getElementById("materialsList")
 Object.entries(Simulation.MATERIALS).forEach(([name, mat], i)=>{
     const smallBoxParent = document.createElement("div"),
           smallBoxIcon = document.createElement("div")
@@ -65,7 +63,6 @@ Object.entries(Simulation.MATERIALS).forEach(([name, mat], i)=>{
 })
 
 // BRUSHES TAB
-const brushesList = document.getElementById("brushesList")
 Object.entries(Simulation.BRUSH_TYPES).forEach(([name, brush], i)=>{
     const smallBoxParent = document.createElement("div"),
           smallBoxIcon = document.createElement("div")
@@ -94,25 +91,21 @@ Object.entries(Simulation.BRUSH_TYPES).forEach(([name, brush], i)=>{
     }
 })
 
-
 // MAP TAB
-document.getElementById("startButton").onclick=()=>simulation.start()
-document.getElementById("stopButton").onclick=()=>simulation.stop()
-document.getElementById("stepButton").onclick=()=>simulation.step()
-document.getElementById("backStepButton").onclick=()=>simulation.backStep()
-document.getElementById("clearButton").onclick=()=>simulation.clear()
+startButton.onclick=()=>simulation.start()
+stopButton.onclick=()=>simulation.stop()
+stepButton.onclick=()=>simulation.step()
+backStepButton.onclick=()=>simulation.backStep()
+clearButton.onclick=()=>simulation.clear()
 
-const c_width = document.getElementById("c_width")
 c_width.value = simulation.mapGrid.mapWidth
 setRegularNumberInput(c_width, v=>simulation.updateMapSize(v))
 addWheelIncrement(c_width, [1,10,50], v=>simulation.updateMapSize(v))
 
-const c_height = document.getElementById("c_height")
 c_height.value = simulation.mapGrid.mapHeight
 setRegularNumberInput(c_height, v=>simulation.updateMapSize(null, v))
 addWheelIncrement(c_height, [1,10,50], v=>simulation.updateMapSize(null, v))
 
-const c_pixelSize = document.getElementById("c_pixelSize")
 c_pixelSize.value = simulation.mapGrid.pixelSize
 setRegularNumberInput(c_pixelSize, v=>simulation.updateMapPixelSize(v))
 addWheelIncrement(c_pixelSize, [1,5,10], v=>{
@@ -120,13 +113,73 @@ addWheelIncrement(c_pixelSize, [1,5,10], v=>{
     if (simulation.autoSimulationSizing) simulation.autoFitMapSize(v)
 })
 
-const c_showGrid = document.getElementById("c_showGrid")
-c_showGrid.checked = simulation.showGrid
-c_showGrid.onchange=e=>simulation.showGrid = e.target.checked
+keepCheckbox(c_showGrid, STORAGE_TYPE, "c_showGrid", simulation.showGrid, isChecked=>simulation.showGrid = isChecked)  
+keepCheckbox(c_showBorder, STORAGE_TYPE, "c_showBorder", simulation.showBorder, isChecked=>simulation.showBorder = isChecked)  
+keepCheckbox(c_autoSizing, STORAGE_TYPE, "c_autoSizing", simulation.autoSimulationSizing, isChecked=>simulation.autoSimulationSizing = isChecked ? (+c_pixelSize.value)||5 : false)  
 
-const c_showBorder = document.getElementById("c_showBorder")
-c_showBorder.checked = simulation.showBorder
-c_showBorder.onchange=e=>simulation.showBorder = e.target.checked
+// SETTINGS TAB
+keepCheckbox(c_showStatus, STORAGE_TYPE, "c_showStatus", false, (isChecked, _, n)=>console.log(n, isChecked, "TODO"))
+keepCheckbox(c_showFPS, STORAGE_TYPE, "c_showFPS", false, isChecked=>toggleFPSDisplay(isChecked))
+keepCheckbox(c_showCursor, STORAGE_TYPE, "c_showCursor", simulation.showCursor, isChecked=>simulation.showCursor = isChecked)
+keepCheckbox(c_showBrush, STORAGE_TYPE, "c_showBrush", simulation.showBrush, isChecked=>simulation.showBrush = isChecked)
+keepCheckbox(c_smoothDrawing, STORAGE_TYPE, "c_smoothDrawing", simulation.smoothDrawingEnabled, isChecked=>simulation.smoothDrawingEnabled = isChecked)
+keepCheckbox(c_dragAndZoom, STORAGE_TYPE, "c_dragAndZoom", simulation.dragAndZoomCanvasEnabled, isChecked=>simulation.dragAndZoomCanvasEnabled = isChecked)
+keepCheckbox(c_useWorkers, STORAGE_TYPE, "c_useWorkers", simulation.worldStartSettings.usesWebWorkers, isChecked=>simulation.updatePhysicsUnitType(isChecked))
+keepCheckbox(c_mapPersistence, STORAGE_TYPE, "c_mapPersistence", true, isChecked=>toggleMapPersistence(isChecked))
+keepCheckbox(c_createFromMouseVel, STORAGE_TYPE, "c_createFromMouseVel", simulation.useMouseVelocityForCreation, isChecked=>simulation.useMouseVelocityForCreation = isChecked)
+keepCheckbox(c_backstepSavingOptimization, STORAGE_TYPE, "c_backstepSavingOptimization", !simulation.backStepSavingIsExact, isChecked=>simulation.backStepSavingIsExact = !isChecked)
 
-c_autoSizing.checked = simulation.autoSimulationSizing
-c_autoSizing.onchange=e=>simulation.autoSimulationSizing = e.target.checked ? (+c_pixelSize.value)||5 : false
+c_maxDynamicMaterials.value = simulation.maxDynamicMaterialCount
+setRegularNumberInput(c_maxDynamicMaterials, v=>simulation.maxDynamicMaterialCount = v)
+addWheelIncrement(c_maxDynamicMaterials, [100,1000,5000], v=>simulation.maxDynamicMaterialCount = v)
+
+c_maxBackstepSaves.value = simulation.backStepSavingCount
+setRegularNumberInput(c_maxBackstepSaves, v=>simulation.backStepSavingCount = v)
+addWheelIncrement(c_maxBackstepSaves, [10,50,100], v=>simulation.backStepSavingCount = v)
+
+c_maxFPS.value = simulation.aimedFPS
+setRegularNumberInput(c_maxFPS, v=>simulation.aimedFPS = v)
+addWheelIncrement(c_maxFPS, [1,2,5], v=>simulation.aimedFPS = v)
+
+// FPS / STEPS COUNTERS
+const fpsCounter = new FPSCounter(), stepFpsCounter = new FPSCounter()
+let stepFps = 0
+function toggleFPSDisplay(show) {
+    if (show) {
+        simulation.stepExtra=()=>stepFps = stepFpsCounter.getFps()
+        simulation.loopExtra=()=>{
+            const fpsValue = fpsCounter.getFps()+"FPS"
+            if (fpsDisplay.textContent !== fpsValue) fpsDisplay.textContent = fpsValue
+
+            const fpsStepValue = fpsStepDisplay.textContent = "|"+stepFps+"SPS"
+            if (fpsStepDisplay.textContent !== fpsStepValue) fpsStepDisplay.textContent = fpsStepValue
+            if (stepFps > 0) stepFps--
+        }
+    }
+    else {
+        simulation.stepExtra = null
+        simulation.loopExtra = null
+        fpsDisplay.textContent = ""
+        fpsStepDisplay.textContent = ""
+        stepFps = 0
+    }
+}
+
+// MAP PERSISTENCE
+let currentSavedMap = "", persistenceIntervalId = null
+function toggleMapPersistence(enable) {
+    if (enable) {
+        persistenceIntervalId = setInterval(()=>{
+            const newSavedMap = simulation.exportAsText(Simulation.EXPORT_STATES.COMPACTED)
+            if (currentSavedMap !== newSavedMap) {
+                currentSavedMap = newSavedMap
+                chrome.storage.local.set({savedMap:currentSavedMap})
+            }
+        }, 500)
+    }
+    else {
+        clearInterval(persistenceIntervalId)
+        currentSavedMap = ""
+        chrome.storage.local.remove("savedMap")
+    }
+}

@@ -1,3 +1,41 @@
+/* Fancy Checkbox */
+.checkboxParent {
+    width: 34px;
+    height: 17px;
+    position: relative;
+    display: inline-block;
+    margin-left: 8px;
+    transform: scale(0.95); /**/
+}
+.checkCore {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #afb7cd;
+    transition: 0.4s;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    border-radius: 6px;
+}
+.checkCore:before {
+    position: absolute;
+    content: "";
+    height: 9px;
+    width: 9px;
+    left: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 5px;
+}
+.checkboxParent > input {display: none;}
+.checkboxParent > input + .checkCore:before {background-color: rgb(var(--l1));}
+.checkboxParent > input:checked + .checkCore:before {transform: translateX(16px);}
+.checkboxParent > input:checked + .checkCore {background-color: #5fadeb;}
+
 :root {
     --app-width: 780px;
     --app-height: 580px;
@@ -9,8 +47,11 @@
     --d0: 0, 0, 0;
     --d4: 34, 32, 32;
     --d5: 54, 52, 52;
+
     --l1: 240 248 255;
     --l4: 55 55 55;
+
+    --s1: 0 255 0;
 }
 
 input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}input[type="number"] {-moz-appearance: textfield;}
@@ -68,6 +109,7 @@ html, body {
     bottom: 0;
     left: 0;
     transition: 0.4s all;
+    background-color: rgba(var(--d0), .5);
 }
 #bottom[data-closed=true] {
     bottom: -147px;
@@ -201,7 +243,7 @@ button, input[type="number"] {
 }
 
 input[type="number"] {
-    width: 50px;
+    width: 60px;
     cursor: text;
     outline: none;
 }
@@ -236,40 +278,29 @@ span {
     align-items: center;
 }
 
-/* Fancy Checkbox */
-.checkboxParent {
-    width: 34px;
-    height: 17px;
-    position: relative;
-    display: inline-block;
-    margin-left: 8px;
-    /* transform: scale(0.9); */
+.settingsTab > div {
+    width: 32%;
+    align-items: center;
+    height: 90%;
+    justify-content: space-between;
 }
-.checkCore {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #afb7cd;
-    transition: 0.4s;
+
+.settingsTab > div > span {
+    width: 91%;
     display: flex;
     align-items: center;
-    flex-direction: row;
-    border-radius: 6px;
+    justify-content: flex-end;
 }
-.checkCore:before {
+
+.overlay {
     position: absolute;
-    content: "";
-    height: 9px;
-    width: 9px;
-    left: 4px;
-    background-color: white;
-    transition: 0.4s;
-    border-radius: 5px;
+    top: -1px;
+    right: 3px;
+    z-index: 2;
+    color: rgb(var(--s1));
+    display: flex;
+    flex-direction: row;
+    font-size: 1.3em;
+    letter-spacing: -1px;
+    opacity: 0.85;
 }
-.checkboxParent > input {display: none;}
-.checkboxParent > input + .checkCore:before {background-color: rgb(var(--l1));}
-.checkboxParent > input:checked + .checkCore:before {transform: translateX(16px);}
-.checkboxParent > input:checked + .checkCore {background-color: #5fadeb;}

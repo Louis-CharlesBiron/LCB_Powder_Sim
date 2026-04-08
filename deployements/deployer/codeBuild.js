@@ -6,10 +6,7 @@ import { BUILD_TIME_LOG_NAME, CONFIG, DIST_ESM, DIST_ESM_RAW, DIST_UMD, DIST_UMD
 
 const UMD_BANNER = "//"+PROJECT_NAME+" UMD - v"+VERSION+"\n", ESM_BANNER = UMD_BANNER.replace("UMD", "ESM"),
     TERSER_CONFIG = {
-        mangle: {
-            keep_classnames: true,
-            keep_fnames: false,
-        },
+        mangle: false,
         compress: {
             dead_code: true, drop_console: false,
             unsafe: false, unsafe_math: false, unsafe_arrows: false,

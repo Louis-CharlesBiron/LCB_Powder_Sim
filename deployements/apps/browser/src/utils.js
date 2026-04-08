@@ -63,6 +63,8 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
  */
 function setRegularNumberInput(input, actionCB) {
     const hasActionCB = typeof actionCB === "function", min = +input.min||0, max = +input.max||Infinity
+    input.title = `Min: ${min} | Max: ${max}`
+
     input.addEventListener("input", ()=>{
         const v = +input.value
         input.value = v > max ? max : v
@@ -71,5 +73,27 @@ function setRegularNumberInput(input, actionCB) {
     input.addEventListener("blur", ()=>{
         const v = +input.value
         input.value = v < min ? min : v > max ? max : v
+    })
+}
+
+/**
+ * 
+ * @param {HTMLInputElement} element The checkbox element
+ * @param {String?} storageType Either "sync", "local" or "session". Defaults to "sync". 
+ * @param {String} storageName The storage key 
+ * @param {Boolean} initChecked Whether the checkbox is initially checked 
+ * @param {Function?} actionCB The action callback, triggers on click and at launch. (isChecked, isAtLaunch, storageName) 
+ * @returns The click event listener
+ */
+function keepCheckbox(element, storageType, storageName, initChecked, actionCB) {
+    const hasActionCB = typeof actionCB === "function", storage = chrome.storage[storageType||"sync"]
+    storage.get(res=>{
+        const isChecked = element.checked = res[storageName]??initChecked
+        if (hasActionCB) actionCB(isChecked, true, storageName)
+    })
+    return element.addEventListener("click", ()=>{
+        const isChecked = element.checked
+        if (hasActionCB) actionCB(isChecked, false, storageName)
+        storage.set({[storageName]:isChecked})
     })
 }

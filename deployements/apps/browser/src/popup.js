@@ -5,6 +5,11 @@ console.log("Hey! \nIf you want to directly use the simulation API, use the glob
 //Display version
 chrome.management.getSelf(e=>document.getElementById("version").textContent="v"+e.versionName)
 
+// UI GLOBALS
+const globals = {
+
+}
+
 // Creating the powder simulation
 const simulation = new Simulation(
     document.getElementById("simulationCanvas"),
@@ -19,7 +24,8 @@ const simulation = new Simulation(
         showGrid: true,
         visualEffectsEnabled: true,
         warningsDisabled: 1,
-        showCursor: false
+        showCursor: false,
+        maxDynamicMaterialCount: 1000000,
     }
 )
 
@@ -28,4 +34,11 @@ function onSimulationReady(simulation) {
         simulation.updateBrushType(Simulation.BRUSH_TYPES.VERTICAL_CROSS)
         simulation.updateMapPixelSize(4)
         simulation.updateMapSize(195, 109)
+
+        // MAP PERSISTENCE
+        chrome.storage.local.get(r=>{
+            const savedMap = r.savedMap
+            if (savedMap) simulation.load(savedMap, true)
+        })
+        
 }
