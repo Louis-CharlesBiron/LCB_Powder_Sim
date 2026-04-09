@@ -184,6 +184,8 @@ class Simulation {
             }
         }
 
+        if (lastPlacedPos && !mouse.valid) this.#lastPlacedPos = null
+
         if (userSettings.showGrid) this.#drawMapGrid()
         if (userSettings.showBorder) this.#drawBorder()
 
@@ -671,6 +673,8 @@ class Simulation {
      * @param {Mouse} mouse A CVS Mouse object
      */
     #placePixelWithMouse(mouse) {
+        if (this._userSettings.useMiddleClickToResetDragAndZoom && mouse.scrollClicked) return
+
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
         if (this.#isMouseWithinSimulation && mapPos) {
             const isRunning = this._isRunning, [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))

@@ -78,12 +78,12 @@ html, body {
 }
 #version {
     position: absolute;
-    left: 1px;
-    top: 0;
+    right: 1px;
+    bottom: 0;
     z-index: 10;
     color: rgba(var(--l1) / .5);
     letter-spacing: -1px;
-    font-size: 10px !important;
+    font-size: 9px !important;
 }
 
 .main {
@@ -235,7 +235,7 @@ button, input[type="number"] {
     background-color: rgb(var(--d0));
     color: rgb(var(--l1));
     border-radius: 3px;
-    font-weight: bold;
+    font-weight: 900;
     line-height: 0px;
     cursor: pointer;
     margin: 0px 5px;
@@ -244,6 +244,7 @@ button, input[type="number"] {
 
 input[type="number"] {
     width: 60px;
+    font-weight: bold;
     cursor: text;
     outline: none;
 }
@@ -265,7 +266,7 @@ input[type="number"] {
 
 
 .mapSection > div > span {
-    width: 60%;
+    width: 62%;
     height: 100%;
     display: flex;
     justify-content: space-between;
@@ -300,7 +301,27 @@ span {
     color: rgb(var(--s1));
     display: flex;
     flex-direction: row;
-    font-size: 1.3em;
+    font-size: 13px;
     letter-spacing: -1px;
     opacity: 0.85;
+    user-select: none;
+    pointer-events: none;
+}
+
+#statusParent {
+    right: unset;
+    top: 0px;
+    left: 2px;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    white-space: pre;
+    align-items: flex-start;
+}
+
+#statusParent > * {
+    width: fit-content;
+    font-size: inherit;
+    display: flex;
+    flex-direction: column;
 }

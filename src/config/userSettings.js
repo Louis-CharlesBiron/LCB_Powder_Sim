@@ -7,6 +7,7 @@ const DEFAULT_USER_SETTINGS = {
 
     autoSimulationSizing: null,
 
+    useMiddleClickToResetDragAndZoom: true,
     dragAndZoomCanvasEnabled: true,
     minZoomThreshold: .1,
     maxZoomThreshold: Infinity,

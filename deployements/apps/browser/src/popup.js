@@ -1,6 +1,6 @@
 const {Simulation, FPSCounter, CDEUtils, Color} = lcbPS
 
-console.log("Hey! \nIf you want to directly use the simulation API, use the global 'simulation' variable!")
+console.log("Hey! If you want to directly use the simulation API, use the global 'simulation' variable!")
 
 //Display version
 chrome.management.getSelf(e=>document.getElementById("version").textContent="v"+e.versionName)
@@ -36,8 +36,8 @@ function onSimulationReady(simulation) {
         simulation.updateMapSize(195, 109)
 
         // MAP PERSISTENCE
-        chrome.storage.local.get(r=>{
-            const savedMap = r.savedMap
+        chrome.storage.local.get(res=>{
+            const savedMap = res[STORAGE_KEYS.savedMap]
             if (savedMap) simulation.load(savedMap, true)
         })
         

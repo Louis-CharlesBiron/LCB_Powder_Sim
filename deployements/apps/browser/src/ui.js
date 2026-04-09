@@ -1,4 +1,4 @@
-const STORAGE_TYPE = "sync"
+      
 
 // Open/close drawer
 drawerControl.onclick=()=>{
@@ -9,17 +9,19 @@ drawerControl.onclick=()=>{
 
 // TABS SWITCHING
 const tabs = document.querySelectorAll(".tabs > span"), tabContents = document.querySelectorAll(".tabContent > div")
-function selectTab(e) {
-    const dataset = e.target.dataset
+function selectTab(index) {
+    const el = tabs[index], dataset = el.dataset
 
     tabs.forEach(el=>el.dataset.selected = false)
     tabContents.forEach(el=>el.dataset.displayed = false)
 
     dataset.selected = true
-    ;[...tabContents].find(el=>el.dataset.content === dataset.content).dataset.displayed = true
+    REGULAR_STORAGE.set({[STORAGE_KEYS.selectedTab]: index})
+    tabContents[index].dataset.displayed = true
 }
 
-tabs.forEach(el=>el.onclick=selectTab)
+tabs.forEach(el=>el.onclick=e=>selectTab(e.target.dataset.content))
+REGULAR_STORAGE.get(res=>selectTab(res[STORAGE_KEYS.selectedTab]||0))
 
 // CSS VARIABLES
 const root = document.querySelector(":root").style
@@ -97,6 +99,9 @@ stopButton.onclick=()=>simulation.stop()
 stepButton.onclick=()=>simulation.step()
 backStepButton.onclick=()=>simulation.backStep()
 clearButton.onclick=()=>simulation.clear()
+resetZoomButton.onclick=()=>simulation.cameraManager.resetCamera()
+
+
 
 c_width.value = simulation.mapGrid.mapWidth
 setRegularNumberInput(c_width, v=>simulation.updateMapSize(v))
@@ -113,21 +118,26 @@ addWheelIncrement(c_pixelSize, [1,5,10], v=>{
     if (simulation.autoSimulationSizing) simulation.autoFitMapSize(v)
 })
 
-keepCheckbox(c_showGrid, STORAGE_TYPE, "c_showGrid", simulation.showGrid, isChecked=>simulation.showGrid = isChecked)  
-keepCheckbox(c_showBorder, STORAGE_TYPE, "c_showBorder", simulation.showBorder, isChecked=>simulation.showBorder = isChecked)  
-keepCheckbox(c_autoSizing, STORAGE_TYPE, "c_autoSizing", simulation.autoSimulationSizing, isChecked=>simulation.autoSimulationSizing = isChecked ? (+c_pixelSize.value)||5 : false)  
+simulation.onMapSizeChanged=(newSize)=>{
+    c_width.value = newSize[0]
+    c_height.value = newSize[1]
+}
+
+keepCheckbox(c_showGrid, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.showGrid, isChecked=>simulation.showGrid = isChecked)  
+keepCheckbox(c_showBorder, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.showBorder, isChecked=>simulation.showBorder = isChecked)  
+keepCheckbox(c_autoSizing, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.autoSimulationSizing, isChecked=>simulation.autoSimulationSizing = isChecked ? (+c_pixelSize.value)||5 : false)  
 
 // SETTINGS TAB
-keepCheckbox(c_showStatus, STORAGE_TYPE, "c_showStatus", false, (isChecked, _, n)=>console.log(n, isChecked, "TODO"))
-keepCheckbox(c_showFPS, STORAGE_TYPE, "c_showFPS", false, isChecked=>toggleFPSDisplay(isChecked))
-keepCheckbox(c_showCursor, STORAGE_TYPE, "c_showCursor", simulation.showCursor, isChecked=>simulation.showCursor = isChecked)
-keepCheckbox(c_showBrush, STORAGE_TYPE, "c_showBrush", simulation.showBrush, isChecked=>simulation.showBrush = isChecked)
-keepCheckbox(c_smoothDrawing, STORAGE_TYPE, "c_smoothDrawing", simulation.smoothDrawingEnabled, isChecked=>simulation.smoothDrawingEnabled = isChecked)
-keepCheckbox(c_dragAndZoom, STORAGE_TYPE, "c_dragAndZoom", simulation.dragAndZoomCanvasEnabled, isChecked=>simulation.dragAndZoomCanvasEnabled = isChecked)
-keepCheckbox(c_useWorkers, STORAGE_TYPE, "c_useWorkers", simulation.worldStartSettings.usesWebWorkers, isChecked=>simulation.updatePhysicsUnitType(isChecked))
-keepCheckbox(c_mapPersistence, STORAGE_TYPE, "c_mapPersistence", true, isChecked=>toggleMapPersistence(isChecked))
-keepCheckbox(c_createFromMouseVel, STORAGE_TYPE, "c_createFromMouseVel", simulation.useMouseVelocityForCreation, isChecked=>simulation.useMouseVelocityForCreation = isChecked)
-keepCheckbox(c_backstepSavingOptimization, STORAGE_TYPE, "c_backstepSavingOptimization", !simulation.backStepSavingIsExact, isChecked=>simulation.backStepSavingIsExact = !isChecked)
+keepCheckbox(c_showStatus, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], false, isChecked=>toggleShowStatus(isChecked))
+keepCheckbox(c_showFPS, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], false, isChecked=>toggleFPSDisplay(isChecked))
+keepCheckbox(c_showCursor, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.showCursor, isChecked=>simulation.showCursor = isChecked)
+keepCheckbox(c_showBrush, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.showBrush, isChecked=>simulation.showBrush = isChecked)
+keepCheckbox(c_smoothDrawing, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.smoothDrawingEnabled, isChecked=>simulation.smoothDrawingEnabled = isChecked)
+keepCheckbox(c_dragAndZoom, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.dragAndZoomCanvasEnabled, isChecked=>simulation.dragAndZoomCanvasEnabled = isChecked)
+keepCheckbox(c_useWorkers, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.worldStartSettings.usesWebWorkers, isChecked=>simulation.updatePhysicsUnitType(isChecked))
+keepCheckbox(c_mapPersistence, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], true, isChecked=>toggleMapPersistence(isChecked))
+keepCheckbox(c_createFromMouseVel, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.useMouseVelocityForCreation, isChecked=>simulation.useMouseVelocityForCreation = isChecked)
+keepCheckbox(c_backstepSavingOptimization, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], !simulation.backStepSavingIsExact, isChecked=>simulation.backStepSavingIsExact = !isChecked)
 
 c_maxDynamicMaterials.value = simulation.maxDynamicMaterialCount
 setRegularNumberInput(c_maxDynamicMaterials, v=>simulation.maxDynamicMaterialCount = v)
@@ -165,21 +175,83 @@ function toggleFPSDisplay(show) {
     }
 }
 
+// STATUS
+const STATUS_REFRESH_RATE = 1000/10
+let statusIntervalId = null
+function toggleShowStatus(show) {
+    clearInterval(statusIntervalId)
+    if (show) {
+        statusIntervalId = setInterval(()=>{
+            const map = simulation.mapGrid, mousePos = simulation.mouse.pos
+
+            // MOUSE MAP POS | MOUSE MAP INDEX | MOUSE ABSOLUTE POS 
+            const mapPos = map.getLocalMapPixel(mousePos)
+            mousePosStatus.textContent = `Mouse pos: ${mapPos ? "["+mapPos+"]" : "Out Of Bounds"} | Index: ${mapPos ? map.mapPosToIndex(mapPos) : "Out Of Bounds"}`
+
+            // MAP DIMENSIONS
+            const mapDimensionsText = "Map: "+map.displayDimensions+"/"+map.pixelSize+"px\nParticles: "+simulation._indexCount[0]+"/"+(map.mapWidth*map.mapHeight)
+            if (mapDimensionsStatus.textContent !== mapDimensionsText) mapDimensionsStatus.textContent = mapDimensionsText
+
+            // SIDE PRIORITY
+            const sidePriorityText = "Side priority: "+Simulation.SIDE_PRIORITY_NAMES[simulation.sidePriority]
+            if (sidePriorityStatus.textContent !== sidePriorityText) sidePriorityStatus.textContent = sidePriorityText
+
+            // IS RUNNING
+            const isRunningText = "State: "+(simulation.isRunning ? "RUNNING" : "STOPPED")
+            if (isRunningStatus.textContent !== isRunningText) isRunningStatus.textContent = isRunningText
+
+            // PHYSICS UNIT TYPE
+            const physicsUnitTypeText = "Physics: "+(simulation.usingWebWorkers ? "WORKERS ("+simulation.physicsUnit.threadCount+"x)" : "LOCAL")
+            if (physicsUnitTypeStatus.textContent !== physicsUnitTypeText) physicsUnitTypeStatus.textContent = physicsUnitTypeText
+
+            // TIMESTAMP
+            const timeStampText = "Timestamp: "+(simulation.CVS.timeStamp|0)
+            if (timeStampStatus.textContent !== timeStampText) timeStampStatus.textContent = timeStampText
+
+            // ZOOM LEVEL
+            const zoomText = "Zoom: "+CDEUtils.truncateDecimals(simulation.CVS.zoom, 3)+"x"
+            if (zoomStatus.textContent !== zoomText) zoomStatus.textContent = zoomText
+
+            tempStatus.textContent = "Skips: todo\nStep time: todo"
+
+            // MOUSE PARTICLE INFO
+            if (simulation.isMouseWithinSimulation && mapPos) {
+                const particleInfo = simulation.getPixelInfo(map.mapPosToIndex(mapPos))
+                particleStatus.innerHTML = Array.isArray(particleInfo) ? `
+--- Pointed Particle ---
+Material: ${Simulation.MATERIAL_NAMES[particleInfo[0]]}
+Particle index: ${particleInfo[1]}
+Flags: ${particleInfo[2]}
+Pos: [${particleInfo[3].toFixed(2)}, ${particleInfo[4].toFixed(2)}]
+Vel: [${particleInfo[5].toFixed(2)}, ${particleInfo[6].toFixed(2)}]
+Gravity: ${particleInfo[7]}
+StepsAlive: ${particleInfo[8]}
+                ` : ""
+            }
+
+        }, STATUS_REFRESH_RATE)
+    }
+    else {
+        statusIntervalId = null
+        ;[...statusParent.children].forEach(el=>el.textContent = "")
+    }
+}
+
 // MAP PERSISTENCE
 let currentSavedMap = "", persistenceIntervalId = null
 function toggleMapPersistence(enable) {
+    clearInterval(persistenceIntervalId)
     if (enable) {
         persistenceIntervalId = setInterval(()=>{
             const newSavedMap = simulation.exportAsText(Simulation.EXPORT_STATES.COMPACTED)
             if (currentSavedMap !== newSavedMap) {
                 currentSavedMap = newSavedMap
-                chrome.storage.local.set({savedMap:currentSavedMap})
+                MAP_PERSISTENCE_STORAGE.set({[STORAGE_KEYS.savedMap]:currentSavedMap})
             }
         }, 500)
     }
     else {
-        clearInterval(persistenceIntervalId)
         currentSavedMap = ""
-        chrome.storage.local.remove("savedMap")
+        MAP_PERSISTENCE_STORAGE.remove(STORAGE_KEYS.savedMap)
     }
 }

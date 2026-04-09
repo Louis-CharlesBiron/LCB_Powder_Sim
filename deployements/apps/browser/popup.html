@@ -16,6 +16,18 @@
             <div id="fpsStepDisplay"></div>
          </div>
 
+         <div class="overlay" id="statusParent">
+            <span id="mousePosStatus"></span>
+            <span id="mapDimensionsStatus"></span>
+            <span id="sidePriorityStatus"></span>
+            <span id="isRunningStatus"></span>
+            <span id="physicsUnitTypeStatus"></span>
+            <span id="zoomStatus"></span>
+            <span id="timeStampStatus"></span>
+            <span id="tempStatus"></span>
+            <span id="particleStatus"></span>
+         </div>
+
          <div class="cvsParent">
             <canvas id="simulationCanvas"></canvas>
          </div>
@@ -63,6 +75,7 @@
                         <div class="crow">
                            <button id="backStepButton"><</button>
                            <button id="stepButton">></button>           
+                           <button id="resetZoomButton">Zoom 1x</button>
                         </div>
                      </div>
 
@@ -95,6 +108,11 @@
                         <span>Drag and zoom: <label class="checkboxParent"><input id="c_dragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
                         <span>Multithreading: <label class="checkboxParent"><input id="c_useWorkers" type="checkbox"><span class="checkCore"></span></label></span>
                         <span>Map persistence: <label class="checkboxParent"><input id="c_mapPersistence" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Visual Effects: <label class="checkboxParent"><input id="c_visualEffect" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>b: <label class="checkboxParent"><input id="c_a" type="checkbox"><span class="checkCore"></span></label></span>
+                     </div>
+                     <div class="col">
+                        <span>Middle click resets zoom: <label class="checkboxParent"><input id="c_useMiddleClickToResetDragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
                         <span>Mouse velocity create: <label class="checkboxParent"><input id="c_createFromMouseVel" type="checkbox"><span class="checkCore"></span></label></span>
                         <span>Backstep optimization: <label class="checkboxParent"><input id="c_backstepSavingOptimization" type="checkbox"><span class="checkCore"></span></label></span>
                      </div>
@@ -113,6 +131,11 @@
                      <div>
                         <button id="saveButton">Save</button>
                         <button id="loadButton">Load</button>
+                     </div>
+
+                     <div>
+                        <button id="resetSavedMapButton">Reset saved Map</button>
+                        <button id="resetAllButton">Reset ALL settings</button>
                      </div>
 
                      <div>
@@ -153,6 +176,7 @@
       </div>
       
       <script src="src/lcb-ps/lcbPS.min.js"></script>
+      <script src="src/constants.js"></script>
       <script src="src/utils.js"></script>
       <script src="src/popup.js"></script>
       <script src="src/ui.js"></script>

@@ -8824,6 +8824,10 @@ export class CameraManager {
         this.#simulation = simulation
         this.#setCanvasZoomAndDrag()
     }
+
+    resetCamera() {
+        this.#simulation.CVS.resetTransformations(true)
+    }
     
     // Zooms in/out towards the provided pos
     #zoomTowardsPos(pos, zoomDirection) {
@@ -8847,9 +8851,7 @@ export class CameraManager {
             let isCameraMoving = false, lastDragPos = [0,0]
 
             frame.addEventListener("wheel", e=>{
-                if (userSettings.dragAndZoomCanvasEnabled) {
-                    if (this.#zoomTowardsPos(mouse.rawPos, e.deltaY)) lastDragPos = [...mouse.rawPos]
-                }
+                if (userSettings.dragAndZoomCanvasEnabled && this.#zoomTowardsPos(mouse.rawPos, e.deltaY)) lastDragPos = [...mouse.rawPos]
             })
 
             frame.addEventListener("mousedown", e=>{
@@ -8858,7 +8860,10 @@ export class CameraManager {
                         isCameraMoving = true
                         lastDragPos = [e.clientX, e.clientY]
                     }
-                    else if (e.button === Mouse.BUTTON_TYPES.MIDDLE) CVS.resetTransformations(true)
+                    else if (userSettings.useMiddleClickToResetDragAndZoom && e.button === Mouse.BUTTON_TYPES.MIDDLE) {
+                        this.resetCamera()
+                        e.preventDefault()
+                    }
                 }
             })
 
@@ -9190,6 +9195,7 @@ const DEFAULT_USER_SETTINGS = {
 
     autoSimulationSizing: null,
 
+    useMiddleClickToResetDragAndZoom: true,
     dragAndZoomCanvasEnabled: true,
     minZoomThreshold: .1,
     maxZoomThreshold: Infinity,
@@ -9577,16 +9583,6 @@ export class MaterialSettings {
         triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
         preventDefault: true
     },
-    SELECT_AIR: {
-        callback:simulation=>{
-            simulation.updateSelectedMaterial(SETTINGS.MATERIALS.AIR)
-        },
-        cancelKeys: [TypingDevice.KEYS.CONTROL],
-        keys:[TypingDevice.KEYS.DIGIT_0, TypingDevice.KEYS.NUMPAD_0],
-        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
-        preventDefault: true
-    },
-    
 
     BRUSH_PIXEL: {
         callback:simulation=>{
@@ -11389,6 +11385,8 @@ export class Simulation {
             }
         }
 
+        if (lastPlacedPos && !mouse.valid) this.#lastPlacedPos = null
+
         if (userSettings.showGrid) this.#drawMapGrid()
         if (userSettings.showBorder) this.#drawBorder()
 
@@ -11876,6 +11874,8 @@ export class Simulation {
      * @param {Mouse} mouse A CVS Mouse object
      */
     #placePixelWithMouse(mouse) {
+        if (this._userSettings.useMiddleClickToResetDragAndZoom && mouse.scrollClicked) return
+
         const mapPos = this._mapGrid.getLocalMapPixel(mouse.pos)
         if (this.#isMouseWithinSimulation && mapPos) {
             const isRunning = this._isRunning, [x,y] = mapPos, [ix,iy] = this.#lastPlacedPos||mapPos, dx = x-ix, dy = y-iy, dMax = Math.max(Math.abs(dx), Math.abs(dy))
