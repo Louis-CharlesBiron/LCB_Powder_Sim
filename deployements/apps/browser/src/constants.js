@@ -24,4 +24,5 @@ const STORAGE_KEYS = {
     // OTHERS
     savedMap: "n",
     selectedTab: "o",
+    exportType: "p",
 }

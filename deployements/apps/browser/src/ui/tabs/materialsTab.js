@@ -25,3 +25,7 @@ Object.entries(Simulation.MATERIALS).forEach(([name, mat], i)=>{
         smallBoxParent.dataset.selected = true
     }
 })
+
+simulation.onSelectedMaterialChanged=newValue=>{
+    displayUpdate("Selected Material: "+normalizeText(Simulation.MATERIAL_NAMES[newValue]))
+}

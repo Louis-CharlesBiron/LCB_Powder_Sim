@@ -41,7 +41,7 @@
     --app-height: 580px;
     --cvsHeight: 100%;
     --tabsHeight: 25%;
-    --drawerControlButtonWidth: 4%;
+    --drawerControlButtonWidth: 3%;
     --tabsCount: 0;
     --checkboxWidth: 34px;
 
@@ -53,6 +53,7 @@
     --l4: 55 55 55;
 
     --s1: 0 255 0;
+    --s2: 180 180 180;
 }
 
 input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}input[type="number"] {-moz-appearance: textfield;}
@@ -143,7 +144,7 @@ html, body {
 
 #drawerControl {
     position: absolute;
-    width: 3%;
+    width: var(--drawerControlButtonWidth);
     height: 26px;
     color: var(--l1);
     background-color: rgba(var(--l1) / 0.2);
@@ -151,6 +152,23 @@ html, body {
     top: -29px;
     font-weight: bold;
     padding: 0px;
+}
+
+#updatesStatus {
+    position: absolute;
+    width: calc(100% - var(--drawerControlButtonWidth));
+    height: 26px;
+    left: 2px;
+    top: -15px;
+    z-index: 2;
+    pointer-events: none;
+    font-size: 13px;
+    letter-spacing: -1px;
+    display: flex;
+    flex-direction: row;
+    color: rgb(var(--s2));
+    opacity: 1;
+    transition: .3s all;
 }
 
 [data-selected=true] {
@@ -177,17 +195,6 @@ html, body {
 .col {
     display: flex;
     flex-direction: column;
-}
-
-.tabContentHeader {
-    position: absolute;
-    top: 0;
-    left: 0;
-    font-size: 13px;
-    padding: 1px 3px;
-    border-right: 2px solid rgb(var(--l1));
-    border-bottom: 2px solid rgb(var(--l1));
-    display: none; /* TODO TEMP  */
 }
 
 .tabInputsParent {
@@ -234,7 +241,7 @@ html, body {
     border-radius: 2px;
 }
 
-button, input, textarea, .button {
+button, input, textarea, .button, select {
     border: 2px solid rgb(var(--l1));
     height: 25px;
     background-color: rgb(var(--d0));
@@ -272,6 +279,10 @@ textarea {
 .button {
     padding: 0px 5px;
     height: 22px;
+}
+
+select {
+    width: 66px;
 }
 
 .crow {
@@ -370,9 +381,15 @@ span {
     border-left: 3px solid rgba(var(--d5), 1);
 }
 
-.smallButtonGroup {
+.smallGroup {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+}
+
+svg {
+    fill: rgb(var(--l1));
+    cursor: pointer;
+    transition: 0.4s all;
 }

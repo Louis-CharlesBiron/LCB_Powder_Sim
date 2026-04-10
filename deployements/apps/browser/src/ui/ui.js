@@ -32,4 +32,11 @@ document.querySelectorAll("[data-scrollable]").forEach(el=>{
 const root = document.querySelector(":root").style
 root.setProperty("--tabsCount", tabs.length)
 
+let displayUpdateTimeoutId = null
+displayUpdate = (text)=>{
+    clearTimeout(displayUpdateTimeoutId)
 
+    updatesStatus.style.opacity = "1"
+    updatesStatus.textContent = text
+    displayUpdateTimeoutId = setTimeout(()=>updatesStatus.style.opacity = "0", 1250)
+}

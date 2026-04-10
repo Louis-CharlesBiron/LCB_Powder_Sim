@@ -25,3 +25,7 @@ Object.entries(Simulation.BRUSH_TYPES).forEach(([name, brush], i)=>{
         smallBoxParent.dataset.selected = true
     }
 })
+
+simulation.onBrushTypeChanged=newValue=>{
+    displayUpdate("Selected Brush: "+normalizeText(Simulation.BRUSH_TYPE_NAMES[newValue]))
+}

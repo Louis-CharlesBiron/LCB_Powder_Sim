@@ -10839,16 +10839,16 @@ class LocalPhysicsUnit extends _PhysicsUnit {
 
     /**
      * A physics unit that directly attaches to the main thread
-     * @param {Object} physicsConfig A physics configuration object 
+     * @param {Object} physicsSettings A physics configuration object 
      * @param {Object} MATERIALS_SETTINGS A physics configuration object
      * @param {Simulation} definitionHolder The Simulation class, including its static members
      */
-    constructor(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
+    constructor(physicsSettings, MATERIALS_SETTINGS, definitionHolder) {
         if (_PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE) return _PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE
 
         super(null)
         this._physicsCore = createPhysicsCore(
-            physicsConfig,
+            physicsSettings,
             MATERIALS_SETTINGS,
             definitionHolder.MATERIALS,
             definitionHolder.MATERIAL_GROUPS,
@@ -11017,7 +11017,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
     #createWorkers() {
         this.killWorkers()
         if (this._initialized) {
-            const threadCount = this._threadCount, {physicsConfig, MATERIALS_SETTINGS, definitionHolder} = this._workerDependencies
+            const threadCount = this._threadCount, {physicsSettings, MATERIALS_SETTINGS, definitionHolder} = this._workerDependencies
             
             for (let i=0;i<threadCount;i++) {
                 const worker = new Worker(RemotePhysicsUnit.WORKER_RELATIVE_PATH, {type:"module"})
@@ -11029,7 +11029,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
                     threadCount,
                     initUpdatables: this._initUpdatables,
                     workerDependencies: {
-                        physicsConfig,
+                        physicsSettings,
                         SIGNALS_INDEXES: RemotePhysicsUnit.SIGNALS_INDEXES,
                         SIGNALS: RemotePhysicsUnit.SIGNALS,
                         WORKER_MESSAGE_TYPES: RemotePhysicsUnit.WORKER_MESSAGE_TYPES,
@@ -11258,7 +11258,7 @@ export class Simulation {
         SimUtils.addGettersSetters(this, [
             ...Object.keys(Simulation.DEFAULT_USER_SETTINGS).map(exposedName=>({exposedName, path:["_userSettings", exposedName]})),
             ...Object.keys(Simulation.DEFAULT_WORLD_START_SETTINGS).map(exposedName=>({exposedName, path:["_worldStartSettings", exposedName]})),
-            ...Object.keys(Simulation.DEFAULT_PHYSICS_SETTINGS).filter(x=>x[0]!=="$").map(exposedName=>({exposedName, path:["_physicsConfig", exposedName]})),
+            ...Object.keys(Simulation.DEFAULT_PHYSICS_SETTINGS).filter(x=>x[0]!=="$").map(exposedName=>({exposedName, path:["_physicsSettings", exposedName]})),
             {exposedName:"loopExtra"},
             {exposedName:"isRunning"},
             {exposedName:"mapGridRenderStyles"},
@@ -11280,7 +11280,7 @@ export class Simulation {
      * @param {Object?} userSettings An object defining the user settings
      * @param {Object?} colorSettings An object defining the color settings
      */
-    constructor(canvas, readyCB, worldStartSettings, userSettings, physicsConfig, colorSettings) {
+    constructor(canvas, readyCB, worldStartSettings, userSettings, physicsSettings, colorSettings) {
         // SIMULATION
         this._CVS = canvas instanceof Canvas ? canvas : new Canvas(canvas)
         this._worldStartSettings = SimUtils.getAdjustedSettings(worldStartSettings, Simulation.DEFAULT_WORLD_START_SETTINGS)
@@ -11294,7 +11294,7 @@ export class Simulation {
         this._indexCount = new Simulation.#C_COUNT(1)
         this.#createIndexArrays(arraySize)
         this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
-        this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_SETTINGS)
+        this._physicsSettings = SimUtils.getAdjustedSettings(physicsSettings, Simulation.DEFAULT_PHYSICS_SETTINGS)
 
         this._isRunning = false
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
@@ -11582,7 +11582,7 @@ export class Simulation {
             const threadCount = usesWebWorkers===true ? 4 : usesWebWorkers
 
             this._physicsUnit = new RemotePhysicsUnit(threadCount, this.#initSAB(), {
-                physicsConfig:this._physicsConfig,
+                physicsSettings:this._physicsSettings,
                 MATERIALS_SETTINGS: MaterialSettings.MATERIALS_SETTINGS,
                 definitionHolder: Simulation
             }, {
@@ -11592,7 +11592,7 @@ export class Simulation {
                 arraySize: this._mapGrid.arraySize,
             })
         }
-        else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+        else this._physicsUnit = new LocalPhysicsUnit(this._physicsSettings, MaterialSettings.MATERIALS_SETTINGS, Simulation)
 
         if (CDEUtils.isFunction(this._onPhysicsUnitTypeChanged)) this._onPhysicsUnitTypeChanged(this._physicsUnit)
     }
@@ -12246,8 +12246,8 @@ export class Simulation {
         const gridMaterials = this._gridMaterials, g_ll = gridMaterials.length
         let textResult = [], lastMaterial, atI = -1
 
-        if (state === SETTINGS.EXPORT_STATES.RAW) textResult = gridMaterials.toString()
-        else if (state === SETTINGS.EXPORT_STATES.COMPACTED) {
+        if (state == SETTINGS.EXPORT_STATES.RAW) textResult = gridMaterials.toString()
+        else if (state == SETTINGS.EXPORT_STATES.COMPACTED) {
             for (let i=0;i<g_ll;i++) {
                 const mat = gridMaterials[i]
                 if (lastMaterial === mat) textResult[atI][1]++
@@ -12256,7 +12256,7 @@ export class Simulation {
             }
             textResult = textResult.toString()
         }
-        else if (state === SETTINGS.EXPORT_STATES.EXACT) {
+        else if (state == SETTINGS.EXPORT_STATES.EXACT) {
             for (let i=0;i<g_ll;i++) {
                 const pixelInfo = this.getPixelInfo(i)
                 if (typeof pixelInfo === "number") {
@@ -12358,7 +12358,7 @@ export class Simulation {
     get brushType() {return this._brushType}
     get replaceMode() {return this._replaceMode}
     get hasReplaceMode() {return this._replaceMode !== Simulation.REPLACE_MODES.ALL}
-	get physicsConfig() {return this._physicsConfig}
+	get physicsSettings() {return this._physicsSettings}
 	get worldStartSettings() {return this._worldStartSettings}
 	get userSettings() {return this._userSettings}
 	get colorSettings() {return this._colorSettings}

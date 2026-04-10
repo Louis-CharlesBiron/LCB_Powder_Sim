@@ -180,7 +180,7 @@ class Simulation {
             if (isRunning) this.#placePixelWithMouse(mouse)
             else if (lastPlacedPos) {
                 const currentPlacePos = this._mapGrid.getLocalMapPixel(mouse.pos)
-                if (lastPlacedPos[0] !== currentPlacePos[0] && lastPlacedPos[1] !== currentPlacePos[1]) this.#placePixelWithMouse(mouse)
+                if (currentPlacePos && lastPlacedPos[0] !== currentPlacePos[0] && lastPlacedPos[1] !== currentPlacePos[1]) this.#placePixelWithMouse(mouse)
             }
         }
 
@@ -1045,8 +1045,8 @@ class Simulation {
         const gridMaterials = this._gridMaterials, g_ll = gridMaterials.length
         let textResult = [], lastMaterial, atI = -1
 
-        if (state === SETTINGS.EXPORT_STATES.RAW) textResult = gridMaterials.toString()
-        else if (state === SETTINGS.EXPORT_STATES.COMPACTED) {
+        if (state == SETTINGS.EXPORT_STATES.RAW) textResult = gridMaterials.toString()
+        else if (state == SETTINGS.EXPORT_STATES.COMPACTED) {
             for (let i=0;i<g_ll;i++) {
                 const mat = gridMaterials[i]
                 if (lastMaterial === mat) textResult[atI][1]++
@@ -1055,7 +1055,7 @@ class Simulation {
             }
             textResult = textResult.toString()
         }
-        else if (state === SETTINGS.EXPORT_STATES.EXACT) {
+        else if (state == SETTINGS.EXPORT_STATES.EXACT) {
             for (let i=0;i<g_ll;i++) {
                 const pixelInfo = this.getPixelInfo(i)
                 if (typeof pixelInfo === "number") {

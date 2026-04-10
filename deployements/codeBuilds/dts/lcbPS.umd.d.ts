@@ -6690,11 +6690,11 @@ declare class _PhysicsUnit {
 declare class LocalPhysicsUnit extends _PhysicsUnit {
     /**
      * A physics unit that directly attaches to the main thread
-     * @param {Object} physicsConfig A physics configuration object
+     * @param {Object} physicsSettings A physics configuration object
      * @param {Object} MATERIALS_SETTINGS A physics configuration object
      * @param {Simulation} definitionHolder The Simulation class, including its static members
      */
-    constructor(physicsConfig: any, MATERIALS_SETTINGS: any, definitionHolder: Simulation);
+    constructor(physicsSettings: any, MATERIALS_SETTINGS: any, definitionHolder: Simulation);
     _physicsCore: (gridIndexes: any, gridMaterials: any, indexCount: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any, sidePriority: any, mapWidth: any, deltaTime: any) => void;
     step(gridIndexes: any, gridMaterials: any, indexCount: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any, sidePriority: any, mapWidth: any, deltaTime: any): void;
 }
@@ -7273,7 +7273,7 @@ declare class Simulation {
      * @param {Object?} userSettings An object defining the user settings
      * @param {Object?} colorSettings An object defining the color settings
      */
-    constructor(canvas: HTMLCanvasElement | Canvas, readyCB: Function | null, worldStartSettings: any | null, userSettings: any | null, physicsConfig: any, colorSettings: any | null);
+    constructor(canvas: HTMLCanvasElement | Canvas, readyCB: Function | null, worldStartSettings: any | null, userSettings: any | null, physicsSettings: any, colorSettings: any | null);
     _CVS: Canvas;
     _worldStartSettings: any;
     _mapGrid: any;
@@ -7281,7 +7281,7 @@ declare class Simulation {
     _gridMaterials: Uint16Array<ArrayBuffer>;
     _indexCount: Int32Array<ArrayBuffer>;
     _lastGridMaterials: Uint16Array<ArrayBuffer>;
-    _physicsConfig: any;
+    _physicsSettings: any;
     _isRunning: boolean;
     _sidePriority: number;
     _onMapSizeChanged: any;
@@ -7647,7 +7647,7 @@ declare class Simulation {
     set replaceMode(replaceMode: any);
     get replaceMode(): any;
     get hasReplaceMode(): boolean;
-    get physicsConfig(): any;
+    get physicsSettings(): any;
     get worldStartSettings(): any;
     get userSettings(): any;
     get colorSettings(): any;

@@ -43,6 +43,7 @@
                <span data-content="6">Physics</span>
                <span data-content="7">Presets</span>
                <div id="drawerControl">∨</div>
+               <div id="updatesStatus"></div>
             </div>
 
             <div class="tabContent">
@@ -121,15 +122,23 @@
                <div data-content="4">
                   <div class="tabInputsParent savesTab">
                      <div>
-                        <div class="smallButtonGroup">
+                        <div class="smallGroup">
                            <button id="saveButton">Save</button>
                            <button id="downloadSaveButton">Download Save</button>
                         </div>
-                        <textarea id="exportValueInput" type="text" placeholder="Export as text..." readonly rows="3"></textarea>
+                        <div class="smallGroup">
+                           <textarea id="exportValueInput" type="text" placeholder="Export as text..." readonly rows="3"></textarea>
+                           <svg id="copyButton" height="24" width="24" viewBox="0 -960 960 960"><path d="M180-80q-24 0-42-18t-18-42h60v60Zm-60-144v-84h60v84h-60Zm0-168v-84h60v84h-60Zm0-168v-84h60v84h-60Zm0-168q0-24 18-42t42-18v60h-60ZM264-80v-60h84v60h-84Zm60-144q-24 0-42-18t-18-42v-536q0-24 18-42t42-18h416q24 0 42 18t18 42v536q0 24-18 42t-42 18H324Zm0-60h416v-536H324v536ZM432-80v-60h84v60h-84Zm168 0v-60h60q0 24-18 42t-42 18Z"></path></svg>
+                           <select id="exportTypeSelect">
+                              <option value="0">Raw</option>
+                              <option value="1">Compacted</option>
+                              <option value="2">Exact</option>
+                           </select>
+                        </div>
                      </div>
 
                      <div>
-                        <div  class="smallButtonGroup">
+                        <div  class="smallGroup">
                            <button id="loadButton">Load</button>
                            <label for="uploadFile" class="fileUploadParent">
                               <input id="uploadFile" type="file" accept=".lcbps" class="hidden">

@@ -6,9 +6,7 @@ console.log("Hey! If you want to directly use the simulation API, use the global
 chrome.management.getSelf(e=>document.getElementById("version").textContent="v"+e.versionName)
 
 // UI GLOBALS
-const globals = {
-
-}
+let displayUpdate = ()=>{}
 
 // Creating the powder simulation
 const simulation = new Simulation(
@@ -34,6 +32,8 @@ function onSimulationReady(simulation) {
         simulation.updateBrushType(Simulation.BRUSH_TYPES.VERTICAL_CROSS)
         simulation.updateMapPixelSize(4)
         simulation.updateMapSize(195, 109)
+        //simulation.updateMapPixelSize(3)
+        //simulation.updateMapSize(260, 145)
 
         // MAP PERSISTENCE
         chrome.storage.local.get(res=>{
