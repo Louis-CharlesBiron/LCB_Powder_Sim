@@ -97,3 +97,15 @@ function keepCheckbox(element, storageType, storageName, initChecked, actionCB) 
         storage.set({[key]:isChecked})
     })
 }
+
+// doc todo
+function downloadFile(content, filename, conflictAction="uniquify", saveAs=true) {
+    chrome.downloads.download({url:URL.createObjectURL(new Blob([content], {type:"text/"})), filename, conflictAction, saveAs})
+}
+
+// doc todo
+function readFile(file, callback) {
+    const fileReader = new FileReader()
+    fileReader.onload=e=>callback(e.target.result, file)
+    fileReader.readAsText(file)
+}

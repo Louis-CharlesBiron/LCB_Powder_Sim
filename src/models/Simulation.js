@@ -57,7 +57,7 @@ class Simulation {
         SimUtils.addGettersSetters(this, [
             ...Object.keys(Simulation.DEFAULT_USER_SETTINGS).map(exposedName=>({exposedName, path:["_userSettings", exposedName]})),
             ...Object.keys(Simulation.DEFAULT_WORLD_START_SETTINGS).map(exposedName=>({exposedName, path:["_worldStartSettings", exposedName]})),
-            ...Object.keys(Simulation.DEFAULT_PHYSICS_SETTINGS).filter(x=>x[0]!=="$").map(exposedName=>({exposedName, path:["_physicsConfig", exposedName]})),
+            ...Object.keys(Simulation.DEFAULT_PHYSICS_SETTINGS).filter(x=>x[0]!=="$").map(exposedName=>({exposedName, path:["_physicsSettings", exposedName]})),
             {exposedName:"loopExtra"},
             {exposedName:"isRunning"},
             {exposedName:"mapGridRenderStyles"},
@@ -79,7 +79,7 @@ class Simulation {
      * @param {Object?} userSettings An object defining the user settings
      * @param {Object?} colorSettings An object defining the color settings
      */
-    constructor(canvas, readyCB, worldStartSettings, userSettings, physicsConfig, colorSettings) {
+    constructor(canvas, readyCB, worldStartSettings, userSettings, physicsSettings, colorSettings) {
         // SIMULATION
         this._CVS = canvas instanceof Canvas ? canvas : new Canvas(canvas)
         this._worldStartSettings = SimUtils.getAdjustedSettings(worldStartSettings, Simulation.DEFAULT_WORLD_START_SETTINGS)
@@ -93,7 +93,7 @@ class Simulation {
         this._indexCount = new Simulation.#C_COUNT(1)
         this.#createIndexArrays(arraySize)
         this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
-        this._physicsConfig = SimUtils.getAdjustedSettings(physicsConfig, Simulation.DEFAULT_PHYSICS_SETTINGS)
+        this._physicsSettings = SimUtils.getAdjustedSettings(physicsSettings, Simulation.DEFAULT_PHYSICS_SETTINGS)
 
         this._isRunning = false
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
@@ -381,7 +381,7 @@ class Simulation {
             const threadCount = usesWebWorkers===true ? 4 : usesWebWorkers
 
             this._physicsUnit = new RemotePhysicsUnit(threadCount, this.#initSAB(), {
-                physicsConfig:this._physicsConfig,
+                physicsSettings:this._physicsSettings,
                 MATERIALS_SETTINGS: MaterialSettings.MATERIALS_SETTINGS,
                 definitionHolder: Simulation
             }, {
@@ -391,7 +391,7 @@ class Simulation {
                 arraySize: this._mapGrid.arraySize,
             })
         }
-        else this._physicsUnit = new LocalPhysicsUnit(this._physicsConfig, MaterialSettings.MATERIALS_SETTINGS, Simulation)
+        else this._physicsUnit = new LocalPhysicsUnit(this._physicsSettings, MaterialSettings.MATERIALS_SETTINGS, Simulation)
 
         if (CDEUtils.isFunction(this._onPhysicsUnitTypeChanged)) this._onPhysicsUnitTypeChanged(this._physicsUnit)
     }
@@ -1157,7 +1157,7 @@ class Simulation {
     get brushType() {return this._brushType}
     get replaceMode() {return this._replaceMode}
     get hasReplaceMode() {return this._replaceMode !== Simulation.REPLACE_MODES.ALL}
-	get physicsConfig() {return this._physicsConfig}
+	get physicsSettings() {return this._physicsSettings}
 	get worldStartSettings() {return this._worldStartSettings}
 	get userSettings() {return this._userSettings}
 	get colorSettings() {return this._colorSettings}

@@ -1,6 +1,8 @@
 const INPUT_STORAGE_TYPE = "sync",
       REGULAR_STORAGE = chrome.storage.sync
-      MAP_PERSISTENCE_STORAGE = chrome.storage.local
+      MAP_PERSISTENCE_STORAGE = chrome.storage.local,
+      FILE_EXTENSION = ".lcbps",
+      PROPOSED_FILE_NAME = "LCBPowderSimulator"+FILE_EXTENSION
       
       
 const STORAGE_KEYS = {

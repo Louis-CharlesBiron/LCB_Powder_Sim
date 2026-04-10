@@ -143,7 +143,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
     #createWorkers() {
         this.killWorkers()
         if (this._initialized) {
-            const threadCount = this._threadCount, {physicsConfig, MATERIALS_SETTINGS, definitionHolder} = this._workerDependencies
+            const threadCount = this._threadCount, {physicsSettings, MATERIALS_SETTINGS, definitionHolder} = this._workerDependencies
             
             for (let i=0;i<threadCount;i++) {
                 const worker = new Worker(RemotePhysicsUnit.WORKER_RELATIVE_PATH, {type:"classic"})
@@ -155,7 +155,7 @@ class RemotePhysicsUnit extends _PhysicsUnit {
                     threadCount,
                     initUpdatables: this._initUpdatables,
                     workerDependencies: {
-                        physicsConfig,
+                        physicsSettings,
                         SIGNALS_INDEXES: RemotePhysicsUnit.SIGNALS_INDEXES,
                         SIGNALS: RemotePhysicsUnit.SIGNALS,
                         WORKER_MESSAGE_TYPES: RemotePhysicsUnit.WORKER_MESSAGE_TYPES,

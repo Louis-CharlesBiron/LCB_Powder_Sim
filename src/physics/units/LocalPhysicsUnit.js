@@ -2,16 +2,16 @@ class LocalPhysicsUnit extends _PhysicsUnit {
 
     /**
      * A physics unit that directly attaches to the main thread
-     * @param {Object} physicsConfig A physics configuration object 
+     * @param {Object} physicsSettings A physics configuration object 
      * @param {Object} MATERIALS_SETTINGS A physics configuration object
      * @param {Simulation} definitionHolder The Simulation class, including its static members
      */
-    constructor(physicsConfig, MATERIALS_SETTINGS, definitionHolder) {
+    constructor(physicsSettings, MATERIALS_SETTINGS, definitionHolder) {
         if (_PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE) return _PhysicsUnit.LOCAL_PHYSICS_UNIT_INSTANCE
 
         super(null)
         this._physicsCore = createPhysicsCore(
-            physicsConfig,
+            physicsSettings,
             MATERIALS_SETTINGS,
             definitionHolder.MATERIALS,
             definitionHolder.MATERIAL_GROUPS,

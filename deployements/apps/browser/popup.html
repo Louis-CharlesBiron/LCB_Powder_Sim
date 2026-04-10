@@ -4,7 +4,7 @@
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta charset="UTF-8">
       <title>LCB Powder Simulator</title>
-      <link rel="stylesheet" href="src/popup.css">
+      <link rel="stylesheet" href="src/ui/popup.css">
    </head>
    <body>
       <span id="version"></span>
@@ -46,25 +46,20 @@
             </div>
 
             <div class="tabContent">
+
                <div data-content="0" data-displayed="true">
-                  <span class="tabContentHeader">Materials</span>
-                  
-                  <div class="tabInputsParent">
+                  <div class="tabInputsParent" data-scrollable>
                      <div class="bigList" id="materialsList"></div>
                   </div>
-
                </div>
+
                <div data-content="1">
-                  <span class="tabContentHeader">Brushes</span>
-                  
-                  <div class="tabInputsParent">
-                     <div  class="bigList" id="brushesList"></div>
+                  <div class="tabInputsParent" data-scrollable>
+                     <div class="bigList" id="brushesList"></div>
                   </div>
-
                </div>
-               <div data-content="2">
-                  <span class="tabContentHeader">Map settings</span>
 
+               <div data-content="2">
                   <div class="tabInputsParent mapSection">
                      <div class="col">
                         <div class="crow">
@@ -91,83 +86,84 @@
                         <span>Pixel Size: <input type="number"step="1" min="1" max="200" id="c_pixelSize"></span>
                      </div>
                   </div>
-
                </div>
-               <div data-content="3">
-                  <span class="tabContentHeader">General settings</span>
 
-                  <div class="tabInputsParent settingsTab">
-                     <div class="col">
-                        <span>Show status: <label class="checkboxParent"><input id="c_showStatus" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Show FPS: <label class="checkboxParent"><input id="c_showFPS" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Show Cursor: <label class="checkboxParent"><input id="c_showCursor" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Show Brush: <label class="checkboxParent"><input id="c_showBrush" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Smooth drawing: <label class="checkboxParent"><input id="c_smoothDrawing" type="checkbox"><span class="checkCore"></span></label></span>
-                     </div>
-                     <div class="col">
-                        <span>Drag and zoom: <label class="checkboxParent"><input id="c_dragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Multithreading: <label class="checkboxParent"><input id="c_useWorkers" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Map persistence: <label class="checkboxParent"><input id="c_mapPersistence" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Visual Effects: <label class="checkboxParent"><input id="c_visualEffect" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>b: <label class="checkboxParent"><input id="c_a" type="checkbox"><span class="checkCore"></span></label></span>
-                     </div>
-                     <div class="col">
-                        <span>Middle click resets zoom: <label class="checkboxParent"><input id="c_useMiddleClickToResetDragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Mouse velocity create: <label class="checkboxParent"><input id="c_createFromMouseVel" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Backstep optimization: <label class="checkboxParent"><input id="c_backstepSavingOptimization" type="checkbox"><span class="checkCore"></span></label></span>
-                     </div>
-                     <div class="col">
-                        <span>Max particles: <input type="number" step="1000" min="0" max="1000000" id="c_maxDynamicMaterials"></span>
-                        <span>Backstep saves: <input type="number" step="10" min="0" max="100000" id="c_maxBackstepSaves"></span>
-                        <span>Max FPS: <input type="number" step="4" min="5" max="240" id="c_maxFPS"></span>
+               <div data-content="3">
+                  <div class="tabInputsParent" data-scrollable>
+                     <div class="bigList settingsTab">
+                        <div class="col">
+                           <span class="label"><span>Show FPS:</span><label class="checkboxParent"><input id="c_showFPS" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Show status:</span><label class="checkboxParent"><input id="c_showStatus" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Show Cursor:</span><label class="checkboxParent"><input id="c_showCursor" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Show Brush:</span><label class="checkboxParent"><input id="c_showBrush" type="checkbox"><span class="checkCore"></span></label></span>
+                        </div>
+                        <div class="col">
+                           <span class="label"><span>Map persistence:</span><label class="checkboxParent"><input id="c_mapPersistence" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Visual Effects:</span><label class="checkboxParent"><input id="c_visualEffect" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Drag and zoom:</span><label class="checkboxParent"><input id="c_dragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Smooth drawing:</span><label class="checkboxParent"><input id="c_smoothDrawing" type="checkbox"><span class="checkCore"></span></label></span>
+                        </div>
+                        <div class="col" style="width: 235px;">
+                           <span class="label"><span>Multithreading:</span><label class="checkboxParent"><input id="c_useWorkers" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Mouse velocity create:</span><label class="checkboxParent"><input id="c_createFromMouseVel" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Backstep optimization:</span><label class="checkboxParent"><input id="c_backstepSavingOptimization" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Middle click resets zoom:</span><label class="checkboxParent"><input id="c_useMiddleClickToResetDragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
+                        </div>
+                        <div class="col" style="width: 195px;">
+                           <span class="label"><span>Max particles:</span><input type="number" step="1000" min="0" max="1000000" id="c_maxDynamicMaterials"></span>
+                           <span class="label"><span>Backstep saves:</span><input type="number" step="10" min="0" max="100000" id="c_maxBackstepSaves"></span>
+                           <span class="label"><span>Max FPS:</span><input type="number" step="4" min="2" max="240" id="c_maxFPS"></span>
+                        </div>
                      </div>
                   </div>
-
                </div>
+
                <div data-content="4">
-                  <span class="tabContentHeader">Import / Export</span>
-                  
-                  <div class="tabInputsParent">
+                  <div class="tabInputsParent savesTab">
                      <div>
-                        <button id="saveButton">Save</button>
-                        <button id="loadButton">Load</button>
+                        <div class="smallButtonGroup">
+                           <button id="saveButton">Save</button>
+                           <button id="downloadSaveButton">Download Save</button>
+                        </div>
+                        <textarea id="exportValueInput" type="text" placeholder="Export as text..." readonly rows="3"></textarea>
                      </div>
+
+                     <div>
+                        <div  class="smallButtonGroup">
+                           <button id="loadButton">Load</button>
+                           <label for="uploadFile" class="fileUploadParent">
+                              <input id="uploadFile" type="file" accept=".lcbps" class="hidden">
+                              <span class="button">Upload <span style="font-size: 10px;"> (.lcbps)</span></span>
+                           </label>
+                        </div>
+                        <textarea id="loadValueInput" type="text" placeholder="Load from text..." rows="3"></textarea>
+                     </div>
+
+                     <div class="separation"></div>
 
                      <div>
                         <button id="resetSavedMapButton">Reset saved Map</button>
                         <button id="resetAllButton">Reset ALL settings</button>
                      </div>
-
-                     <div>
-                        <input id="exportValueInput" type="text" placeholder="Save export to copy..." readonly>
-                        <input id="loadValueInput" type="text" placeholder="Load to input...">
-                     </div>
                   </div>
-
                </div>
+
                <div data-content="5">
-                  <span class="tabContentHeader">6</span>
-                  
                   <div class="tabInputsParent">
 
                   </div>
-
                </div>
+
                <div data-content="6">
-                  <span class="tabContentHeader">7</span>
-                  
                   <div class="tabInputsParent">
 
                   </div>
-
                </div>
+
                <div data-content="7">
-                  <span class="tabContentHeader">8</span>
-                  
                   <div class="tabInputsParent">
                      prsests
                   </div>
-
                </div>
 
             </div>
@@ -175,10 +171,20 @@
 
       </div>
       
+
       <script src="src/lcb-ps/lcbPS.min.js"></script>
       <script src="src/constants.js"></script>
       <script src="src/utils.js"></script>
       <script src="src/popup.js"></script>
-      <script src="src/ui.js"></script>
+
+      <script src="src/ui/tabs/materialsTab.js"></script>
+      <script src="src/ui/tabs/brushesTab.js"></script>
+      <script src="src/ui/tabs/mapTab.js"></script>
+      <script src="src/ui/tabs/settingsTab.js"></script>
+      <script src="src/ui/tabs/savesTab.js"></script>
+      <script src="src/ui/tabs/miscTab.js"></script>
+      <script src="src/ui/tabs/physicsTab.js"></script>
+      <script src="src/ui/tabs/presetsTab.js"></script>
+      <script src="src/ui/ui.js"></script>
    </body>
 </html>
