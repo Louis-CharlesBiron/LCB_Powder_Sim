@@ -1,3 +1,4 @@
+(()=>{
 startButton.onclick=()=>simulation.start()
 stopButton.onclick=()=>simulation.stop()
 stepButton.onclick=()=>simulation.step()
@@ -37,3 +38,5 @@ simulation.onMapSizeChanged=newSize=>{
 simulation.onMapPixelSizeChanged=newValue=>{
     displayUpdate("New Pixel Size: "+newValue)
 }
+
+})()

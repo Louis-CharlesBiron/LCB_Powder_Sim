@@ -138,7 +138,7 @@
                      </div>
 
                      <div>
-                        <div  class="smallGroup">
+                        <div class="smallGroup">
                            <button id="loadButton">Load</button>
                            <label for="uploadFile" class="fileUploadParent">
                               <input id="uploadFile" type="file" accept=".lcbps" class="hidden">
@@ -147,8 +147,6 @@
                         </div>
                         <textarea id="loadValueInput" type="text" placeholder="Load from text..." rows="3"></textarea>
                      </div>
-
-                     <div class="separation"></div>
 
                      <div>
                         <button id="resetSavedMapButton">Reset saved Map</button>
@@ -164,8 +162,46 @@
                </div>
 
                <div data-content="6">
-                  <div class="tabInputsParent">
-
+                  <div class="tabInputsParent" data-scrollable>
+                     <div class="bigList physicsTab">
+                        <div class="col" style="width: 235px;">
+                           <span class="label"><span>Crazy Init Velocity:</span><label class="checkboxParent"><input id="c_" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>2nd Fall Uniformity:</span><label class="checkboxParent"><input id="c_" type="checkbox"><span class="checkCore"></span></label></span>
+                           <button id="resetPhysicsButton">Reset Physics</button>
+                        </div>
+                        <div class="physicsEditorParent">
+                           Editor
+                           <select id="materialSettingsSelect"></select>
+                           <div class="col">
+                              <span class="tlabel"><span>Gravity:</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                              <span class="tlabel"><span>Velocity X:</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                              <span class="tlabel"><span>Velocity Y:</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                           </div>
+                           <div class="col">
+                              <span class="tlabel"><span>±</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                              <span class="tlabel"><span>±</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                              <span class="tlabel"><span>±</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                           </div>
+                        </div>
+                        <div class="col">
+                           <span class="tlabel"><span>Base Friction:</span><input type="number" step="1000" min="0" max="1000000" id="c_"></span>
+                           <span class="tlabel"><span>Friction Coef:</span><input type="number" step="1000" min="0" max="1000000" id="c_"></span>
+                           <span class="tlabel"><span>Final Col Time:</span><input type="number" step="1000" min="0" max="1000000" id="c_"></span>
+                        </div>
+                        <div class="col" style="width: 275px;">
+                           <span class="tlabel"><span>Contamination Chance:</span><input type="number" step="1000" min="0" max="1000000" id="c_"></span>
+                           <span class="tlabel"><span>Lava Melt Chance:</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                           <span class="tlabel"><span>Fire Inflammation Chance:</span><input type="number" step="4" min="2" max="240" id="c_"></span>
+                        </div>
+                        <div class="col">
+                           <span class="tlabel"><span>Vapor Chance 1:</span><input type="number" step="1000" min="0" max="1000000" id="c_"></span>
+                           <span class="tlabel"><span>Vapor Chance 2:</span><input type="number" step="1000" min="0" max="1000000" id="c_"></span>
+                        </div>
+                        <div class="col" style="width: 252px;">
+                           <span class="tlabel"><span>Fire Decay Threshold:</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                           <span class="tlabel"><span>Vapor Decay Threshold:</span><input type="number" step="4" min="2" max="240" id="c_"></span>
+                        </div>
+                     </div>
                   </div>
                </div>
 

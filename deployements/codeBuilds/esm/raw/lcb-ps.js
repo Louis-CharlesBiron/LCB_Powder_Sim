@@ -9364,6 +9364,10 @@ export class MaterialSettings {
         Object.values(SETTINGS.MATERIALS).forEach(material=>MaterialSettings.MATERIALS_SETTINGS[material] ??= {})
         MaterialSettings.MATERIALS_SETTINGS.forEach((settings, material)=>MaterialSettings.updateMaterialSettings(material, settings))
     }
+
+    static getMaterialSettings(material) {
+        return MaterialSettings.MATERIALS_SETTINGS[material]
+    }
     
     static updateMaterialSettings(material, settings) {
         const adjustedSettings = SimUtils.getAdjustedSettings(settings, MaterialSettings.#DEFAULT_MATERIAL_SETTINGS)
@@ -11381,7 +11385,7 @@ export class Simulation {
             if (isRunning) this.#placePixelWithMouse(mouse)
             else if (lastPlacedPos) {
                 const currentPlacePos = this._mapGrid.getLocalMapPixel(mouse.pos)
-                if (lastPlacedPos[0] !== currentPlacePos[0] && lastPlacedPos[1] !== currentPlacePos[1]) this.#placePixelWithMouse(mouse)
+                if (currentPlacePos && lastPlacedPos[0] !== currentPlacePos[0] && lastPlacedPos[1] !== currentPlacePos[1]) this.#placePixelWithMouse(mouse)
             }
         }
 
@@ -11692,6 +11696,15 @@ export class Simulation {
      */
     updateMaterialSettings(material, settings) {
         MaterialSettings.updateMaterialSettings(material, SimUtils.getAdjustedSettings(settings, MaterialSettings.MATERIALS_SETTINGS[material]||{}))
+    }
+
+    /**
+     * Gets a material's physics configurations
+     * @param {Simulation.MATERIALS} material The material type
+     * @returns An object containing the physics configurations of the material
+     */
+    getMaterialSettings(material) {
+        return MaterialSettings.getMaterialSettings(material)
     }
 
     /**

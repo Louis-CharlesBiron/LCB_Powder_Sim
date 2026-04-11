@@ -77,6 +77,22 @@ function setRegularNumberInput(input, actionCB) {
 }
 
 /**
+ * Fills the options of a select element
+ * @param {HTMLSelectElement} input The input of 'number' type
+ * @param {Array} optionNames The name of each option 
+ * @param {Function?} valueMapper Can be used to define a custom option's value. (index, optionName)=>{return optionValue}
+ */
+function fillSelectOptions(input, optionNames, valueMapper) {
+    const hasValueMapper = typeof valueMapper === "function"
+    optionNames.forEach((name, i)=>{
+        const option = document.createElement("option")
+        option.value = hasValueMapper ? valueMapper(i, name) : i
+        option.textContent = name
+        input.appendChild(option)
+    })
+}
+
+/**
  * 
  * @param {HTMLInputElement} element The checkbox element
  * @param {String?} storageType Either "sync", "local" or "session". Defaults to "sync". 

@@ -1,3 +1,4 @@
+(()=>{
 Object.entries(Simulation.MATERIALS).forEach(([name, mat], i)=>{
     const smallBoxParent = document.createElement("div"),
           smallBoxIcon = document.createElement("div")
@@ -29,3 +30,5 @@ Object.entries(Simulation.MATERIALS).forEach(([name, mat], i)=>{
 simulation.onSelectedMaterialChanged=newValue=>{
     displayUpdate("Selected Material: "+normalizeText(Simulation.MATERIAL_NAMES[newValue]))
 }
+
+})()

@@ -494,6 +494,15 @@ class Simulation {
     }
 
     /**
+     * Gets a material's physics configurations
+     * @param {Simulation.MATERIALS} material The material type
+     * @returns An object containing the physics configurations of the material
+     */
+    getMaterialSettings(material) {
+        return MaterialSettings.getMaterialSettings(material)
+    }
+
+    /**
      * Updates the side prioritised first by the physics.
      * @param {Simulation.SIDE_PRIORITIES} sidePriority The side priority value
      * @returns The new priority

@@ -100,6 +100,10 @@ class MaterialSettings {
         Object.values(SETTINGS.MATERIALS).forEach(material=>MaterialSettings.MATERIALS_SETTINGS[material] ??= {})
         MaterialSettings.MATERIALS_SETTINGS.forEach((settings, material)=>MaterialSettings.updateMaterialSettings(material, settings))
     }
+
+    static getMaterialSettings(material) {
+        return MaterialSettings.MATERIALS_SETTINGS[material]
+    }
     
     static updateMaterialSettings(material, settings) {
         const adjustedSettings = SimUtils.getAdjustedSettings(settings, MaterialSettings.#DEFAULT_MATERIAL_SETTINGS)

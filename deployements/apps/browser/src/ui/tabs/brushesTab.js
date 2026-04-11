@@ -1,3 +1,4 @@
+(()=>{
 Object.entries(Simulation.BRUSH_TYPES).forEach(([name, brush], i)=>{
     const smallBoxParent = document.createElement("div"),
           smallBoxIcon = document.createElement("div")
@@ -29,3 +30,5 @@ Object.entries(Simulation.BRUSH_TYPES).forEach(([name, brush], i)=>{
 simulation.onBrushTypeChanged=newValue=>{
     displayUpdate("Selected Brush: "+normalizeText(Simulation.BRUSH_TYPE_NAMES[newValue]))
 }
+
+})()

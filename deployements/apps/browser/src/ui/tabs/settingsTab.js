@@ -1,3 +1,4 @@
+(()=>{
 keepCheckbox(c_showStatus, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], false, isChecked=>toggleShowStatus(isChecked))
 keepCheckbox(c_showFPS, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], false, isChecked=>toggleFPSDisplay(isChecked))
 keepCheckbox(c_showCursor, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.showCursor, isChecked=>simulation.showCursor = isChecked)
@@ -125,3 +126,5 @@ function toggleMapPersistence(enable) {
         MAP_PERSISTENCE_STORAGE.remove(STORAGE_KEYS.savedMap)
     }
 }
+
+})()

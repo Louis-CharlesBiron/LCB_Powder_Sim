@@ -6339,6 +6339,7 @@ declare class MaterialSettings {
         stepsAliveOffsetMax: number;
         hasStepsAliveOffset: any;
     };
+    static getMaterialSettings(material: any): any;
     static updateMaterialSettings(material: any, settings: any): void;
 }
 declare namespace DEFAULT_KEYBINDS {
@@ -7378,6 +7379,25 @@ declare class Simulation {
         VAPOR: number;
         FIRE: number;
     }, settings: any): void;
+    /**
+     * Gets a material's physics configurations
+     * @param {Simulation.MATERIALS} material The material type
+     * @returns An object containing the physics configurations of the material
+     */
+    getMaterialSettings(material: {
+        AIR: number;
+        SAND: number;
+        WATER: number;
+        STONE: number;
+        GRAVEL: number;
+        INVERTED_WATER: number;
+        CONTAMINANT: number;
+        LAVA: number;
+        ELECTRICITY: number;
+        COPPER: number;
+        VAPOR: number;
+        FIRE: number;
+    }): any;
     /**
      * Updates the side prioritised first by the physics.
      * @param {Simulation.SIDE_PRIORITIES} sidePriority The side priority value

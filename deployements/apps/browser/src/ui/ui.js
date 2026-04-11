@@ -21,8 +21,15 @@ tabs.forEach(el=>el.onclick=e=>selectTab(e.target.dataset.content))
 REGULAR_STORAGE.get(res=>selectTab(res[STORAGE_KEYS.selectedTab]||0))
 
 // HORIZONTAL TAB SCROLL
+let isInputFocused = false
+const scrollBlocking = document.querySelectorAll("input[type=number], select").forEach(el=>{
+    el.onfocus=()=>isInputFocused = true
+    el.onblur=()=>isInputFocused = false
+})
 document.querySelectorAll("[data-scrollable]").forEach(el=>{
     el.addEventListener("wheel", e=>{
+        const nodeName = e.target.nodeName
+        if (isInputFocused && ((nodeName === "INPUT" && e.target.type === "number") || nodeName === "SELECT")) return
         e.preventDefault()
         el.scrollLeft += e.deltaY
     })

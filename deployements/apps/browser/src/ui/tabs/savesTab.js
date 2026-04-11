@@ -1,3 +1,4 @@
+(()=>{
 // SAVE
 let exportType = Simulation.EXPORT_STATES.EXACT
 
@@ -43,3 +44,5 @@ exportTypeSelect.onchange=e=>{
 // RESETS
 resetSavedMapButton.onclick=()=>MAP_PERSISTENCE_STORAGE.remove(STORAGE_KEYS.savedMap)// TODO CONFIRMATION
 resetAllButton.onclick=()=>REGULAR_STORAGE.clear()// TODO CONFIRMATION
+
+})()

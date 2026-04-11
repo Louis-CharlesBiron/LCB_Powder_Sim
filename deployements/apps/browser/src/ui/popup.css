@@ -44,6 +44,7 @@
     --drawerControlButtonWidth: 3%;
     --tabsCount: 0;
     --checkboxWidth: 34px;
+    --inputWidth: 60px;
 
     --d0: 0, 0, 0;
     --d4: 34, 32, 32;
@@ -256,7 +257,7 @@ button, input, textarea, .button, select {
 }
 
 input[type="number"], input[type="text"], textarea {
-    width: 60px;
+    width: var(--inputWidth);
     font-weight: bold;
     cursor: text;
     outline: none;
@@ -361,9 +362,15 @@ span {
     flex-direction: column;
 }
 
-.label {
+.label, .tlabel {
     text-align: end;
     width: calc(100% - var(--checkboxWidth));
+}
+
+.tlabel {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .savesTab > div {
@@ -373,6 +380,10 @@ span {
     height: 65%;
     width: 32%;
     align-items: center;
+}
+
+.savesTab {
+    justify-content: flex-end;
 }
 
 .separation {
@@ -392,4 +403,18 @@ svg {
     fill: rgb(var(--l1));
     cursor: pointer;
     transition: 0.4s all;
+}
+
+.physicsTab > div {
+    width: 200px;
+    height: 90%;
+    margin-right: 18px;
+    justify-content: space-between;
+}
+
+.physicsEditorParent {
+    border: 2px solid red;
+    display: flex;
+    flex-direction: row;
+    width: fit-content !important;
 }
