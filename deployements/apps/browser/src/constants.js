@@ -4,7 +4,7 @@ const INPUT_STORAGE_TYPE = "sync",
       FILE_EXTENSION = ".lcbps",
       PROPOSED_FILE_NAME = "LCBPowderSimulator"+FILE_EXTENSION
       
-      
+
 const STORAGE_KEYS = {
     // INPUTS
     showGrid: "a",
@@ -20,9 +20,15 @@ const STORAGE_KEYS = {
     mapPersistence: "k",
     createFromMouseVel: "l",
     backstepSavingOptimization: "m",
+    crazyVel: "q",
+    secondFallUni:"r",
 
     // OTHERS
     savedMap: "n",
     selectedTab: "o",
     exportType: "p",
 }
+
+
+// TODO
+// conflicts: Mouse Velocity Create & Crazy Init Vel

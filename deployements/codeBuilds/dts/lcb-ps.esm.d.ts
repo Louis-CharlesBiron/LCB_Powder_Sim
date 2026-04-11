@@ -6208,6 +6208,8 @@ export class MaterialSettings {
         stepsAliveOffsetMax: number;
         hasStepsAliveOffset: any;
     };
+    static "__#private@#defineSettings"(): void;
+    static resetAllMaterialSettings(): void;
     static getMaterialSettings(material: any): any;
     static updateMaterialSettings(material: any, settings: any): void;
 }
@@ -7059,6 +7061,7 @@ export class Simulation {
     _onBrushTypeChanged: any;
     _onReplaceModeChanged: any;
     _onPhysicsUnitTypeChanged: any;
+    _onMaterialSettingsChanged: any;
     _onStopped: any;
     _onStarted: any;
     _userSettings: any;
@@ -7165,6 +7168,14 @@ export class Simulation {
         VAPOR: number;
         FIRE: number;
     }): any;
+    /**
+     * Resets all materials' physics configurations
+     */
+    resetAllMaterialSettings(): any[];
+    /**
+     * Resets the physics setitings to their default values
+     */
+    resetPhysicsSettings(): any;
     /**
      * Updates the side prioritised first by the physics.
      * @param {Simulation.SIDE_PRIORITIES} sidePriority The side priority value
@@ -7475,6 +7486,8 @@ export class Simulation {
     get onReplaceModeChanged(): any;
     set onPhysicsUnitTypeChanged(_onPhysicsUnitTypeChanged: any);
     get onPhysicsUnitTypeChanged(): any;
+    set onMaterialSettingsChanged(onMaterialSettingsChanged: any);
+    get onMaterialSettingsChanged(): any;
     set onStarted(_onStarted: any);
     get onStarted(): any;
     set onStopped(_onStopped: any);

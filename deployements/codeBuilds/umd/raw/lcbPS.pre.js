@@ -9299,9 +9299,13 @@ class MaterialSettings {
         stepsAliveOffsetMax:0,
         hasStepsAliveOffset:null,
     }
+    
+    static {
+        MaterialSettings.#defineSettings()
+    }
 
     // MATERIALS CONFIGS //
-    static {
+    static #defineSettings() {
         const {SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, VAPOR, FIRE} = SETTINGS.MATERIALS
 
         MaterialSettings.MATERIALS_SETTINGS[SAND] = {}
@@ -9362,6 +9366,10 @@ class MaterialSettings {
 
         Object.values(SETTINGS.MATERIALS).forEach(material=>MaterialSettings.MATERIALS_SETTINGS[material] ??= {})
         MaterialSettings.MATERIALS_SETTINGS.forEach((settings, material)=>MaterialSettings.updateMaterialSettings(material, settings))
+    }
+
+    static resetAllMaterialSettings() {
+        MaterialSettings.#defineSettings()
     }
 
     static getMaterialSettings(material) {
@@ -11299,7 +11307,7 @@ class Simulation {
         this._indexCount = new Simulation.#C_COUNT(1)
         this.#createIndexArrays(arraySize)
         this._lastGridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize)
-        this._physicsSettings = SimUtils.getAdjustedSettings(physicsSettings, Simulation.DEFAULT_PHYSICS_SETTINGS)
+        this._physicsSettings = this.resetPhysicsSettings()
 
         this._isRunning = false
         this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
@@ -11313,6 +11321,7 @@ class Simulation {
         this._onBrushTypeChanged = null
         this._onReplaceModeChanged = null
         this._onPhysicsUnitTypeChanged = null
+        this._onMaterialSettingsChanged = null
         this._onStopped = null
         this._onStarted = null
 
@@ -11697,6 +11706,7 @@ class Simulation {
      */
     updateMaterialSettings(material, settings) {
         MaterialSettings.updateMaterialSettings(material, SimUtils.getAdjustedSettings(settings, MaterialSettings.MATERIALS_SETTINGS[material]||{}))
+        if (CDEUtils.isFunction(this._onMaterialSettingsChanged)) this._onMaterialSettingsChanged(this.getMaterialSettings(material), material)
     }
 
     /**
@@ -11706,6 +11716,22 @@ class Simulation {
      */
     getMaterialSettings(material) {
         return MaterialSettings.getMaterialSettings(material)
+    }
+
+    /**
+     * Resets all materials' physics configurations
+     */
+    resetAllMaterialSettings() {
+        MaterialSettings.resetAllMaterialSettings()
+        if (CDEUtils.isFunction(this._onMaterialSettingsChanged)) this._onMaterialSettingsChanged(MaterialSettings.MATERIALS_SETTINGS)
+        return MaterialSettings.MATERIALS_SETTINGS
+    }
+
+    /**
+     * Resets the physics setitings to their default values
+     */
+    resetPhysicsSettings() {
+        return this._physicsSettings = SimUtils.getAdjustedSettings({}, Simulation.DEFAULT_PHYSICS_SETTINGS)
     }
 
     /**
@@ -12403,6 +12429,7 @@ class Simulation {
 	get onBrushTypeChanged() {return this._onBrushTypeChanged}
 	get onReplaceModeChanged() {return this._onReplaceModeChanged}
 	get onPhysicsUnitTypeChanged() {return this._onPhysicsUnitTypeChanged}
+	get onMaterialSettingsChanged() {return this._onMaterialSettingsChanged}
 	get onStarted() {return this._onStarted}
 	get onStopped() {return this._onStopped}
 
@@ -12419,6 +12446,7 @@ class Simulation {
 	set onBrushTypeChanged(_onBrushTypeChanged) {this._onBrushTypeChanged = _onBrushTypeChanged}
 	set onReplaceModeChanged(_onReplaceModeChanged) {this._onReplaceModeChanged = _onReplaceModeChanged}
 	set onPhysicsUnitTypeChanged(_onPhysicsUnitTypeChanged) {this._onPhysicsUnitTypeChanged = _onPhysicsUnitTypeChanged}
+	set onMaterialSettingsChanged(onMaterialSettingsChanged) {this._onMaterialSettingsChanged = onMaterialSettingsChanged}
 	set onStarted(_onStarted) {this._onStarted = _onStarted}
 	set onStopped(_onStopped) {this._onStopped = _onStopped}
     set autoSimulationSizing(autoSimulationSizing) {
