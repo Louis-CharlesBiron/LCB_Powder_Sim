@@ -1,9 +1,42 @@
 (()=>{
-let selectedMat = null
+const dynamicMaterials = Object.entries(Simulation.MATERIALS).filter(x=>!(x[1]&Simulation.MATERIAL_GROUPS.STATIC))
+let targetMat = null
+fillSelectOptions(materialSettingsSelect, dynamicMaterials.map(x=>x[0]).map(x=>normalizeText(x)), i=>dynamicMaterials[i][1])
+addWheelIncrement(materialSettingsSelect, null, v=>handeMaterialSettingsSelect(+v))
+materialSettingsSelect.onchange=e=>handeMaterialSettingsSelect(+e.target.value)
 materialSettingsSelect.value = Simulation.DEFAULT_MATERIAL
-materialSettingsSelect.onchange=e=>selectedMat = +e.target.value
-fillSelectOptions(materialSettingsSelect, Object.keys(Simulation.MATERIALS).map(x=>normalizeText(x)), i=>1<<i)
-addWheelIncrement(materialSettingsSelect, null, v=>selectedMat = +v)
+
+function handeMaterialSettingsSelect(mat) {
+    const physicsSettings = simulation.getMaterialSettings(mat)
+    targetMat = mat
+
+    c_materialSettingsGravity.value = physicsSettings.gravity
+    c_materialSettingsVelocityX.value = physicsSettings.velX
+    c_materialSettingsVelocityY.value = physicsSettings.velY
+
+    c_materialSettingsGravityRange.value = physicsSettings.gravityOffsetMax
+    c_materialSettingsVelocityXRange.value = physicsSettings.velXOffsetMax
+    c_materialSettingsVelocityYRange.value = physicsSettings.velYOffsetMax
+
+}handeMaterialSettingsSelect(Simulation.MATERIALS.SAND)
+
+setRegularNumberInput(c_materialSettingsGravity, v=>simulation.updateMaterialSettings(targetMat, {gravity:v}))
+addWheelIncrement(c_materialSettingsGravity, [1,25,100], v=>simulation.updateMaterialSettings(targetMat, {gravity:v}))
+
+setRegularNumberInput(c_materialSettingsVelocityX, v=>simulation.updateMaterialSettings(targetMat, {velX:v}))
+addWheelIncrement(c_materialSettingsVelocityX, [1,25,100], v=>simulation.updateMaterialSettings(targetMat, {velX:v}))
+
+setRegularNumberInput(c_materialSettingsVelocityY, v=>simulation.updateMaterialSettings(targetMat, {velY:v}))
+addWheelIncrement(c_materialSettingsVelocityY, [1,25,100], v=>simulation.updateMaterialSettings(targetMat, {velY:v}))
+
+setRegularNumberInput(c_materialSettingsGravityRange, v=>simulation.updateMaterialSettings(targetMat, {gravityOffsetMin:-v, gravityOffsetMax:v}))
+addWheelIncrement(c_materialSettingsGravity, [1,25,100], v=>simulation.updateMaterialSettings(targetMat, {gravityOffsetMin:-v, gravityOffsetMax:v}))
+
+setRegularNumberInput(c_materialSettingsVelocityXRange, v=>simulation.updateMaterialSettings(targetMat, {velXOffsetMin:-v, velXOffsetMax:v}))
+addWheelIncrement(c_materialSettingsVelocityXRange, [1,25,100], v=>simulation.updateMaterialSettings(targetMat, {velXOffsetMin:-v, velXOffsetMax:v}))
+
+setRegularNumberInput(c_materialSettingsVelocityYRange, v=>simulation.updateMaterialSettings(targetMat, {velYOffsetMin:-v, velYOffsetMax:v}))
+addWheelIncrement(c_materialSettingsVelocityYRange, [1,25,100], v=>simulation.updateMaterialSettings(targetMat, {velYOffsetMin:-v, velYOffsetMax:v}))
 
 
 keepCheckbox(c_crazyVel, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], false, isChecked=>toggleCrazyInitVelocity(isChecked))
@@ -23,6 +56,8 @@ resetPhysicsButton.onclick=()=>{
     c_fireExtinguishesVaporCreationChance.value = simulation.fireExtinguishesVaporCreationChance.toFixed(4)
     c_fireDecayThreshold.value = simulation.fireDecayThreshold
     c_vaporDecayThreshold.value = simulation.vaporDecayThreshold
+
+    handeMaterialSettingsSelect(targetMat)
 }
 
 c_baseFriction.value = simulation.baseFriction

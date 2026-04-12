@@ -29,7 +29,7 @@ const scrollBlocking = document.querySelectorAll("input[type=number], select").f
 document.querySelectorAll("[data-scrollable]").forEach(el=>{
     el.addEventListener("wheel", e=>{
         const nodeName = e.target.nodeName
-        if (isInputFocused && ((nodeName === "INPUT" && e.target.type === "number") || nodeName === "SELECT")) return
+        if (((isInputFocused && nodeName === "INPUT" && e.target.type === "number") || nodeName === "SELECT")) return
         e.preventDefault()
         el.scrollLeft += e.deltaY
     })

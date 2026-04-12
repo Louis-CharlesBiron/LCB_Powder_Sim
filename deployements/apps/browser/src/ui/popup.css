@@ -388,15 +388,25 @@ span {
 
 .separation {
     width: 1px !important;
-    height: 100%;
-    border-left: 3px solid rgba(var(--d5), 1);
+    height: 100% !important;
+    border-left: 4px solid rgba(var(--l1) / .2);
+    border-radius: 102px;
+    margin: 0 !important;
 }
 
-.smallGroup {
+.smallGroup, .smallVerticalGroup {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+}
+
+.smallVerticalGroup {
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+.smallVerticalGroup > span {
+    text-align: center;
 }
 
 svg {
@@ -406,15 +416,18 @@ svg {
 }
 
 .physicsTab > div {
-    width: 200px;
+    width: 205px;
     height: 90%;
     margin-right: 18px;
     justify-content: space-between;
 }
 
 .physicsEditorParent {
-    border: 2px solid red;
     display: flex;
     flex-direction: row;
     width: fit-content !important;
+}
+
+.spaceRight {
+    margin-right: 10px !important;
 }

@@ -24,7 +24,7 @@ function autoTextSize(text, minSize=5, maxSize=18, disableFormating) {
  */
 function addWheelIncrement(input, step=[1,1,1], actionCB) {
     if (typeof step === "number" || !step) step = [step||1, step||1, step||1]
-    let callback = null
+    let callback = null, isFocused = false
 
     const {nodeName, type} = input, hasActionCB = typeof actionCB === "function",
           normalStep = step[0],
@@ -32,6 +32,7 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
           shiftStep = step[2]??ctrlStep
 
     if (nodeName === "INPUT" && type === "number") callback=e=>{
+        if (!isFocused) return 
         e.preventDefault()
         const min = +input.min||0, max = +input.max||Infinity, isFowardStep = e.deltaY>0
         let stepChosen = normalStep, v = +input.value
@@ -53,7 +54,9 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
     }
     else console.warn("addWheelIncrement: Input not supported", input, nodeName)
 
-    input.onwheel=callback
+    input.addEventListener("wheel", callback)
+    input.addEventListener("focus", ()=>isFocused = true)
+    input.addEventListener("blur", ()=>isFocused = false)
 }
 
 /**

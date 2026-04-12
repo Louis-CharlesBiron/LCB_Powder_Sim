@@ -164,31 +164,35 @@
                <div data-content="6">
                   <div class="tabInputsParent" data-scrollable>
                      <div class="bigList physicsTab">
-                        <div class="col" style="width: 235px;">
+                        <div class="col" style="width: 240px;align-items: center;">
                            <span class="label"><span>Crazy Init Velocity:</span><label class="checkboxParent"><input id="c_crazyVel" type="checkbox"><span class="checkCore"></span></label></span>
                            <span class="label"><span>2nd Fall Uniformity:</span><label class="checkboxParent"><input id="c_secondFallUni" type="checkbox"><span class="checkCore"></span></label></span>
                            <button id="resetPhysicsButton">Reset Physics</button>
                         </div>
+                        <div class="separation"></div>
                         <div class="physicsEditorParent">
-                           Editor
-                           <select id="materialSettingsSelect"></select>
-                           <div class="col">
-                              <span class="tlabel"><span>Gravity:</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
-                              <span class="tlabel"><span>Velocity X:</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
-                              <span class="tlabel"><span>Velocity Y:</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                           <div class="smallVerticalGroup">
+                              <span>Material Editor</span>
+                              <select id="materialSettingsSelect"></select>
+                           </div>
+                           <div class="col" style="width: 170px;">
+                              <span class="tlabel"><span>Gravity:</span><input type="number"    step="1" min="-1000" max="1000" id="c_materialSettingsGravity"></span>
+                              <span class="tlabel"><span>Velocity X:</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityX"></span>
+                              <span class="tlabel"><span>Velocity Y:</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityY"></span>
                            </div>
                            <div class="col">
-                              <span class="tlabel"><span>±</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
-                              <span class="tlabel"><span>±</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
-                              <span class="tlabel"><span>±</span><input type="number" step="10" min="0" max="100000" id="c_"></span>
+                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsGravityRange"></span>
+                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityXRange"></span>
+                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityYRange"></span>
                            </div>
                         </div>
+                        <div class="separation spaceRight"></div>
                         <div class="col">
                            <span class="tlabel"><span>Base Friction:</span><input type="number" step="1" min="-100" max="100" id="c_baseFriction"></span>
                            <span class="tlabel"><span>Friction Coef:</span><input type="number" step="0.001" min="0.001" max="5" id="c_frictionCoefficient"></span>
                            <span class="tlabel"><span>Final Col Time:</span><input type="number" step="1" min="1" max="10000" id="c_finalCollisionTime"></span>
                         </div>
-                        <div class="col" style="width: 275px;">
+                        <div class="col" style="width: 282px;">
                            <span class="tlabel"><span>Contamination Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_contaminationChance"></span>
                            <span class="tlabel"><span>Lava Melt Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_meltChance"></span>
                            <span class="tlabel"><span>Fire Inflammation Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_inflammationChance"></span>
@@ -197,7 +201,7 @@
                            <span class="tlabel"><span>Vapor Chance 1:</span><input type="number" step="0.1" min="0" max="1" id="c_fireExtinguishesVaporCreationChance"></span>
                            <span class="tlabel"><span>Vapor Chance 2:</span><input type="number" step="0.1" min="0" max="1" id="c_firePropagatesVaporCreationChance"></span>
                         </div>
-                        <div class="col" style="width: 252px;">
+                        <div class="col" style="width: 257px;">
                            <span class="tlabel"><span>Fire Decay Threshold:</span><input type="number" step="10" min="1" max="100000" id="c_fireDecayThreshold"></span>
                            <span class="tlabel"><span>Vapor Decay Threshold:</span><input type="number" step="10" min="1" max="100000" id="c_vaporDecayThreshold"></span>
                         </div>

@@ -1,4 +1,5 @@
 (()=>{
+const parentClassName = "smallBoxParent"
 Object.entries(Simulation.MATERIALS).forEach(([name, mat], i)=>{
     const smallBoxParent = document.createElement("div"),
           smallBoxIcon = document.createElement("div")
@@ -14,7 +15,6 @@ Object.entries(Simulation.MATERIALS).forEach(([name, mat], i)=>{
     smallBoxText.textContent = normalText
     smallBoxText.style.fontSize = autoTextSize(normalText, 8.25, 19)
 
-    const parentClassName = "smallBoxParent"
     smallBoxParent.className = parentClassName
     smallBoxIcon.className = "smallBoxIcon"
     smallBoxIcon.style.width = smallBoxIcon.getBoundingClientRect().height+"px"
@@ -27,8 +27,15 @@ Object.entries(Simulation.MATERIALS).forEach(([name, mat], i)=>{
     }
 })
 
+function selectUIMaterial(index) {
+    materialsList.querySelectorAll("."+parentClassName).forEach(el=>el.dataset.selected = false)
+    materialsList.children[index].dataset.selected = true
+}
+
 simulation.onSelectedMaterialChanged=newValue=>{
-    displayUpdate("Selected Material: "+normalizeText(Simulation.MATERIAL_NAMES[newValue]))
+    const materialName = Simulation.MATERIAL_NAMES[newValue]
+    selectUIMaterial(Object.values(Simulation.MATERIAL_NAMES).indexOf(materialName)-1)
+    displayUpdate("Selected Material: "+normalizeText(materialName))
 }
 
 })()

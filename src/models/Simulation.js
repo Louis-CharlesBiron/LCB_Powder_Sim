@@ -469,7 +469,7 @@ class Simulation {
             this.#commonSizeUpdate(()=>this.#updatePixelsFromSize(oldWidth, oldHeight, width, height))
             if (this.usingWebWorkers) this._physicsUnit.updateSAB(this.#initSAB())
 
-            if (CDEUtils.isFunction(this._onMapSizeChanged)) this._onMapSizeChanged(this._mapGrid.dimensions, this._mapGrid, this._mapGrid)
+            if (CDEUtils.isFunction(this._onMapSizeChanged)) this._onMapSizeChanged(this._mapGrid.dimensions, this._mapGrid)
         }
     }
 
