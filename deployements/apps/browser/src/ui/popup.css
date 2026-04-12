@@ -70,8 +70,10 @@ input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-i
 }
 
 html, body {
-    width: var(--app-width);
-    height: var(--app-height);
+    min-width: var(--app-width);
+    min-height: var(--app-height);
+    width: 100%;
+    height: 100%;
     background-color: rgb(var(--d0));
     margin: 0px;
     user-select: none;
@@ -119,7 +121,7 @@ html, body {
     background-color: rgba(var(--d0), .5);
 }
 #bottom[data-closed=true] {
-    bottom: -147px;
+    bottom: calc(-1 * var(--tabsHeight) - 2px);
 }
 
 .tabs {

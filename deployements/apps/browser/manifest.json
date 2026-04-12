@@ -27,7 +27,9 @@
   "permissions": [
     "storage",
     "unlimitedStorage",
-    "downloads"
-  ]
+    "downloads",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": ["<all_urls>"]
 }
-

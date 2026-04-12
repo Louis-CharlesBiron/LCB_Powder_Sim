@@ -48,7 +48,8 @@
         "CDEUtils",
         "SimUtils",
         "createPhysicsCoreWorker",
-        "Color"
+        "Color",
+        "Canvas"
     ],
     "dependencies": [],
     "workers":[

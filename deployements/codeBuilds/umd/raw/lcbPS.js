@@ -9193,7 +9193,8 @@ const DEFAULT_COLOR_SETTINGS = {
     LAVA:[255,132,0,.95],
     ELECTRICITY:[255,235,0,.9],
     COPPER:[121,65,52,1],
-    VAPOR:[255,255,228,.25],
+    VAPOR:[128, 128, 114, 0.5]
+,
     FIRE:[255,50,40,.85],
 }
 
@@ -12482,5 +12483,5 @@ class Simulation {
         this._userSettings.showCursor = showCursor
     }
 }
-return {Simulation,FPSCounter,CDEUtils,SimUtils,createPhysicsCoreWorker,Color}
+return {Simulation,FPSCounter,CDEUtils,SimUtils,createPhysicsCoreWorker,Color,Canvas}
 })
