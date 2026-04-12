@@ -611,9 +611,9 @@ class Simulation {
               gridIndexes = this._gridIndexes = new Simulation.#C_GRID_INDEXES(arraySize).fill(-1),
               gridMaterials = this._gridMaterials = new Simulation.#C_GRID_MATERIALS(arraySize).fill(Simulation.MATERIALS.AIR),    
               newIndexArrays = this.#createIndexArrays(arraySize),
-              a_ll = newIndexArrays.length, newSize = newWidth*newHeight
+              a_ll = newIndexArrays.length, newSize = newWidth*newHeight, newSizePD = newSize*Simulation.PHYSICS_DATA_ATTRIBUTES
 
-        for (let i=0;i<a_ll;i++) newIndexArrays[i].set(oldIndexArrays[i].subarray(0, newSize))
+        for (let i=0;i<a_ll;i++) newIndexArrays[i].set(oldIndexArrays[i].subarray(0, i === 1 ? newSizePD : newSize))
 
         for (let y=0,offset=0,oi=0;y<smallestHeight;y++) {
             gridIndexes.set(oldGridIndexes.subarray(oi, oi+smallestWidth), offset)
