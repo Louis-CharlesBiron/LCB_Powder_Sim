@@ -9182,8 +9182,7 @@ const DEFAULT_COLOR_SETTINGS = {
     LAVA:[255,132,0,.95],
     ELECTRICITY:[255,235,0,.9],
     COPPER:[121,65,52,1],
-    VAPOR:[128, 128, 114, 0.5]
-,
+    VAPOR:[128,128,114,.5],
     FIRE:[255,50,40,.85],
 }
 
@@ -11259,6 +11258,7 @@ export class Simulation {
     static DEFAULT_MATERIAL = Simulation.MATERIALS.SAND
     static DEFAULT_BRUSH_TYPE = Simulation.BRUSH_TYPES.PIXEL
     static DEFAULT_REPLACE_MODE = Simulation.REPLACE_MODES.ALL
+    static DEFAULT_SIDE_PRIORITY = Simulation.SIDE_PRIORITIES.RANDOM
     static DEFAULT_WORLD_START_SETTINGS = DEFAULT_WORLD_START_SETTINGS
     static DEFAULT_USER_SETTINGS = DEFAULT_USER_SETTINGS
     static DEFAULT_PHYSICS_SETTINGS = DEFAULT_PHYSICS_SETTINGS
@@ -11310,7 +11310,7 @@ export class Simulation {
         this._physicsSettings = this.resetPhysicsSettings()
 
         this._isRunning = false
-        this._sidePriority = Simulation.SIDE_PRIORITIES.RANDOM
+        this._sidePriority = Simulation.DEFAULT_SIDE_PRIORITY
         this.updatePhysicsUnitType(this._worldStartSettings.usesWebWorkers)
 
         // EVENTS
@@ -11357,10 +11357,7 @@ export class Simulation {
         this._CVS.setMouseUp(this.#mouseUp.bind(this))
         this._CVS.setKeyUp(null, true)
         this._CVS.setKeyDown(null, true)
-        this._CVS.onResizeCB=()=>{
-            const pixelSize = this._userSettings.autoSimulationSizing
-            if (pixelSize) this.autoFitMapSize(pixelSize)
-        }
+        this._CVS.onResizeCB=()=>this.#handleAutoSizing()
         this._CVS.start()
         this._mouseListenerIds = [
             this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this.#isMouseWithinSimulation = true),
@@ -11372,13 +11369,22 @@ export class Simulation {
         this.#initialized = Simulation.#INIT_STATES.READY
 
 
-        if (this._userSettings.autoSimulationSizing) this.autoFitMapSize(this._userSettings.autoSimulationSizing)
+        this.#handleAutoSizing()
         if (CDEUtils.isFunction(readyCB)) readyCB(this)
         if (this.usingWebWorkers) this._physicsUnit.initialize()
 
         this.#initialized = Simulation.#INIT_STATES.NOT_INITIALIZED
 
         if (this._worldStartSettings.autoStart) this.start()
+    }
+
+    #handleAutoSizing(pixelSize=this._userSettings.autoSimulationSizing) {
+        if (pixelSize) {
+            if (CDEUtils.isFunction(pixelSize)) pixelSize = pixelSize(this.CVS, this)
+
+            if (Array.isArray(pixelSize)) this.autoFitMapSize(pixelSize[0], ...pixelSize[1])
+            else this.autoFitMapSize(pixelSize)
+        }
     }
 
     /* RENDERING */
@@ -12451,7 +12457,7 @@ export class Simulation {
 	set onStopped(_onStopped) {this._onStopped = _onStopped}
     set autoSimulationSizing(autoSimulationSizing) {
         this._userSettings.autoSimulationSizing = autoSimulationSizing
-        if (autoSimulationSizing) this.autoFitMapSize(autoSimulationSizing)
+        this.#handleAutoSizing(autoSimulationSizing)
     }
     set dragAndZoomCanvasEnabled(dragAndZoomCanvasEnabled) {
         this._userSettings.dragAndZoomCanvasEnabled = dragAndZoomCanvasEnabled

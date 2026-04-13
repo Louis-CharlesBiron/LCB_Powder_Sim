@@ -433,3 +433,10 @@ svg {
 .spaceRight {
     margin-right: 10px !important;
 }
+
+.miscTab > .col {
+    width: 220px;
+    height: 90%;
+    margin-right: 18px;
+    justify-content: space-evenly;
+}

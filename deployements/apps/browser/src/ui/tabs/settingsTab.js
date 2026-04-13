@@ -32,7 +32,7 @@ function toggleFPSDisplay(show) {
             const fpsValue = fpsCounter.getFps()+"FPS"
             if (fpsDisplay.textContent !== fpsValue) fpsDisplay.textContent = fpsValue
 
-            const fpsStepValue = fpsStepDisplay.textContent = "|"+stepFps+"SPS"
+            const fpsStepValue = fpsStepDisplay.textContent = "/"+stepFps+"SPS"
             if (fpsStepDisplay.textContent !== fpsStepValue) fpsStepDisplay.textContent = fpsStepValue
             if (stepFps > 0) stepFps--
         }

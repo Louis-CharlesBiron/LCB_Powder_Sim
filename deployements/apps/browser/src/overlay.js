@@ -41,8 +41,10 @@ function toggleFixedPosition(enable) {
 
 const CVS = Canvas.create()
 CVS.cvs.style.zIndex = 99999999999999
+if (+CVS.cvs.height > window.innerHeight) CVS.cvs.height = window.innerHeight
 toggleFixedPosition(true)
 
+const PX_SIZE = 4
 const simulation = new Simulation(
     CVS,
     onSimulationReady,
@@ -51,7 +53,7 @@ const simulation = new Simulation(
         aimedFPS: 60,
     },
     {
-        autoSimulationSizing: 4,
+        autoSimulationSizing: CVS=>[PX_SIZE, [CVS.width+PX_SIZE/2, CVS.height+PX_SIZE/2]],
         showBorder: true,
         showGrid: true,
         warningsDisabled: 1,
@@ -67,6 +69,6 @@ function onSimulationReady(simulation) {
 
     toggleIntegrationVisibility(false, simulation)
     toggleInputIsolation(true)
-
+    
     simulation.updateBrushType(Simulation.BRUSH_TYPES.VERTICAL_CROSS)
 }

@@ -6744,6 +6744,7 @@ export class Simulation {
     static DEFAULT_MATERIAL: number;
     static DEFAULT_BRUSH_TYPE: number;
     static DEFAULT_REPLACE_MODE: number;
+    static DEFAULT_SIDE_PRIORITY: number;
     static DEFAULT_WORLD_START_SETTINGS: {
         autoStart: boolean;
         usesWebWorkers: number;

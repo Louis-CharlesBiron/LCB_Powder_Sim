@@ -1,7 +1,7 @@
 (()=>{
 const dynamicMaterials = Object.entries(Simulation.MATERIALS).filter(x=>!(x[1]&Simulation.MATERIAL_GROUPS.STATIC))
 let targetMat = null
-fillSelectOptions(materialSettingsSelect, dynamicMaterials.map(x=>x[0]).map(x=>normalizeText(x)), i=>dynamicMaterials[i][1])
+fillSelectOptions(materialSettingsSelect, dynamicMaterials.map(x=>normalizeText(x[0])), i=>dynamicMaterials[i][1])
 addWheelIncrement(materialSettingsSelect, null, v=>handeMaterialSettingsSelect(+v))
 materialSettingsSelect.onchange=e=>handeMaterialSettingsSelect(+e.target.value)
 materialSettingsSelect.value = Simulation.DEFAULT_MATERIAL
