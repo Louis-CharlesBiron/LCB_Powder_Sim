@@ -117,13 +117,13 @@ function toggleMapPersistence(enable) {
             const newSavedMap = simulation.exportAsText(Simulation.EXPORT_STATES.COMPACTED)
             if (currentSavedMap !== newSavedMap) {
                 currentSavedMap = newSavedMap
-                MAP_PERSISTENCE_STORAGE.set({[STORAGE_KEYS.savedMap]:currentSavedMap})
+                LOCAL_STORAGE.set({[STORAGE_KEYS.savedMap]:currentSavedMap})
             }
         }, 500)
     }
     else {
         currentSavedMap = ""
-        MAP_PERSISTENCE_STORAGE.remove(STORAGE_KEYS.savedMap)
+        LOCAL_STORAGE.remove(STORAGE_KEYS.savedMap)
     }
 }
 

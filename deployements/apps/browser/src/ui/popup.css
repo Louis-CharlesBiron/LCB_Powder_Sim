@@ -69,6 +69,17 @@ input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-i
     background-color: rgba(var(--d5), 1);
 }
 
+@media (max-height: 145px) {
+    .cvsParent {
+        display: none;
+    }
+
+    #bottom {
+        height: 145px !important;
+    }
+}
+
+
 html, body {
     min-width: var(--app-width);
     min-height: var(--app-height);
@@ -79,7 +90,6 @@ html, body {
     user-select: none;
     overflow: hidden;
     font-family: monospace;
-    transition: 0.4s all;
 }
 #version {
     position: absolute;
@@ -117,7 +127,6 @@ html, body {
     position: absolute;
     bottom: 0;
     left: 0;
-    transition: 0.4s all;
     background-color: rgba(var(--d0), .5);
 }
 #bottom[data-closed=true] {

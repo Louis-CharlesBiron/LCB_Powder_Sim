@@ -42,7 +42,7 @@ exportTypeSelect.onchange=e=>{
 }
 
 // RESETS
-resetSavedMapButton.onclick=()=>MAP_PERSISTENCE_STORAGE.remove(STORAGE_KEYS.savedMap)// TODO CONFIRMATION
+resetSavedMapButton.onclick=()=>LOCAL_STORAGE.remove(STORAGE_KEYS.savedMap)// TODO CONFIRMATION
 resetAllButton.onclick=()=>REGULAR_STORAGE.clear()// TODO CONFIRMATION
 
 })()

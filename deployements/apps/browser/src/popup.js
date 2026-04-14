@@ -39,6 +39,5 @@ function onSimulationReady(simulation) {
         chrome.storage.local.get(res=>{
             const savedMap = res[STORAGE_KEYS.savedMap]
             if (savedMap) simulation.load(savedMap, true)
-        })
-        
+        })       
 }

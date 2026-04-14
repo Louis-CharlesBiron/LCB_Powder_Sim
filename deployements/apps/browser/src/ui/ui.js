@@ -47,3 +47,26 @@ displayUpdate = (text)=>{
     updatesStatus.textContent = text
     displayUpdateTimeoutId = setTimeout(()=>updatesStatus.style.opacity = "0", 1250)
 }
+
+// OVERLAY CONTROL
+LOCAL_STORAGE.get(res=>{
+    const overlayTabId = res[STORAGE_KEYS.overlayTabId]
+    if (overlayTabId) {
+        chrome.tabs.get(overlayTabId, tab=>{
+            if (tab) toggleOverlayAppDisplay(true)
+            else LOCAL_STORAGE.set({[STORAGE_KEYS.overlayTabId]:null})
+        })
+    }
+})
+
+function toggleOverlayAppDisplay(enable) {
+    if (enable) {
+        root.setProperty("--app-height", OVERLAY_ON_APP_HEIGHT)
+        document.documentElement.style.height = OVERLAY_ON_APP_HEIGHT
+    }
+    else {
+        root.setProperty("--app-height", OVERLAY_OFF_APP_HEIGHT)
+        document.documentElement.style.height = null
+    }
+    toggleOverlayButton.textContent = enable ? STRINGS.OVERLAY_ON : STRINGS.OVERLAY_OFF
+}
