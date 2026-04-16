@@ -1,4 +1,4 @@
-function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
+function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS, PHYSICS_DATA_ATTRIBUTES) {
     // GLOBAL CONSTANTS
     const {STATIC} = MATERIAL_GROUPS,
         RT = createRandomTable()
@@ -10,40 +10,56 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
         MAP_WIDTH,
         CLAMP_MAX
 
+    // Wrapper function to update the utils globals
     function _updatePhysicsUtilsGlobals(mapWidth, spRandom, spLeft, spRight) {
         CLAMP_MAX = (MAP_WIDTH = mapWidth)-1
         SP_RANDOM = spRandom
         SP_LEFT = spLeft
         SP_RIGHT = spRight
     }
-
     
     let _rIndex=0
-    // TODO DOC
+    /**
+     * Returns the next number from the random table 
+     */
     function nextRandom() {
         return RT[_rIndex++&RTSize]
     }
 
     const FLOAT32_TRUNC_ARR = new Float32Array(1), UINT32_TRUNC_ARR = new Uint32Array(FLOAT32_TRUNC_ARR.buffer)
-    // DOC TODO
+    /**
+     * If necessary, truncates the provided number to make it fit into a Float32Array without rounding 
+     * @param {Number} num The number to truncate 
+     */
     function safeTrunc(num) {
         FLOAT32_TRUNC_ARR[0] = num
         if (FLOAT32_TRUNC_ARR[0] > num) UINT32_TRUNC_ARR[0]--
         return FLOAT32_TRUNC_ARR[0]
     }
 
-    // DOC TODO
     const BIT32 = 31
+    /**
+     * A binary implementation of Math.abs
+     */
     function abs(num) {
        return (num^(num>>BIT32))-(num>>BIT32)
     }
 
-    // DOC TODO
+    /**
+     * Clamps the provided number between the provided boundaries
+     * @param {Number} num The number to clamp
+     * @param {Number} min The minimum boundary
+     * @param {Number} max The maximum boundary
+     */
     function clamp(num, min=0, max=CLAMP_MAX) {
         return num < min ? min : num > max ? max : num
     }
 
-    // DOC TODO
+    /**
+     * Returns the 1D grid value equivalent to the provided coordinates
+     * @param {Number} x The x value
+     * @param {Number} y The y value
+     */
     function getAdjacencyCoords(x, y) {
         return y*MAP_WIDTH+clamp(x, 0, CLAMP_MAX)
     }
@@ -60,45 +76,95 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
         return Math.floor(Math.random()*((max-min)*precision+1))/precision+min
     }
     
-    // DOC TODO
-    function replaceParticleAtIndex(gridIndex, material, particle) {
-        const gridMaterials = particle.gridMaterials, gridIndexes = particle.gridIndexes, indexCount = particle.indexCount,
-              indexFlags = particle.indexFlags, indexPosX = particle.indexPosX, indexPosY = particle.indexPosY, indexVelX = particle.indexVelX, indexVelY = particle.indexVelY, indexGravity = particle.indexGravity, indexStepsAlive = particle.indexStepsAlive,
-              isStatic = material & STATIC, oldIndex = gridIndexes[gridIndex]
+    /**
+     * Replaces the particle at the provided index, with the provided material
+     * @param {Number} gridIndex The gridIndex value
+     * @param {Number} material The material to place
+     * @param {TypedArrays} ...[arrays] The data arrays 
+     * @returns The placed material
+     */
+    function replaceParticleAtIndex(gridIndex, material, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive) {
+        const oldIndex = gridIndexes[gridIndex], oiPD = oldIndex*PHYSICS_DATA_ATTRIBUTES
 
-        if (!isStatic) {
-            const y = (gridIndex/MAP_WIDTH)|0,
-                  x = gridIndex-y*MAP_WIDTH,
-                  materialSettings = MATERIALS_SETTINGS[material]
-        
-            indexFlags[oldIndex] = materialSettings.flags
-            indexPosX[oldIndex] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
-            indexPosY[oldIndex] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
-            indexVelX[oldIndex] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
-            indexVelY[oldIndex] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
-            indexGravity[oldIndex] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
-            indexStepsAlive[oldIndex] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
-            gridIndexes[gridIndex] = oldIndex
-        }
-        else if (isStatic) {
+        if (material & STATIC) {
             const i = --indexCount[0]
             if (oldIndex !== i) {
-                const x = indexPosX[oldIndex] = indexPosX[i], 
-                      y = indexPosY[oldIndex] = indexPosY[i]
+                const iPD = i*PHYSICS_DATA_ATTRIBUTES,
+                x = indexPhysicsData[oiPD] = indexPhysicsData[iPD], 
+                y = indexPhysicsData[oiPD+1] = indexPhysicsData[iPD+1]
                 indexFlags[oldIndex] = indexFlags[i]
-                indexVelX[oldIndex] = indexVelX[i]
-                indexVelY[oldIndex] = indexVelY[i]
+                indexPhysicsData[oiPD+2] = indexPhysicsData[iPD+2]
+                indexPhysicsData[oiPD+3] = indexPhysicsData[iPD+3]
                 indexGravity[oldIndex] = indexGravity[i]
                 indexStepsAlive[oldIndex] = indexStepsAlive[i]
                 gridIndexes[(y|0)*MAP_WIDTH+(x|0)] = oldIndex
             }
             gridIndexes[gridIndex] = -1
+        } else {
+            const y = (gridIndex/MAP_WIDTH)|0,
+                  x = gridIndex-y*MAP_WIDTH,
+                  materialSettings = MATERIALS_SETTINGS[material]
+        
+            indexFlags[oldIndex] = materialSettings.flags
+            indexPhysicsData[oiPD] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+1] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+2] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+3] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+            indexGravity[oldIndex] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
+            indexStepsAlive[oldIndex] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
+            gridIndexes[gridIndex] = oldIndex
         }
 
         return gridMaterials[gridIndex] = material
     }
     
-    // DOC TODO
+     /**
+     * (Thread safe version of replaceParticleAtIndex) Replaces the particle at the provided index, with the provided material
+     * @param {Number} gridIndex The gridIndex value
+     * @param {Number} material The material to place
+     * @param {TypedArrays} ...[arrays] The data arrays 
+     * @returns The placed material
+     */
+    function workerReplaceParticleAtIndex(gridIndex, material, indexCount, gridMaterials, gridIndexes, indexFlags, indexPhysicsData, indexGravity, indexStepsAlive) {
+        const oldIndex = Atomics.load(gridIndexes, gridIndex), oiPD = oldIndex*PHYSICS_DATA_ATTRIBUTES
+
+        if (material & STATIC) {
+            const i = Atomics.sub(indexCount, 0, 1)-1
+            if (oldIndex !== i) {
+                const iPD = i*PHYSICS_DATA_ATTRIBUTES
+                x = indexPhysicsData[oiPD] = indexPhysicsData[iPD], 
+                y = indexPhysicsData[oiPD+1] = indexPhysicsData[iPD+1]
+                indexFlags[oldIndex] = indexFlags[i]
+                indexPhysicsData[oiPD+2] = indexPhysicsData[iPD+2]
+                indexPhysicsData[oiPD+3] = indexPhysicsData[iPD+3]
+                indexGravity[oldIndex] = indexGravity[i]
+                indexStepsAlive[oldIndex] = indexStepsAlive[i]
+                Atomics.store(gridIndexes, (y|0)*MAP_WIDTH+(x|0), oldIndex)
+            }
+            Atomics.store(gridIndexes, gridIndex, -1)
+        } else {
+            const y = (gridIndex/MAP_WIDTH)|0,
+                  x = gridIndex-y*MAP_WIDTH,
+                  materialSettings = MATERIALS_SETTINGS[material]
+        
+            indexFlags[oldIndex] = materialSettings.flags
+            indexPhysicsData[oiPD] = x+(materialSettings.hasPosXOffset ? random(materialSettings.posXOffsetMin, materialSettings.posXOffsetMax, materialSettings.posXOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+1] = y+(materialSettings.hasPosYOffset ? random(materialSettings.posYOffsetMin, materialSettings.posYOffsetMax, materialSettings.posYOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+2] = materialSettings.velX+(materialSettings.hasVelXOffset ? random(materialSettings.velXOffsetMin, materialSettings.velXOffsetMax, materialSettings.velXOffsetDecimals) : 0)
+            indexPhysicsData[oiPD+3] = materialSettings.velY+(materialSettings.hasVelYOffset ? random(materialSettings.velYOffsetMin, materialSettings.velYOffsetMax, materialSettings.velYOffsetDecimals) : 0)
+            indexGravity[oldIndex] = materialSettings.gravity+(materialSettings.hasGravityOffset ? random(materialSettings.gravityOffsetMin, materialSettings.gravityOffsetMax, materialSettings.gravityOffsetDecimals) : 0)
+            indexStepsAlive[oldIndex] = materialSettings.stepsAlive+(materialSettings.hasStepsAliveOffset ? random(materialSettings.stepsAliveOffsetMin, materialSettings.stepsAliveOffsetMax) : 0)
+            Atomics.store(gridIndexes, gridIndex, oldIndex)
+        }
+
+        Atomics.store(gridMaterials, gridIndex, material)
+
+        return material
+    }
+
+    /**
+     * Returns whether the side priority should be left 
+     */
     function getSideSelectionPriority() {
         if (SP_RANDOM) return RT[_rIndex++&RTSize] < .5
         else if (SP_LEFT) return true
@@ -106,12 +172,15 @@ function getPhysicsUtils(RTSize, MATERIALS_SETTINGS, MATERIAL_GROUPS) {
     }
 
     
-    // DOC TODO
+    /**
+     * Creates the random table
+     * @returns The created table
+     */
     function createRandomTable() {
         const table = new Float32Array(RTSize), random = Math.random
         for (let i=0;i<RTSize;i++) table[i] = random()
         return table
     }
 
-    return {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, random, replaceParticleAtIndex, getSideSelectionPriority, nextRandom}
+    return {_updatePhysicsUtilsGlobals, safeTrunc, abs, clamp, getAdjacencyCoords, random, replaceParticleAtIndex, workerReplaceParticleAtIndex, getSideSelectionPriority, nextRandom}
 }

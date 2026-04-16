@@ -1,6 +1,6 @@
 {
     "name": "lcb-ps",
-    "version": "1.0.4",
+    "version": "2.0.0",
     "description": "LCB Powder Simulator is an efficient, customizable and fully native JS powder simulation.",
     "author": {
         "name": "Louis-Charles Biron",
@@ -14,7 +14,7 @@
     },
     "files": [
         "umd/lcbPS.min.js",
-        "umd/RemotePhysicsUnit.min.js",
+        "umd/RemotePhysicsUnit.min.js TODO",
         "dts/lcbPS.umd.d.ts",
 
         "esm/raw/lcb-ps.js",

@@ -6023,6 +6023,55 @@ export class Dot extends _Obj {
     get cachedPath(): boolean;
     #private;
 }
+export class CameraManager {
+    constructor(simulation: any);
+    resetCamera(): void;
+    #private;
+}
+export class SimUtils {
+    /**
+    * Merges a modification object and a base object
+    * @param {Object} inputSettings The object with modifications
+    * @param {Object} defaultSettings The object to update
+    * @returns The merged object
+    */
+    static getAdjustedSettings(inputSettings: any, defaultSettings: any): any;
+    /**
+     * Dynamically adds setters/getters to the provided class' prototype
+     * @param {Class} targetClass The class to modify
+     * @param {Object} attributes An object such as: {exposedName:"height", path?:["_mapGrid", "_height"]}
+     */
+    static addGettersSetters(targetClass: Class, attributes: any): void;
+    /**
+     * Returns the biggest decimal point among the provided numbers
+     * @param  {...Number} nums A list of numbers
+     */
+    static getMaxDecimals(...nums: number[]): number;
+    /**
+     * Returns a random number within the min and max range
+     * @param {Number} min: the minimal possible value (included)
+     * @param {Number} max: the maximal possible value (included)
+     * @param {Number?} decimals: the decimal point. (Defaults to 0 (integers))
+     * @returns the generated number
+     */
+    static random(min: number, max: number, decimals?: number | null): number;
+    /**
+     * Logs a warning messages if warnings are enabled
+     * @param {String} warningMessage Warning message to log
+     * @param {Object} userSettings The userSettings object
+     */
+    static warn(warningMessage: string, userSettings: any): void;
+}
+export class KeybindManager {
+    constructor(simulation: any, keybinds: any);
+    /**
+     * Creates functional keybinds TODO IMPROVE
+     * @param {Object} keybinds The keybinds to set
+     */
+    setKeyBinds(keybinds: any): void;
+    get keybinds(): any;
+    #private;
+}
 export namespace SETTINGS {
     namespace MATERIALS {
         let AIR: number;
@@ -6035,91 +6084,31 @@ export namespace SETTINGS {
         let LAVA: number;
         let ELECTRICITY: number;
         let COPPER: number;
-        let TREE: number;
-        let GAS: number;
+        let VAPOR: number;
+        let FIRE: number;
     }
     namespace MATERIAL_GROUPS {
         let GASES: any;
         let REG_TRANSPIERCEABLE: any;
-        let REPLACE_TRANSPIERCEABLE: any;
         let LIQUIDS: any;
         let CONTAMINABLE: any;
         let MELTABLE: any;
-        let HAS_VISUAL_EFFECTS: any;
+        let FIRE_EXTINGUISH: any;
+        let INFLAMMABLE: any;
         let STATIC: any;
-        let REVERSE_LOOP_CONTAINED_SKIPABLE: any;
-        let FORWARDS_LOOP_CONTAINED_SKIPABLE: any;
+        let ALIVE_TRACKING: any;
+        let DEPOSITABLE: any;
+        let HAS_VISUAL_EFFECTS: any;
+        let SAND_SKIPABLE: any;
+        let WATER_SKIPABLE: any;
+        let GRAVEL_SKIPABLE: any;
+        let INVERTED_WATER_SKIPABLE: any;
+        let CONTAMINANT_SKIPABLE: any;
+        let LAVA_SKIPABLE: any;
+        let VAPOR_SKIPABLE: any;
+        let FIRE_SKIPABLE: any;
     }
     let MATERIAL_NAMES: string[];
-    namespace MATERIAL_STATES {
-        export let EMPTY: number;
-        export namespace COPPER_1 {
-            let LIT: number;
-            let ORIGIN: number;
-            let DISABLED: number;
-        }
-        export { COPPER_1 as COPPER };
-    }
-    namespace MATERIAL_STATES_GROUPS {
-        export namespace COPPER_2 {
-            let ACTIVATED: any;
-            let SOURCEABLE: any;
-        }
-        export { COPPER_2 as COPPER };
-    }
-    namespace DEFAULT_WORLD_START_SETTINGS {
-        let autoStart: boolean;
-        let usesWebWorkers: boolean;
-        let aimedFPS: number;
-        let zoom: any;
-        let cameraCenterPos: any;
-        let mapWidth: any;
-        let mapHeight: any;
-        let mapPixelSize: any;
-    }
-    namespace DEFAULT_USER_SETTINGS {
-        let autoSimulationSizing: any;
-        let dragAndZoomCanvasEnabled: boolean;
-        let minZoomThreshold: number;
-        let maxZoomThreshold: number;
-        let zoomInIncrement: number;
-        let zoomOutIncrement: number;
-        let warningsDisabled: boolean;
-        let showBorder: boolean;
-        let showGrid: boolean;
-        let smoothDrawingEnabled: boolean;
-        let visualEffectsEnabled: boolean;
-        let drawingDisabled: boolean;
-    }
-    namespace DEFAULT_COLOR_SETTINGS {
-        export let grid: number[];
-        export let border: number[];
-        export let VOID: number[];
-        let AIR_1: number[];
-        export { AIR_1 as AIR };
-        let SAND_1: number[];
-        export { SAND_1 as SAND };
-        let WATER_1: number[];
-        export { WATER_1 as WATER };
-        let STONE_1: number[];
-        export { STONE_1 as STONE };
-        let GRAVEL_1: number[];
-        export { GRAVEL_1 as GRAVEL };
-        let INVERTED_WATER_1: number[];
-        export { INVERTED_WATER_1 as INVERTED_WATER };
-        let CONTAMINANT_1: number[];
-        export { CONTAMINANT_1 as CONTAMINANT };
-        let LAVA_1: number[];
-        export { LAVA_1 as LAVA };
-        let ELECTRICITY_1: number[];
-        export { ELECTRICITY_1 as ELECTRICITY };
-        let COPPER_3: number[];
-        export { COPPER_3 as COPPER };
-        let TREE_1: number[];
-        export { TREE_1 as TREE };
-        let GAS_1: number[];
-        export { GAS_1 as GAS };
-    }
     namespace D {
         let b: number;
         let r: number;
@@ -6134,15 +6123,16 @@ export namespace SETTINGS {
         let RANDOM: number;
         let LEFT: number;
         let RIGHT: number;
-        let MAP_DEPENDANT: number;
     }
     let SIDE_PRIORITY_NAMES: any[];
-    let DEFAULT_BACK_STEP_SAVING_COUNT: number;
     namespace EXPORT_STATES {
         let RAW: number;
         let COMPACTED: number;
+        let EXACT: number;
     }
     let EXPORT_SEPARATOR: string;
+    let EXPORT_DYAMIC_SEPARATOR: string;
+    let EXPORT_STATIC_SEPARATOR: string;
     namespace BRUSH_TYPES {
         let PIXEL: number;
         let VERTICAL_CROSS: number;
@@ -6161,13 +6151,8 @@ export namespace SETTINGS {
     let BRUSHES_X_VALUES: any[];
     let WORKER_RELATIVE_PATH: URL;
     namespace WORKER_MESSAGE_TYPES {
-        let INIT: number;
-        let STEP: number;
-        let START_LOOP: number;
-        let STOP_LOOP: number;
-        let SIDE_PRIORITY: number;
-        let MAP_SIZE: number;
-        let PIXELS: number;
+        let INIT: any;
+        let UPDATE_SAB: number;
     }
     namespace WORKER_MESSAGE_GROUPS {
         let GIVES_PIXELS_TO_MAIN: any;
@@ -6182,12 +6167,6 @@ export namespace SETTINGS {
         let READY: number;
         let INITIALIZED: number;
     }
-    let FILE_SERVED_WARN: string;
-    let STANDALONE_KEYBIND_WARN: string;
-    let NOT_INITIALIZED_LOAD_WARN: string;
-    let NOT_INITIALIZED_MAP_SIZE_WARN: string;
-    let NOT_INITIALIZED_PIXEL_SIZE_WARN: string;
-    let NOT_INITIALIZED_PHYSICS_TYPE_WARN: string;
     namespace DEFAULT_MAP_RESOLUTIONS {
         let HIGH: number;
         let MEDIUM: number;
@@ -6198,33 +6177,71 @@ export namespace SETTINGS {
         let ALL: number;
     }
 }
+export class MaterialSettings {
+    static MATERIALS_SETTINGS: any[];
+    static "__#private@#DEFAULT_MATERIAL_SETTINGS": {
+        flags: number;
+        posXOffsetMin: number;
+        posXOffsetMax: number;
+        posXOffsetDecimals: any;
+        hasPosXOffset: any;
+        posYOffsetMin: number;
+        posYOffsetMax: number;
+        posYOffsetDecimals: any;
+        hasPosYOffset: any;
+        velX: number;
+        velXOffsetMin: number;
+        velXOffsetMax: number;
+        velXOffsetDecimals: any;
+        hasVelXOffset: any;
+        velY: number;
+        velYOffsetMin: number;
+        velYOffsetMax: number;
+        velYOffsetDecimals: any;
+        hasVelYOffset: any;
+        gravity: number;
+        gravityOffsetMin: number;
+        gravityOffsetMax: number;
+        gravityOffsetDecimals: any;
+        hasGravityOffset: any;
+        stepsAlive: number;
+        stepsAliveOffsetMin: number;
+        stepsAliveOffsetMax: number;
+        hasStepsAliveOffset: any;
+    };
+    static "__#private@#defineSettings"(): void;
+    static resetAllMaterialSettings(): void;
+    static getMaterialSettings(material: any): any;
+    static updateMaterialSettings(material: any, settings: any): void;
+}
 export namespace DEFAULT_KEYBINDS {
-    export namespace MY_CUSTOM_SIZE_KEYBIND {
+    namespace MY_CUSTOM_SIZE_KEYBIND {
+        export function callback(simulation: any): void;
         export let requiredKeys: string[];
         export let keys: string[];
         import triggerType = ONCE;
         export { triggerType };
         export let preventDefault: boolean;
     }
-    export namespace STEP_1 {
-        export let defaultFunction: string;
+    namespace STEP {
+        export function callback_1(simulation: any): void;
+        export { callback_1 as callback };
         let keys_1: string[];
         export { keys_1 as keys };
         let triggerType_1: any;
         export { triggerType_1 as triggerType };
     }
-    export { STEP_1 as STEP };
-    export namespace BACK_STEP {
-        let defaultFunction_1: string;
-        export { defaultFunction_1 as defaultFunction };
+    namespace BACK_STEP {
+        export function callback_2(simulation: any): void;
+        export { callback_2 as callback };
         let keys_2: string[];
         export { keys_2 as keys };
         let triggerType_2: any;
         export { triggerType_2 as triggerType };
     }
-    export namespace BACK_STEP_ONCE {
-        let defaultFunction_2: string;
-        export { defaultFunction_2 as defaultFunction };
+    namespace BACK_STEP_ONCE {
+        export function callback_3(simulation: any): void;
+        export { callback_3 as callback };
         let requiredKeys_1: string[];
         export { requiredKeys_1 as requiredKeys };
         let keys_3: string[];
@@ -6234,386 +6251,314 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_1: boolean;
         export { preventDefault_1 as preventDefault };
     }
-    export namespace STEP_FAST {
-        let defaultFunction_3: string;
-        export { defaultFunction_3 as defaultFunction };
+    namespace STEP_FAST {
+        export function callback_4(simulation: any): void;
+        export { callback_4 as callback };
         let keys_4: string[];
         export { keys_4 as keys };
-        import triggerType_4 = MEDIUM_REPEATING;
+        import triggerType_4 = FAST_REPEATING;
         export { triggerType_4 as triggerType };
     }
-    export namespace BACK_STEP_FAST {
-        let defaultFunction_4: string;
-        export { defaultFunction_4 as defaultFunction };
+    namespace BACK_STEP_FAST {
+        export function callback_5(simulation: any): void;
+        export { callback_5 as callback };
         let keys_5: string[];
         export { keys_5 as keys };
-        import triggerType_5 = MEDIUM_REPEATING;
+        import triggerType_5 = FAST_REPEATING;
         export { triggerType_5 as triggerType };
     }
-    export namespace START {
-        let defaultFunction_5: string;
-        export { defaultFunction_5 as defaultFunction };
+    namespace START {
+        export function callback_6(simulation: any): void;
+        export { callback_6 as callback };
         let keys_6: string[];
         export { keys_6 as keys };
         import triggerType_6 = ONCE;
         export { triggerType_6 as triggerType };
     }
-    export namespace STOP {
-        let defaultFunction_6: string;
-        export { defaultFunction_6 as defaultFunction };
-        export let defaultParams: string[];
+    namespace STOP {
+        export function callback_7(simulation: any): void;
+        export { callback_7 as callback };
         let keys_7: string[];
         export { keys_7 as keys };
         import triggerType_7 = ONCE;
         export { triggerType_7 as triggerType };
+        let preventDefault_2: boolean;
+        export { preventDefault_2 as preventDefault };
     }
-    export namespace CLEAR {
-        let defaultFunction_7: string;
-        export { defaultFunction_7 as defaultFunction };
+    namespace FULL_STOP {
+        export function callback_8(simulation: any): void;
+        export { callback_8 as callback };
         let requiredKeys_2: string[];
         export { requiredKeys_2 as requiredKeys };
         let keys_8: string[];
         export { keys_8 as keys };
         import triggerType_8 = ONCE;
         export { triggerType_8 as triggerType };
-        let preventDefault_2: boolean;
-        export { preventDefault_2 as preventDefault };
+        let preventDefault_3: boolean;
+        export { preventDefault_3 as preventDefault };
     }
-    export namespace DISABLE_WORKERS {
-        let defaultFunction_8: string;
-        export { defaultFunction_8 as defaultFunction };
-        let defaultParams_1: boolean[];
-        export { defaultParams_1 as defaultParams };
+    namespace CLEAR {
+        export function callback_9(simulation: any): void;
+        export { callback_9 as callback };
         let requiredKeys_3: string[];
         export { requiredKeys_3 as requiredKeys };
         let keys_9: string[];
         export { keys_9 as keys };
         import triggerType_9 = ONCE;
         export { triggerType_9 as triggerType };
-        let preventDefault_3: boolean;
-        export { preventDefault_3 as preventDefault };
+        let preventDefault_4: boolean;
+        export { preventDefault_4 as preventDefault };
     }
-    export namespace ENABLE_WORKERS {
-        let defaultFunction_9: string;
-        export { defaultFunction_9 as defaultFunction };
-        let defaultParams_2: boolean[];
-        export { defaultParams_2 as defaultParams };
+    namespace DISABLE_WORKERS {
+        export function callback_10(simulation: any): void;
+        export { callback_10 as callback };
         let requiredKeys_4: string[];
         export { requiredKeys_4 as requiredKeys };
         let keys_10: string[];
         export { keys_10 as keys };
         import triggerType_10 = ONCE;
         export { triggerType_10 as triggerType };
-        let preventDefault_4: boolean;
-        export { preventDefault_4 as preventDefault };
+        let preventDefault_5: boolean;
+        export { preventDefault_5 as preventDefault };
     }
-    export namespace SELECT_SAND {
-        let defaultFunction_10: string;
-        export { defaultFunction_10 as defaultFunction };
-        let defaultParams_3: number[];
-        export { defaultParams_3 as defaultParams };
-        export let cancelKeys: string[];
+    namespace ENABLE_WORKERS {
+        export function callback_11(simulation: any): void;
+        export { callback_11 as callback };
+        let requiredKeys_5: string[];
+        export { requiredKeys_5 as requiredKeys };
         let keys_11: string[];
         export { keys_11 as keys };
         import triggerType_11 = ONCE;
         export { triggerType_11 as triggerType };
-        let preventDefault_5: boolean;
-        export { preventDefault_5 as preventDefault };
+        let preventDefault_6: boolean;
+        export { preventDefault_6 as preventDefault };
     }
-    export namespace SELECT_WATER {
-        let defaultFunction_11: string;
-        export { defaultFunction_11 as defaultFunction };
-        let defaultParams_4: number[];
-        export { defaultParams_4 as defaultParams };
-        let cancelKeys_1: string[];
-        export { cancelKeys_1 as cancelKeys };
+    namespace SELECT_SAND {
+        export function callback_12(simulation: any): void;
+        export { callback_12 as callback };
+        export let cancelKeys: string[];
         let keys_12: string[];
         export { keys_12 as keys };
         import triggerType_12 = ONCE;
         export { triggerType_12 as triggerType };
-        let preventDefault_6: boolean;
-        export { preventDefault_6 as preventDefault };
+        let preventDefault_7: boolean;
+        export { preventDefault_7 as preventDefault };
     }
-    export namespace SELECT_STONE {
-        let defaultFunction_12: string;
-        export { defaultFunction_12 as defaultFunction };
-        let defaultParams_5: number[];
-        export { defaultParams_5 as defaultParams };
-        let cancelKeys_2: string[];
-        export { cancelKeys_2 as cancelKeys };
+    namespace SELECT_WATER {
+        export function callback_13(simulation: any): void;
+        export { callback_13 as callback };
+        let cancelKeys_1: string[];
+        export { cancelKeys_1 as cancelKeys };
         let keys_13: string[];
         export { keys_13 as keys };
         import triggerType_13 = ONCE;
         export { triggerType_13 as triggerType };
-        let preventDefault_7: boolean;
-        export { preventDefault_7 as preventDefault };
+        let preventDefault_8: boolean;
+        export { preventDefault_8 as preventDefault };
     }
-    export namespace SELECT_GRAVEL {
-        let defaultFunction_13: string;
-        export { defaultFunction_13 as defaultFunction };
-        let defaultParams_6: number[];
-        export { defaultParams_6 as defaultParams };
-        let cancelKeys_3: string[];
-        export { cancelKeys_3 as cancelKeys };
+    namespace SELECT_STONE {
+        export function callback_14(simulation: any): void;
+        export { callback_14 as callback };
+        let cancelKeys_2: string[];
+        export { cancelKeys_2 as cancelKeys };
         let keys_14: string[];
         export { keys_14 as keys };
         import triggerType_14 = ONCE;
         export { triggerType_14 as triggerType };
-        let preventDefault_8: boolean;
-        export { preventDefault_8 as preventDefault };
+        let preventDefault_9: boolean;
+        export { preventDefault_9 as preventDefault };
     }
-    export namespace SELECT_INVERTED_WATER {
-        let defaultFunction_14: string;
-        export { defaultFunction_14 as defaultFunction };
-        let defaultParams_7: number[];
-        export { defaultParams_7 as defaultParams };
-        let cancelKeys_4: string[];
-        export { cancelKeys_4 as cancelKeys };
+    namespace SELECT_GRAVEL {
+        export function callback_15(simulation: any): void;
+        export { callback_15 as callback };
+        let cancelKeys_3: string[];
+        export { cancelKeys_3 as cancelKeys };
         let keys_15: string[];
         export { keys_15 as keys };
         import triggerType_15 = ONCE;
         export { triggerType_15 as triggerType };
-        let preventDefault_9: boolean;
-        export { preventDefault_9 as preventDefault };
+        let preventDefault_10: boolean;
+        export { preventDefault_10 as preventDefault };
     }
-    export namespace SELECT_CONTAMINANT {
-        let defaultFunction_15: string;
-        export { defaultFunction_15 as defaultFunction };
-        let defaultParams_8: number[];
-        export { defaultParams_8 as defaultParams };
-        let cancelKeys_5: string[];
-        export { cancelKeys_5 as cancelKeys };
+    namespace SELECT_INVERTED_WATER {
+        export function callback_16(simulation: any): void;
+        export { callback_16 as callback };
+        let cancelKeys_4: string[];
+        export { cancelKeys_4 as cancelKeys };
         let keys_16: string[];
         export { keys_16 as keys };
         import triggerType_16 = ONCE;
         export { triggerType_16 as triggerType };
-        let preventDefault_10: boolean;
-        export { preventDefault_10 as preventDefault };
+        let preventDefault_11: boolean;
+        export { preventDefault_11 as preventDefault };
     }
-    export namespace SELECT_LAVA {
-        let defaultFunction_16: string;
-        export { defaultFunction_16 as defaultFunction };
-        let defaultParams_9: number[];
-        export { defaultParams_9 as defaultParams };
-        let cancelKeys_6: string[];
-        export { cancelKeys_6 as cancelKeys };
+    namespace SELECT_CONTAMINANT {
+        export function callback_17(simulation: any): void;
+        export { callback_17 as callback };
+        let cancelKeys_5: string[];
+        export { cancelKeys_5 as cancelKeys };
         let keys_17: string[];
         export { keys_17 as keys };
         import triggerType_17 = ONCE;
         export { triggerType_17 as triggerType };
-        let preventDefault_11: boolean;
-        export { preventDefault_11 as preventDefault };
+        let preventDefault_12: boolean;
+        export { preventDefault_12 as preventDefault };
     }
-    export namespace SELECT_ELECTRICITY {
-        let defaultFunction_17: string;
-        export { defaultFunction_17 as defaultFunction };
-        let defaultParams_10: number[];
-        export { defaultParams_10 as defaultParams };
-        let cancelKeys_7: string[];
-        export { cancelKeys_7 as cancelKeys };
+    namespace SELECT_LAVA {
+        export function callback_18(simulation: any): void;
+        export { callback_18 as callback };
+        let cancelKeys_6: string[];
+        export { cancelKeys_6 as cancelKeys };
         let keys_18: string[];
         export { keys_18 as keys };
         import triggerType_18 = ONCE;
         export { triggerType_18 as triggerType };
-        let preventDefault_12: boolean;
-        export { preventDefault_12 as preventDefault };
+        let preventDefault_13: boolean;
+        export { preventDefault_13 as preventDefault };
     }
-    export namespace SELECT_COPPER {
-        let defaultFunction_18: string;
-        export { defaultFunction_18 as defaultFunction };
-        let defaultParams_11: number[];
-        export { defaultParams_11 as defaultParams };
-        let cancelKeys_8: string[];
-        export { cancelKeys_8 as cancelKeys };
+    namespace SELECT_VAPOR {
+        export function callback_19(simulation: any): void;
+        export { callback_19 as callback };
+        let cancelKeys_7: string[];
+        export { cancelKeys_7 as cancelKeys };
         let keys_19: string[];
         export { keys_19 as keys };
         import triggerType_19 = ONCE;
         export { triggerType_19 as triggerType };
-        let preventDefault_13: boolean;
-        export { preventDefault_13 as preventDefault };
+        let preventDefault_14: boolean;
+        export { preventDefault_14 as preventDefault };
     }
-    export namespace SELECT_AIR {
-        let defaultFunction_19: string;
-        export { defaultFunction_19 as defaultFunction };
-        let defaultParams_12: number[];
-        export { defaultParams_12 as defaultParams };
-        let cancelKeys_9: string[];
-        export { cancelKeys_9 as cancelKeys };
+    namespace SELECT_FIRE {
+        export function callback_20(simulation: any): void;
+        export { callback_20 as callback };
+        let cancelKeys_8: string[];
+        export { cancelKeys_8 as cancelKeys };
         let keys_20: string[];
         export { keys_20 as keys };
         import triggerType_20 = ONCE;
         export { triggerType_20 as triggerType };
-        let preventDefault_14: boolean;
-        export { preventDefault_14 as preventDefault };
+        let preventDefault_15: boolean;
+        export { preventDefault_15 as preventDefault };
     }
-    export namespace BRUSH_PIXEL {
-        let defaultFunction_20: string;
-        export { defaultFunction_20 as defaultFunction };
-        let defaultParams_13: number[];
-        export { defaultParams_13 as defaultParams };
-        let requiredKeys_5: string[];
-        export { requiredKeys_5 as requiredKeys };
+    namespace BRUSH_PIXEL {
+        export function callback_21(simulation: any): void;
+        export { callback_21 as callback };
+        let requiredKeys_6: string[];
+        export { requiredKeys_6 as requiredKeys };
         let keys_21: string[];
         export { keys_21 as keys };
         import triggerType_21 = ONCE;
         export { triggerType_21 as triggerType };
-        let preventDefault_15: boolean;
-        export { preventDefault_15 as preventDefault };
+        let preventDefault_16: boolean;
+        export { preventDefault_16 as preventDefault };
     }
-    export namespace BRUSH_VERTICAL_CROSS {
-        let defaultFunction_21: string;
-        export { defaultFunction_21 as defaultFunction };
-        let defaultParams_14: number[];
-        export { defaultParams_14 as defaultParams };
-        let requiredKeys_6: string[];
-        export { requiredKeys_6 as requiredKeys };
+    namespace BRUSH_VERTICAL_CROSS {
+        export function callback_22(simulation: any): void;
+        export { callback_22 as callback };
+        let requiredKeys_7: string[];
+        export { requiredKeys_7 as requiredKeys };
         let keys_22: string[];
         export { keys_22 as keys };
         import triggerType_22 = ONCE;
         export { triggerType_22 as triggerType };
-        let preventDefault_16: boolean;
-        export { preventDefault_16 as preventDefault };
+        let preventDefault_17: boolean;
+        export { preventDefault_17 as preventDefault };
     }
-    export namespace BRUSH_X3 {
-        let defaultFunction_22: string;
-        export { defaultFunction_22 as defaultFunction };
-        let defaultParams_15: number[];
-        export { defaultParams_15 as defaultParams };
-        let requiredKeys_7: string[];
-        export { requiredKeys_7 as requiredKeys };
+    namespace BRUSH_X3 {
+        export function callback_23(simulation: any): void;
+        export { callback_23 as callback };
+        let requiredKeys_8: string[];
+        export { requiredKeys_8 as requiredKeys };
         let keys_23: string[];
         export { keys_23 as keys };
         import triggerType_23 = ONCE;
         export { triggerType_23 as triggerType };
-        let preventDefault_17: boolean;
-        export { preventDefault_17 as preventDefault };
+        let preventDefault_18: boolean;
+        export { preventDefault_18 as preventDefault };
     }
-    export namespace BRUSH_BIG_DOT {
-        let defaultFunction_23: string;
-        export { defaultFunction_23 as defaultFunction };
-        let defaultParams_16: number[];
-        export { defaultParams_16 as defaultParams };
-        let requiredKeys_8: string[];
-        export { requiredKeys_8 as requiredKeys };
+    namespace BRUSH_BIG_DOT {
+        export function callback_24(simulation: any): void;
+        export { callback_24 as callback };
+        let requiredKeys_9: string[];
+        export { requiredKeys_9 as requiredKeys };
         let keys_24: string[];
         export { keys_24 as keys };
         import triggerType_24 = ONCE;
         export { triggerType_24 as triggerType };
-        let preventDefault_18: boolean;
-        export { preventDefault_18 as preventDefault };
+        let preventDefault_19: boolean;
+        export { preventDefault_19 as preventDefault };
     }
-    export namespace BRUSH_X5 {
-        let defaultFunction_24: string;
-        export { defaultFunction_24 as defaultFunction };
-        let defaultParams_17: number[];
-        export { defaultParams_17 as defaultParams };
-        let requiredKeys_9: string[];
-        export { requiredKeys_9 as requiredKeys };
+    namespace BRUSH_X5 {
+        export function callback_25(simulation: any): void;
+        export { callback_25 as callback };
+        let requiredKeys_10: string[];
+        export { requiredKeys_10 as requiredKeys };
         let keys_25: string[];
         export { keys_25 as keys };
         import triggerType_25 = ONCE;
         export { triggerType_25 as triggerType };
-        let preventDefault_19: boolean;
-        export { preventDefault_19 as preventDefault };
+        let preventDefault_20: boolean;
+        export { preventDefault_20 as preventDefault };
     }
-    export namespace BRUSH_X15 {
-        let defaultFunction_25: string;
-        export { defaultFunction_25 as defaultFunction };
-        let defaultParams_18: number[];
-        export { defaultParams_18 as defaultParams };
-        let requiredKeys_10: string[];
-        export { requiredKeys_10 as requiredKeys };
+    namespace BRUSH_X15 {
+        export function callback_26(simulation: any): void;
+        export { callback_26 as callback };
+        let requiredKeys_11: string[];
+        export { requiredKeys_11 as requiredKeys };
         let keys_26: string[];
         export { keys_26 as keys };
         import triggerType_26 = ONCE;
         export { triggerType_26 as triggerType };
-        let preventDefault_20: boolean;
-        export { preventDefault_20 as preventDefault };
+        let preventDefault_21: boolean;
+        export { preventDefault_21 as preventDefault };
     }
-    export namespace BRUSH_X25 {
-        let defaultFunction_26: string;
-        export { defaultFunction_26 as defaultFunction };
-        let defaultParams_19: number[];
-        export { defaultParams_19 as defaultParams };
-        let requiredKeys_11: string[];
-        export { requiredKeys_11 as requiredKeys };
+    namespace BRUSH_X25 {
+        export function callback_27(simulation: any): void;
+        export { callback_27 as callback };
+        let requiredKeys_12: string[];
+        export { requiredKeys_12 as requiredKeys };
         let keys_27: string[];
         export { keys_27 as keys };
         import triggerType_27 = ONCE;
         export { triggerType_27 as triggerType };
-        let preventDefault_21: boolean;
-        export { preventDefault_21 as preventDefault };
+        let preventDefault_22: boolean;
+        export { preventDefault_22 as preventDefault };
     }
-    export namespace BRUSH_X55 {
-        let defaultFunction_27: string;
-        export { defaultFunction_27 as defaultFunction };
-        let defaultParams_20: number[];
-        export { defaultParams_20 as defaultParams };
-        let requiredKeys_12: string[];
-        export { requiredKeys_12 as requiredKeys };
+    namespace BRUSH_X55 {
+        export function callback_28(simulation: any): void;
+        export { callback_28 as callback };
+        let requiredKeys_13: string[];
+        export { requiredKeys_13 as requiredKeys };
         let keys_28: string[];
         export { keys_28 as keys };
         import triggerType_28 = ONCE;
         export { triggerType_28 as triggerType };
-        let preventDefault_22: boolean;
-        export { preventDefault_22 as preventDefault };
+        let preventDefault_23: boolean;
+        export { preventDefault_23 as preventDefault };
     }
-    export namespace BRUSH_X99 {
-        let defaultFunction_28: string;
-        export { defaultFunction_28 as defaultFunction };
-        let defaultParams_21: number[];
-        export { defaultParams_21 as defaultParams };
-        let requiredKeys_13: string[];
-        export { requiredKeys_13 as requiredKeys };
+    namespace BRUSH_X99 {
+        export function callback_29(simulation: any): void;
+        export { callback_29 as callback };
+        let requiredKeys_14: string[];
+        export { requiredKeys_14 as requiredKeys };
         let keys_29: string[];
         export { keys_29 as keys };
         import triggerType_29 = ONCE;
         export { triggerType_29 as triggerType };
-        let preventDefault_23: boolean;
-        export { preventDefault_23 as preventDefault };
+        let preventDefault_24: boolean;
+        export { preventDefault_24 as preventDefault };
     }
 }
-export class LocalPhysicsUnit {
-    _physicsCore: PhysicsCore;
-    step(pixels: any, pxStepUpdated: any, pxStates: any, sidePriority: any, mapWidth: any, mapHeight: any): void;
-}
-export class PhysicsCore {
-    static D: {
-        b: number;
-        r: number;
-        l: number;
-        br: number;
-        bl: number;
-        t: number;
-        tr: number;
-        tl: number;
-    };
-    static "__#private@#DEBUG_CLS_THRESHOLD": number;
-    static "__#private@#RANDOM_CACHE": any;
-    static "__#private@#RANDOM_TABLE_SIZE": number;
-    static "__#private@#RANDOM_INDEX": number;
-    static "__#private@#REGULAR_MOVES": {
-        I: number;
-        B: number;
-        R: number;
-        L: number;
-        BR: number;
-        BL: number;
-        T: number;
-        TR: number;
-        TL: number;
-    };
-    static "__#private@#SAND_SP_BIT": number;
-    static "__#private@#SAND_CACHE": Uint8Array<ArrayBuffer>;
-    static "__#private@#WATER_SP_BIT": number;
-    static "__#private@#WATER_CACHE": Uint8Array<ArrayBuffer>;
-    static "__#private@#INVERTED_WATER_SP_BIT": number;
-    static "__#private@#INVERTED_WATER_CACHE": Uint8Array<ArrayBuffer>;
-    static "__#private@#updateCachedSandTable"(D: any, stack: any): number;
-    static "__#private@#updateCachedWaterTable"(D: any, stack: any): number;
-    static "__#private@#updateCachedInvertedWaterTable"(D: any, stack: any): number;
-    testMove(stack: any): any;
-    step(pixels: any, pxStepUpdated: any, pxStates: any, sidePriority: any, mapWidth: any, mapHeight: any, M: any, G: any, D: any, S: any, SG: any, P: any): void;
+export class _PhysicsUnit {
+    static LOCAL_PHYSICS_UNIT_INSTANCE: any;
+    static REMOTE_PHYSICS_UNIT_INSTANCE: any;
+    constructor(_stepExtra: any);
+    _stepExtra: any;
+    _blocked: boolean;
+    step(): void;
+    set stepExtra(stepExtra: any);
+    get stepExtra(): any;
+    get blocked(): boolean;
 }
 export class MapGrid {
     static DEFAULT_PIXEL_SIZE: number;
@@ -6657,13 +6602,13 @@ export class MapGrid {
      */
     indexToMapPos(i: number): number[];
     /**
-     * Converts a local map position to an index
+     * Converts a local map position to a grid index
      * @param {[x,y]} mapPos The local map position
      * @returns The index of a pixel in the pixels array
      */
     mapPosToIndex(mapPos: [x, y]): any;
     /**
-     * Converts a local map position to an index
+     * Converts a local map position to a grid index
      * @param {Number} x The X value of the pixel on the map
      * @param {Number} y The Y value of the pixel on the map
      * @returns The index of a pixel in the pixels array
@@ -6679,15 +6624,9 @@ export class MapGrid {
     get globalDimensions(): number[];
     get arraySize(): number;
     get displayDimensions(): string;
-    set lastPixelSize(lps: any);
-    get lastPixelSize(): any;
-    set pixelSize(_pixelSize: any);
-    get pixelSize(): any;
-    set mapWidth(_mapWidth: any);
-    get mapWidth(): any;
-    set mapHeight(_mapHeight: any);
-    get mapHeight(): any;
     get dimensions(): any[];
+    set lastPixelSize(lastPixelSize: any);
+    get lastPixelSize(): any;
     #private;
 }
 export class Simulation {
@@ -6702,36 +6641,33 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-        TREE: number;
-        GAS: number;
+        VAPOR: number;
+        FIRE: number;
     };
     static MATERIAL_GROUPS: {
         GASES: any;
         REG_TRANSPIERCEABLE: any;
-        REPLACE_TRANSPIERCEABLE: any;
         LIQUIDS: any;
         CONTAMINABLE: any;
         MELTABLE: any;
-        HAS_VISUAL_EFFECTS: any;
+        FIRE_EXTINGUISH: any;
+        INFLAMMABLE: any;
         STATIC: any;
-        REVERSE_LOOP_CONTAINED_SKIPABLE: any;
-        FORWARDS_LOOP_CONTAINED_SKIPABLE: any;
+        ALIVE_TRACKING: any;
+        DEPOSITABLE: any;
+        HAS_VISUAL_EFFECTS: any;
+        SAND_SKIPABLE: any;
+        WATER_SKIPABLE: any;
+        GRAVEL_SKIPABLE: any;
+        INVERTED_WATER_SKIPABLE: any;
+        CONTAMINANT_SKIPABLE: any;
+        LAVA_SKIPABLE: any;
+        VAPOR_SKIPABLE: any;
+        FIRE_SKIPABLE: any;
     };
     static MATERIAL_NAMES: string[];
-    static MATERIAL_STATES: {
-        EMPTY: number;
-        COPPER: {
-            LIT: number;
-            ORIGIN: number;
-            DISABLED: number;
-        };
-    };
-    static MATERIAL_STATES_GROUPS: {
-        COPPER: {
-            ACTIVATED: any;
-            SOURCEABLE: any;
-        };
-    };
+    static MATERIAL_STATES: any;
+    static MATERIAL_STATES_GROUPS: any;
     static REPLACE_MODES: {
         ALL: number;
     };
@@ -6749,12 +6685,12 @@ export class Simulation {
         RANDOM: number;
         LEFT: number;
         RIGHT: number;
-        MAP_DEPENDANT: number;
     };
     static SIDE_PRIORITY_NAMES: any[];
     static EXPORT_STATES: {
         RAW: number;
         COMPACTED: number;
+        EXACT: number;
     };
     static EXPORT_SEPARATOR: string;
     static BRUSH_TYPES: {
@@ -6773,20 +6709,6 @@ export class Simulation {
     static BRUSH_TYPE_NAMES: any[];
     static "__#private@#BRUSHES_X_VALUES": any[];
     static "__#private@#BRUSH_GROUPS": {};
-    static WORKER_RELATIVE_PATH: URL;
-    static "__#private@#WORKER_MESSAGE_TYPES": {
-        INIT: number;
-        STEP: number;
-        START_LOOP: number;
-        STOP_LOOP: number;
-        SIDE_PRIORITY: number;
-        MAP_SIZE: number;
-        PIXELS: number;
-    };
-    static "__#private@#WORKER_MESSAGE_GROUPS": {
-        GIVES_PIXELS_TO_MAIN: any;
-        GIVES_PIXELS_TO_WORKER: any;
-    };
     static PHYSICS_UNIT_TYPE: {
         LOCAL: number;
         WORKER: number;
@@ -6799,9 +6721,34 @@ export class Simulation {
     static "__#private@#CACHED_MATERIALS_ROWS": any[];
     static "__#private@#CACHED_GRID_LINES": any;
     static "__#private@#CACHED_GRID_BORDER": any;
+    static SIGNAL_COUNT: number;
+    static "__#private@#C_SIGNALS": Int32ArrayConstructor;
+    static "__#private@#C_COUNT": Int32ArrayConstructor;
+    static "__#private@#C_GRID_INDEXES": Int32ArrayConstructor;
+    static "__#private@#C_GRID_MATERIALS": Uint16ArrayConstructor;
+    static "__#private@#C_FLAGS": Uint16ArrayConstructor;
+    static "__#private@#C_PHYSICS_DATA": Float32ArrayConstructor;
+    static "__#private@#C_GRAVITY": any;
+    static "__#private@#C_STEPS_ALIVE": Uint16ArrayConstructor;
+    static CONTAINERS: {
+        C_SIGNALS: Int32ArrayConstructor;
+        C_COUNT: Int32ArrayConstructor;
+        C_GRID_INDEXES: Int32ArrayConstructor;
+        C_GRID_MATERIALS: Uint16ArrayConstructor;
+        C_FLAGS: Uint16ArrayConstructor;
+        C_PHYSICS_DATA: Float32ArrayConstructor;
+        C_GRAVITY: any;
+        C_STEPS_ALIVE: Uint16ArrayConstructor;
+    };
+    static CONTAINER_NAMES: any;
+    static PHYSICS_DATA_ATTRIBUTES: number;
+    static DEFAULT_MATERIAL: number;
+    static DEFAULT_BRUSH_TYPE: number;
+    static DEFAULT_REPLACE_MODE: number;
+    static DEFAULT_SIDE_PRIORITY: number;
     static DEFAULT_WORLD_START_SETTINGS: {
         autoStart: boolean;
-        usesWebWorkers: boolean;
+        usesWebWorkers: number;
         aimedFPS: number;
         zoom: any;
         cameraCenterPos: any;
@@ -6810,7 +6757,12 @@ export class Simulation {
         mapPixelSize: any;
     };
     static DEFAULT_USER_SETTINGS: {
+        maxDynamicMaterialCount: number;
+        backStepSavingCount: number;
+        backStepSaveOnPlacement: boolean;
+        backStepSavingIsExact: boolean;
         autoSimulationSizing: any;
+        useMiddleClickToResetDragAndZoom: boolean;
         dragAndZoomCanvasEnabled: boolean;
         minZoomThreshold: number;
         maxZoomThreshold: number;
@@ -6819,13 +6771,40 @@ export class Simulation {
         warningsDisabled: boolean;
         showBorder: boolean;
         showGrid: boolean;
-        smoothDrawingEnabled: boolean;
+        showBrush: boolean;
+        showCursor: boolean;
         visualEffectsEnabled: boolean;
+        smoothDrawingEnabled: boolean;
         drawingDisabled: boolean;
+        useMouseVelocityForCreation: boolean;
+        mouseVelocityCoefficient: number;
+    };
+    static DEFAULT_PHYSICS_SETTINGS: {
+        $randomTableSize: number;
+        maxLogCount: number;
+        timerName: string;
+        timerEnabled: boolean;
+        showSkips: boolean;
+        enable2ndFallUniformity: boolean;
+        equivalentTranspierceChance: number;
+        collisionFinalizationTime: number;
+        vaporMovementChance: number;
+        lavaMovementChance: number;
+        contaminationChance: number;
+        lavaMeltChance: number;
+        fireInflammationChance: number;
+        firePropagatesVaporCreationChance: number;
+        fireExtinguishesVaporCreationChance: number;
+        vaporDecayThreshold: number;
+        fireDecayThreshold: number;
+        baseFriction: number;
+        frictionCoefficient: number;
     };
     static DEFAULT_COLOR_SETTINGS: {
         grid: number[];
         border: number[];
+        brush: any;
+        brushInner: any;
         VOID: number[];
         AIR: number[];
         SAND: number[];
@@ -6837,12 +6816,9 @@ export class Simulation {
         LAVA: number[];
         ELECTRICITY: number[];
         COPPER: number[];
-        TREE: number[];
-        GAS: number[];
+        VAPOR: number[];
+        FIRE: number[];
     };
-    static DEFAULT_MATERIAL: number;
-    static DEFAULT_BRUSH_TYPE: number;
-    static DEFAULT_BACK_STEP_SAVING_COUNT: number;
     static DEFAULT_MAP_RESOLUTIONS: {
         HIGH: number;
         MEDIUM: number;
@@ -6852,236 +6828,223 @@ export class Simulation {
     static DEFAULT_KEYBINDS: {
         /**
             KEYBIND_NAME: {
-                defaultFunction?: {string?} The simulation function to call
-                defaultParams?: {Array?} The parameters to pass to the defaultFunction call
+                callback?: {Function?} The function to be called on keybind trigger. (simulation)=>{...}
                 cancelKeys?: {[TypingDevice.KEYS]?} The keys that prevent the execution of the keybind
-                requiredKeys?: {[TypingDevice.KEYS]?} The required modifier keys to execute the keybind
+                requiredKeys?: {[TypingDevice.KEYS]?} The required modifier keys to execute the keybind (one of)
                 keys: {[TypingDevice.KEYS]} The base key bind
                 triggerType?: {TypingDevice.TRIGGER_TYPES?} The trigger type
                 preventDefault?: {Boolean} Whether to e.preventDefault()
             }
         */
         MY_CUSTOM_SIZE_KEYBIND: {
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         STEP: {
-            defaultFunction: string;
+            callback: (simulation: any) => void;
             keys: string[];
             triggerType: any;
         };
         BACK_STEP: {
-            defaultFunction: string;
+            callback: (simulation: any) => void;
             keys: string[];
             triggerType: any;
         };
         BACK_STEP_ONCE: {
-            defaultFunction: string;
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: any;
             preventDefault: boolean;
         };
         STEP_FAST: {
-            defaultFunction: string;
+            callback: (simulation: any) => void;
             keys: string[];
             triggerType: number;
         };
         BACK_STEP_FAST: {
-            defaultFunction: string;
+            callback: (simulation: any) => void;
             keys: string[];
             triggerType: number;
         };
         START: {
-            defaultFunction: string;
+            callback: (simulation: any) => void;
             keys: string[];
             triggerType: number;
         };
         STOP: {
-            defaultFunction: string;
-            defaultParams: string[];
+            callback: (simulation: any) => void;
             keys: string[];
             triggerType: number;
+            preventDefault: boolean;
+        };
+        FULL_STOP: {
+            callback: (simulation: any) => void;
+            requiredKeys: string[];
+            keys: string[];
+            triggerType: number;
+            preventDefault: boolean;
         };
         CLEAR: {
-            defaultFunction: string;
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         DISABLE_WORKERS: {
-            defaultFunction: string;
-            defaultParams: boolean[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         ENABLE_WORKERS: {
-            defaultFunction: string;
-            defaultParams: boolean[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         SELECT_SAND: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         SELECT_WATER: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         SELECT_STONE: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         SELECT_GRAVEL: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         SELECT_INVERTED_WATER: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         SELECT_CONTAMINANT: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         SELECT_LAVA: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
-        SELECT_ELECTRICITY: {
-            defaultFunction: string;
-            defaultParams: number[];
+        SELECT_VAPOR: {
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
-        SELECT_COPPER: {
-            defaultFunction: string;
-            defaultParams: number[];
-            cancelKeys: string[];
-            keys: string[];
-            triggerType: number;
-            preventDefault: boolean;
-        };
-        SELECT_AIR: {
-            defaultFunction: string;
-            defaultParams: number[];
+        SELECT_FIRE: {
+            callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_PIXEL: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_VERTICAL_CROSS: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_X3: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_BIG_DOT: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_X5: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_X15: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_X25: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_X55: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
         BRUSH_X99: {
-            defaultFunction: string;
-            defaultParams: number[];
+            callback: (simulation: any) => void;
             requiredKeys: string[];
             keys: string[];
             triggerType: number;
             preventDefault: boolean;
         };
     };
-    static DEFAULT_PRECISE_PLACE_KEY: string;
+    static PRECISE_PLACE_KEY: string;
+    /**
+     * Instantiates a simulation based on the provided
+    * @param {HTMLCanvasElement | Canvas} canvas A HTML canvas reference or a CDEJS Canvas instance to display the simulation on
+     * @param {Function?} readyCB A callback ran once the simulation is started. (simulation)=>{}
+     * @param {String?} mapData The save data as a string in the format created by the function exportAsText()
+     * @param {Object?} configurations A configurations object, in the format returned by the function getAllConfigurations()
+     */
+    static createFrom(canvas: HTMLCanvasElement | Canvas, readyCB: Function | null, mapData: string | null, configurations: any | null): Simulation;
     /**
      * The core of the simulation and manages all rendering and world manipulation. (except for physics)
      * @param {HTMLCanvasElement | Canvas} canvas A HTML canvas reference or a CDEJS Canvas instance to display the simulation on
@@ -7090,52 +7053,59 @@ export class Simulation {
      * @param {Object?} userSettings An object defining the user settings
      * @param {Object?} colorSettings An object defining the color settings
      */
-    constructor(canvas: HTMLCanvasElement | Canvas, readyCB: Function | null, worldStartSettings: any | null, userSettings: any | null, colorSettings: any | null);
+    constructor(canvas: HTMLCanvasElement | Canvas, readyCB: Function | null, worldStartSettings: any | null, userSettings: any | null, physicsSettings: any, colorSettings: any | null);
     _CVS: Canvas;
     _worldStartSettings: any;
-    _initialized: number;
-    _mapGrid: MapGrid;
-    _pixels: Uint16Array<ArrayBuffer>;
-    _lastPixels: Uint16Array<ArrayBuffer>;
-    _pxStepUpdated: Uint8Array<ArrayBuffer>;
-    _pxStates: Uint8Array<ArrayBuffer>;
-    _backStepSavingMaxCount: number;
-    _backStepSaves: any[];
-    _isMouseWithinSimulation: boolean;
+    _mapGrid: any;
+    _gridIndexes: Int32Array<ArrayBuffer>;
+    _gridMaterials: Uint16Array<ArrayBuffer>;
+    _indexCount: Int32Array<ArrayBuffer>;
+    _lastGridMaterials: Uint16Array<ArrayBuffer>;
+    _physicsSettings: any;
     _isRunning: boolean;
     _sidePriority: number;
-    _lastStepTime: any;
-    _queuedBufferOperations: any[];
+    _onMapSizeChanged: any;
+    _onMapPixelSizeChanged: any;
+    _onSidePriorityChanged: any;
+    _onSelectedMaterialChanged: any;
+    _onBrushTypeChanged: any;
+    _onReplaceModeChanged: any;
+    _onPhysicsUnitTypeChanged: any;
+    _onMaterialSettingsChanged: any;
+    _onStopped: any;
+    _onStarted: any;
     _userSettings: any;
+    set showCursor(showCursor: any);
     _colorSettings: any;
-    _selectedMaterial: number;
-    _brushType: number;
-    _replaceMode: number;
+    _selectedMaterial: any;
+    _brushType: any;
+    _replaceMode: any;
     _mapGridRenderStyles: RenderStyles;
     _mapBorderRenderStyles: RenderStyles;
     _imgMap: any;
     _offscreenCanvas: OffscreenCanvas;
     _offscreenCtx: OffscreenCanvasRenderingContext2D;
     _loopExtra: any;
-    _stepExtra: any;
+    _keybindManager: KeybindManager;
+    _cameraManager: CameraManager;
     _mouseListenerIds: any[];
     /**
      * Updates the display image map according to the pixels array (renders a frame)
      * @param {Boolean?} force If true, disables optimization and forces every pixel to get redrawn
      */
-    updateImgMapFromPixels(force: boolean | null): void;
+    renderPixels(force: boolean | null): any;
     /**
      * Runs and displays one physics step
      */
-    step(): void;
-    /**
-     * Displays the previous physics step saved
-     */
-    backStep(): void;
+    step(deltaTime?: number): void;
     /**
      * Saves a physics step
      */
-    saveStep(): void;
+    saveStep(isExact?: any): void;
+    /**
+     * Displays the previous physics step saved
+     */
+    backStep(): any;
     /**
      * Sets the state of the simulation to be running
      * @param {Boolean} force If true, forces the start even if simulation is already running
@@ -7144,13 +7114,13 @@ export class Simulation {
     /**
      * Sets the state of the simulation to be stopped
      */
-    stop(): void;
+    stop(stopCanvas: any): void;
     /**
-     * Updates whether the physics calculations are offloaded to a worker thread
-     * @param {Boolean} usesWebWorkers Whether an other thread is used. (Defaults to true)
+     * Updates whether the physics calculations are offloaded to worker threads
+     * @param {Boolean} usesWebWorkers Whether multithreading thread is used. (Defaults to true)
      */
-    updatePhysicsUnitType(usesWebWorkers?: boolean): void;
-    _physicsUnit: Worker | LocalPhysicsUnit;
+    updatePhysicsUnitType(usesWebWorkers: boolean): void;
+    _physicsUnit: LocalPhysicsUnit | RemotePhysicsUnit;
     /**
      * Updates map size automatically based on the optimal fit for the provided sizes
      * @param {Number?} pixelSize The desired pixel size
@@ -7158,18 +7128,69 @@ export class Simulation {
      * @param {Number?} globalHeight The height to cover in px
      * @returns The calculated width/height in local pixels
      */
-    autoFitSize(pixelSize?: number | null, globalWidth?: number | null, globalHeight?: number | null): number[];
+    autoFitMapSize(pixelSize?: number | null, globalWidth?: number | null, globalHeight?: number | null): number[];
     /**
      * Updates the map pixel size
      * @param {Number?} pixelSize The new map pixel size
      */
-    updateMapPixelSize(pixelSize?: number | null): void;
+    updateMapPixelSize(pixelSize?: number | null): any;
     /**
      * Updates the map dimensions
      * @param {Number?} width The new width of the map, in local pixels
      * @param {Number?} height The new height of the map, in local pixels
      */
-    updateMapSize(width: number | null, height: number | null): void;
+    updateMapSize(width: number | null, height: number | null): any;
+    /**
+     * Updates a material's physics configurations
+     * @param {Simulation.MATERIALS} material The material type to update
+     * @param {Object} settings An object containing the physics configurations to override
+     */
+    updateMaterialSettings(material: {
+        AIR: number;
+        SAND: number;
+        WATER: number;
+        STONE: number;
+        GRAVEL: number;
+        INVERTED_WATER: number;
+        CONTAMINANT: number;
+        LAVA: number;
+        ELECTRICITY: number;
+        COPPER: number;
+        VAPOR: number;
+        FIRE: number;
+    }, settings: any): void;
+    /**
+     * Gets a material's physics configurations
+     * @param {Simulation.MATERIALS} material The material type
+     * @returns An object containing the physics configurations of the material
+     */
+    getMaterialSettings(material: {
+        AIR: number;
+        SAND: number;
+        WATER: number;
+        STONE: number;
+        GRAVEL: number;
+        INVERTED_WATER: number;
+        CONTAMINANT: number;
+        LAVA: number;
+        ELECTRICITY: number;
+        COPPER: number;
+        VAPOR: number;
+        FIRE: number;
+    }): any;
+    /**
+     * Gets all material physics configurations
+     * @returns An array containing all the physics configurations
+     */
+    getAllMaterialSettings(): any[];
+    /**
+     * Resets all materials' physics configurations
+     */
+    resetAllMaterialSettings(): any[];
+    /**
+     * Resets the physics setitings to their default values
+     */
+    resetPhysicsSettings(): any;
     /**
      * Updates the side prioritised first by the physics.
      * @param {Simulation.SIDE_PRIORITIES} sidePriority The side priority value
@@ -7179,19 +7200,17 @@ export class Simulation {
         RANDOM: number;
         LEFT: number;
         RIGHT: number;
-        MAP_DEPENDANT: number;
     }): {
         RANDOM: number;
         LEFT: number;
         RIGHT: number;
-        MAP_DEPENDANT: number;
     };
     /**
      * Returns the material at the provided local pos
      * @param {[x,y]} mapPos The map pos
      * @returns The material location at the map pos
      */
-    getPixelAtMapPos(mapPos: [x, y]): number;
+    getMaterialAtMapPos(mapPos: [x, y]): number;
     /**
      * Updates the material used by default for world manipulations.
      * @param {Simulation.MATERIALS} material The materials to select
@@ -7207,22 +7226,9 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-        TREE: number;
-        GAS: number;
-    }): number | {
-        AIR: number;
-        SAND: number;
-        WATER: number;
-        STONE: number;
-        GRAVEL: number;
-        INVERTED_WATER: number;
-        CONTAMINANT: number;
-        LAVA: number;
-        ELECTRICITY: number;
-        COPPER: number;
-        TREE: number;
-        GAS: number;
-    };
+        VAPOR: number;
+        FIRE: number;
+    }): any;
     /**
      * Updates the shape used to draw materials on the simulation with mouse.
      * @param {Simulation.BRUSH_TYPES} brushType The brush type to use
@@ -7239,41 +7245,19 @@ export class Simulation {
         X25: number;
         X55: number;
         X99: number;
-    }): number | {
-        PIXEL: number;
-        VERTICAL_CROSS: number;
-        LINE3: number;
-        ROW3: number;
-        BIG_DOT: number;
-        X3: number;
-        X5: number;
-        X15: number;
-        X25: number;
-        X55: number;
-        X99: number;
-    };
+    }): any;
     /**
-     * Updates the shape used to draw materials on the simulation with mouse.
-     * @param {Simulation.BRUSH_TYPES} brushType The brush type to use  TODO DOC
+     * Updates the mask used to draw materials on the simulation with mouse.
+     * @param {Simulation.REPLACE_MODES} replaceMode The replace mode to use
      */
-    updateReplaceMode(replaceMode: any): any;
+    updateReplaceMode(replaceMode: {
+        ALL: number;
+    }): any;
     /**
      * Updates the colors used for the grid and/or the materials.
      * @param {Object} colorSettings The colors to update. (Materials keys need to be in UPPERCASE)
      */
     updateColors(colorSettings: any): void;
-    /**
-     * Merges a modification object and a base object
-     * @param {Object} inputSettings The object with modifications
-     * @param {Object} defaultSettings The object to update
-     * @returns The merged object
-     */
-    getAdjustedSettings(inputSettings: any, defaultSettings: any): any;
-    /**
-     * Creates functional keybinds
-     * @param {Object} keybinds The keybinds to set (Defaults to Simulation.DEFAULT_KEYBINDS)
-     */
-    setKeyBinds(keybinds?: any): void;
     /**
      * Places a pixel of a specified material at the specified position on the pixel map.
      * @param {[x,y]} mapPos The map position of the pixel
@@ -7291,11 +7275,11 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-        TREE: number;
-        GAS: number;
+        VAPOR: number;
+        FIRE: number;
     } | null, replaceMode?: {
         ALL: number;
-    } | null): void;
+    } | null): any;
     /**
      * Places a pixel of a specified material at the specified position on the pixel map.
      * @param {Number} x The X value of the pixel on the map
@@ -7314,18 +7298,18 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-        TREE: number;
-        GAS: number;
+        VAPOR: number;
+        FIRE: number;
     } | null, replaceMode?: {
         ALL: number;
-    } | null): void;
+    } | null): any;
     /**
      * Places a pixel of a specified material at the specified index on the pixel map.
-     * @param {Number} i The index value of the pixel on the map
+     * @param {Number} gridIndex The index value of the pixel on the map
      * @param {Simulation.MATERIALS?} material The material used to draw the pixel (Defaults to the selected material)
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    placePixelAtIndex(i: number, material?: {
+    placePixelAtIndex(gridIndex: number, material?: {
         AIR: number;
         SAND: number;
         WATER: number;
@@ -7336,11 +7320,11 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-        TREE: number;
-        GAS: number;
+        VAPOR: number;
+        FIRE: number;
     } | null, replaceMode?: {
         ALL: number;
-    } | null): void;
+    } | null): any;
     /**
      * Places pixels at the specified coordinates, according to the provided brush pattern
      * @param {Number} x The X value of the center position
@@ -7372,8 +7356,8 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-        TREE: number;
-        GAS: number;
+        VAPOR: number;
+        FIRE: number;
     } | null, replaceMode?: {
         ALL: number;
     } | null): void;
@@ -7396,8 +7380,8 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-        TREE: number;
-        GAS: number;
+        VAPOR: number;
+        FIRE: number;
     } | null): void;
     /**
      * Fills the specified area of the map with a specific material.
@@ -7406,7 +7390,7 @@ export class Simulation {
      * @param {Simulation.MATERIALS?} material The material used (Defaults to the selected material)
      * @param {Simulation.REPLACE_MODES?} replaceMode The material(s) allowed to be replaced (Defaults to the current replace mode)
      */
-    fillArea(pos1: [leftX, topY], pos2: [rightX, bottomY], material?: {
+    fillArea(pos1: [leftX, topY], pos2: [rightX, bottomY], material: {
         AIR: number;
         SAND: number;
         WATER: number;
@@ -7417,101 +7401,249 @@ export class Simulation {
         LAVA: number;
         ELECTRICITY: number;
         COPPER: number;
-        TREE: number;
-        GAS: number;
-    } | null, replaceMode?: {
+        VAPOR: number;
+        FIRE: number;
+    } | null, replaceMode: {
         ALL: number;
-    } | null): void;
+    } | null, disableStoppedRendering: any): any;
+    _indexFlags: any;
+    _indexPhysicsData: any;
+    _indexGravity: any;
+    _indexStepsAlive: any;
     /**
      * Fills the map with saved data.
-     * @param {Uint16Array | String | Object} mapData The save data:
-     * - Either a Uint16Array containing the material value for each index
-     * - Or a string in the format created by the function exportAsText()
-     * - Or an Object containing the material value for each index {"index": material}
+     * @param {String} mapData The save data as a string in the format created by the function exportAsText()
      * @param {Boolean? | [width, height]?} useSaveSizes Whether to resize the map size and pixel size to the save's values (Also used internally to specify the save data dimensions when mapData is of Uint16Array type)
+     * @param {Simulation.REPLACE_MODES} replaceMode The replace mode to use
      */
-    load(mapData: Uint16Array | string | any, useSaveSizes?: any): void;
+    load(mapData: string, useSaveSizes?: any, replaceMode?: {
+        ALL: number;
+    }): any;
     /**
      * Exports/saves the current pixels array as text
-     * @param {Boolean} disableCompacting Whether to disable the text compacting (not recommended for large maps)
+     * @param {Simulation.EXPORT_STATES} state The type of export to generate
      * @param {Function?} callback If using web workers, use this callback to retrieve the return value (stringValue)=>{...}
      * @returns A string representing the current map
      */
-    exportAsText(disableCompacting: boolean, callback: Function | null): string;
+    exportAsText(state: {
+        RAW: number;
+        COMPACTED: number;
+        EXACT: number;
+    }, callback: Function | null): string;
+    /**
+     * Exports all the current simulation configurations
+     */
+    getAllConfigurations(): {
+        listeners: {
+            onBrushTypeChanged: any;
+            onMapPixelSizeChanged: any;
+            onMapSizeChanged: any;
+            onMaterialSettingsChanged: any;
+            onPhysicsUnitTypeChanged: any;
+            onReplaceModeChanged: any;
+            onSelectedMaterialChanged: any;
+            onSidePriorityChanged: any;
+            onStarted: any;
+            onStopped: any;
+        };
+        others: {
+            brushType: any;
+            selectedMaterial: any;
+            replaceMode: any;
+            sidePriority: number;
+            isRunning: boolean;
+            usingWebWorkers: boolean;
+            keybinds: any;
+        };
+        settings: {
+            materialSettings: any[];
+            colorSettings: any;
+            physicsSettings: any;
+            userSettings: any;
+            worldStartSettings: any;
+        };
+    };
+    /**
+     * Returns informations on the pixel at the provided index
+     * @param {Number} gridIndex The grid index to look at
+     * @returns the pixel's informations
+     */
+    getPixelInfo(gridIndex: number): number | any[];
     PERF_REGULAR_SIZE(): void;
     PERF_TEST_FUN(): void;
     PERF_TEST_FULL_WATER_REG(): void;
     PERF_TEST_FULL_WATER_HIGH(): void;
+    TEST_CRAZY(): void;
     get CVS(): Canvas;
     get render(): Render;
     get ctx(): RenderingContext | OffscreenCanvasRenderingContext2D;
     get mouse(): Mouse;
     get keyboard(): TypingDevice;
-    get mapGrid(): MapGrid;
-    set loopExtra(_loopExtra: any);
-    get loopExtra(): any;
-    set stepExtra(stepExtra: any);
-    get stepExtra(): any;
-    get pxStepUpdated(): Uint8Array<ArrayBuffer>;
-    get pxStates(): Uint8Array<ArrayBuffer>;
-    get lastPixels(): Uint16Array<ArrayBuffer>;
-    get lastStepTime(): any;
-    get pixels(): Uint16Array<ArrayBuffer>;
-    set mapGridRenderStyles(_mapGridRenderStyles: RenderStyles);
-    get mapGridRenderStyles(): RenderStyles;
-    set mapBorderRenderStyles(_mapBorderRenderStyles: RenderStyles);
-    get mapBorderRenderStyles(): RenderStyles;
+    get mapGrid(): any;
     get offscreenCanvas(): OffscreenCanvas;
     get imgMap(): any;
     get isMouseWithinSimulation(): boolean;
     set sidePriority(sidePriority: number);
     get sidePriority(): number;
-    set isRunning(isRunning: boolean);
-    get isRunning(): boolean;
-    set backStepSavingMaxCount(_backStepSavingMaxCount: number);
-    get backStepSavingMaxCount(): number;
     get backStepSaves(): any[];
-    set selectedMaterial(_selectedMaterial: number);
-    get selectedMaterial(): number;
-    set brushType(brushType: number);
-    get brushType(): number;
-    set replaceMode(replaceMode: number);
-    get replaceMode(): number;
+    set selectedMaterial(_selectedMaterial: any);
+    get selectedMaterial(): any;
+    set brushType(brushType: any);
+    get brushType(): any;
+    set replaceMode(replaceMode: any);
+    get replaceMode(): any;
     get hasReplaceMode(): boolean;
+    get physicsSettings(): any;
     get worldStartSettings(): any;
     get userSettings(): any;
     get colorSettings(): any;
-    get initialized(): number;
-    get queuedBufferOperations(): any[];
+    get initialized(): any;
+    get queuedBufferOperations(): any;
     set aimedFPS(aimedFPS: number | "static");
     get aimedFPS(): number | "static";
+    set backStepSavingEnabled(backStepSavingEnabled: boolean);
     get backStepSavingEnabled(): boolean;
-    get useLocalPhysics(): boolean;
-    get usesWebWorkers(): boolean;
+    get usingLocalPhysics(): boolean;
+    get usingWebWorkers(): boolean;
     get isFileServed(): any;
-    set showGrid(showGrid: any);
-    get showGrid(): any;
-    set showBorder(showBorder: any);
-    get showBorder(): any;
-    set smoothDrawingEnabled(smoothDrawingEnabled: any);
-    get smoothDrawingEnabled(): any;
-    set visualEffectsEnabled(visualEffectsEnabled: any);
-    get visualEffectsEnabled(): any;
-    set warningsDisabled(warningsDisabled: any);
-    get warningsDisabled(): any;
-    set dragAndZoomCanvasEnabled(dragAndZoomCanvasEnabled: any);
-    get dragAndZoomCanvasEnabled(): any;
+    get gridIndexes(): Int32Array<ArrayBuffer>;
+    get gridMaterials(): Uint16Array<ArrayBuffer>;
+    get lastGridMaterials(): Uint16Array<ArrayBuffer>;
+    get indexCount(): Int32Array<ArrayBuffer>;
+    get indexFlags(): any;
+    get indexPhysicsData(): any;
+    get indexGravity(): any;
+    get indexStepsAlive(): any;
+    set stepExtra(stepExtra: any);
+    get stepExtra(): any;
+    get keybindManager(): KeybindManager;
+    get cameraManager(): CameraManager;
+    get isSecure(): boolean;
+    get physicsUnit(): LocalPhysicsUnit | RemotePhysicsUnit;
+    set onMapSizeChanged(_onMapSizeChanged: any);
+    get onMapSizeChanged(): any;
+    set onMapPixelSizeChanged(_onMapPixelSizeChanged: any);
+    get onMapPixelSizeChanged(): any;
+    set onSidePriorityChanged(_onSidePriorityChanged: any);
+    get onSidePriorityChanged(): any;
+    set onSelectedMaterialChanged(_onSelectedMaterialChanged: any);
+    get onSelectedMaterialChanged(): any;
+    set onBrushTypeChanged(_onBrushTypeChanged: any);
+    get onBrushTypeChanged(): any;
+    set onReplaceModeChanged(_onReplaceModeChanged: any);
+    get onReplaceModeChanged(): any;
+    set onPhysicsUnitTypeChanged(_onPhysicsUnitTypeChanged: any);
+    get onPhysicsUnitTypeChanged(): any;
+    set onMaterialSettingsChanged(onMaterialSettingsChanged: any);
+    get onMaterialSettingsChanged(): any;
+    set onStarted(_onStarted: any);
+    get onStarted(): any;
+    set onStopped(_onStopped: any);
+    get onStopped(): any;
     set autoSimulationSizing(autoSimulationSizing: any);
-    get autoSimulationSizing(): any;
-    set zoomInIncrement(zoomInIncrement: any);
-    get zoomInIncrement(): any;
-    set zoomOutIncrement(zoomOutIncrement: any);
-    get zoomOutIncrement(): any;
-    set minZoomThreshold(minZoomThreshold: any);
-    get minZoomThreshold(): any;
-    set maxZoomThreshold(maxZoomThreshold: any);
-    get maxZoomThreshold(): any;
-    set drawingDisabled(drawingDisabled: any);
-    get drawingDisabled(): any;
+    set dragAndZoomCanvasEnabled(dragAndZoomCanvasEnabled: any);
     #private;
 }
+declare class LocalPhysicsUnit extends _PhysicsUnit {
+    /**
+     * A physics unit that directly attaches to the main thread
+     * @param {Object} physicsSettings A physics configuration object
+     * @param {Object} MATERIALS_SETTINGS A physics configuration object
+     * @param {Simulation} definitionHolder The Simulation class, including its static members
+     */
+    constructor(physicsSettings: any, MATERIALS_SETTINGS: any, definitionHolder: Simulation);
+    _physicsCore: (gridIndexes: any, gridMaterials: any, indexCount: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any, sidePriority: any, mapWidth: any, deltaTime: any) => void;
+    step(gridIndexes: any, gridMaterials: any, indexCount: any, indexFlags: any, indexPhysicsData: any, indexGravity: any, indexStepsAlive: any, sidePriority: any, mapWidth: any, deltaTime: any): void;
+}
+declare class RemotePhysicsUnit extends _PhysicsUnit {
+    static WORKER_MESSAGE_TYPES: {
+        INIT: any;
+        UPDATE_SAB: number;
+    };
+    static WORKER_MESSAGE_GROUPS: {
+        GIVES_PIXELS_TO_MAIN: any;
+        GIVES_PIXELS_TO_WORKER: any;
+    };
+    static DEFAULT_THREAD_COUNT: number;
+    static WORKER_RELATIVE_PATH: URL;
+    static "__#private@#LAUNCH_YEILD": number;
+    static "__#private@#_SI_I": number;
+    static SIGNALS_INDEXES: {
+        SLEEP_STATUS: number;
+        COMPLETION_STATUS: number;
+        DATA: {
+            SIDE_PRIORITY: number;
+            MAP_WIDTH: number;
+            DELTATIME: number;
+            ARRAY_SIZE: number;
+        };
+    };
+    static SIGNALS: {
+        SLEEP_STATUS: {
+            DEAD: number;
+            WAKE: number;
+        };
+        COMPLETION_STATUS: {
+            RESET: number;
+            COMPLETED: number;
+        };
+    };
+    /**
+     * A physics unit uses workers to compute the physics steps of using the main thread
+     * @param {*} threadCount
+     * @param {*} SABDeps
+     * @param {*} workerDependencies
+     * @param {*} initUpdatables
+     */
+    constructor(threadCount: any, SABDeps: any, workerDependencies: any, initUpdatables: any);
+    _signals: Int32Array<any>;
+    _initialized: boolean;
+    _threadCount: any;
+    _queuedBufferOperations: any[];
+    _workers: any[];
+    _initUpdatables: any;
+    _workerDependencies: any;
+    _SABDependencies: any;
+    /**
+     * Initializes the physics unit
+     */
+    initialize(): void;
+    /**
+     * Updates the number of worker used
+     * @param {Number} threadCount The number of workers to use
+     */
+    updateThreadCount(threadCount: number): void;
+    /**
+     * Updates the sharedArrayBuffer and updates workers
+     * @param {Object} SABDependencies Object containing the new SharedArrayBuffer, the offsets and array sizes
+     */
+    updateSAB(SABDependencies: any): void;
+    /**
+     * Runs a physics step on the workers
+     * @param {Function} onStepComplete
+     */
+    step(onStepComplete: Function, sidePriority: any, mapWidth: any, deltaTime: any, arraySize: any): Promise<void>;
+    /**
+     * Sends a message to all workers
+     * @param {WORKER_MESSAGE_TYPES} type The type of the message
+     * @param {Object} data The data to send
+     */
+    sendAll(type: WORKER_MESSAGE_TYPES, data: any): void;
+    /**
+     *  Terminates all workers
+     */
+    killWorkers(): void;
+    /**
+     * Executes queued operations
+     */
+    executeQueuedOperations(): void;
+    /**
+     * Adds an operation to the queue
+     * @param {Function} callback
+     */
+    addToQueue(callback: Function): void;
+    get queuedBufferOperations(): any[];
+    get threadCount(): any;
+    #private;
+}
+export {};

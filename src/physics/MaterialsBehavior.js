@@ -12,6 +12,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE,
         FIRE_INFLAMMATION_CHANCE
 
+    // Wrapper function to update the utils globals
     function _updateMaterialsBehaviorGlobals(contaminationChance, lavaMeltChance, fireExtinguishesVaporCreationChance, fireInflammationChance) {
         CONTAMINATION_CHANCE = contaminationChance
         LAVA_MELT_CHANCE = lavaMeltChance
@@ -19,7 +20,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         FIRE_INFLAMMATION_CHANCE = fireInflammationChance
     }
 
-    // DOC TODO
+    // Defines the SAND behavior
     function applySandBehavior(i, m_B, m_R, m_L, m_BR, m_BL, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] &= ~COLLISION_BOTTOM
         else {
@@ -28,7 +29,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         }
     }
     
-    // DOC TODO
+    // Defines the general liquid behavior
     function applyLiquidBehavior(i, m_B, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_B & transpierceableMain) indexFlags[i] &= ~COLLISION_BOTTOM
         else {
@@ -43,12 +44,12 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         }
     }
 
-    // DOC TODO
+    // Defines the GRAVEL behavior
     function applyGravelBehavior(i, m_B, transpierceableMain, indexFlags) {
         if (m_B & transpierceableMain) indexFlags[i] ^= COLLISION_BOTTOM
     }
 
-    // DOC TODO
+    // Defines the INVERTED_WATER behavior
     function applyInvertedWaterBehavior(i, m_T, m_R, m_L, transpierceableMain, transpierceableSec, indexFlags, cache) {
         if (m_T & transpierceableMain) indexFlags[i] ^= COLLISION_TOP
         else {
@@ -63,20 +64,16 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         }
     }
 
-    // DOC TODO
-    function applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
-        const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
-
+    // Defines the CONTAMINANT behavior
+    function applyContaminantBehavior(m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if (m_B&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_CONTAMINANT
         if (m_R&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_R]] |= TRANSFORM_CONTAMINANT
         if (m_L&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_L]] |= TRANSFORM_CONTAMINANT
         if (m_T&CONTAMINABLE && nextRandom() <= CONTAMINATION_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_CONTAMINANT
     }
 
-    // DOC TODO
-    function applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
-        const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
-
+    // Defines the LAVA behavior
+    function applyLavaBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if (m_B&LIQUIDS||m_R&LIQUIDS||m_L&LIQUIDS||m_T&LIQUIDS) indexFlags[gridIndexes[gi]] |= TRANSFORM_STONE
 
         if (m_B&MELTABLE && nextRandom() <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_LAVA
@@ -85,7 +82,7 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
         if (m_T&MELTABLE && nextRandom() <= LAVA_MELT_CHANCE) indexFlags[gridIndexes[gi_T]] |= TRANSFORM_LAVA
     }
 
-    // DOC TODO
+    // Defines the VAPOR behavior
     function applyVaporBehavior(i, m_T, m_R, m_L, transpierceableMain, indexFlags, cache) {
         if (m_T & transpierceableMain) indexFlags[i] ^= COLLISION_TOP
         else {
@@ -98,12 +95,9 @@ function getMaterialsBehavior(MATERIAL_GROUPS, FLAGS, getSideSelectionPriority, 
             }
         }
     }
-
         
-    // DOC TODO
-    function applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, particle) {
-        const gridIndexes = particle.gridIndexes, indexFlags = particle.indexFlags
-
+    // Defines the FIRE behavior
+    function applyFireBehavior(gi, m_B, m_R, m_L, m_T, gi_B, gi_R, gi_L, gi_T, gridIndexes, indexFlags) {
         if ((m_B|m_R|m_L|m_T) & FIRE_EXTINGUISH) indexFlags[gridIndexes[gi]] |= nextRandom() <= FIRE_EXTINGUISHES_VAPOR_CREATION_CHANCE ? TRANSFORM_VAPOR : TRANSFORM_AIR
 
         if (m_B&INFLAMMABLE && nextRandom() <= FIRE_INFLAMMATION_CHANCE) indexFlags[gridIndexes[gi_B]] |= TRANSFORM_FIRE

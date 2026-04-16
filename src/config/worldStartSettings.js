@@ -1,6 +1,6 @@
 const DEFAULT_WORLD_START_SETTINGS = {
     autoStart: true,
-    usesWebWorkers: true,
+    usesWebWorkers: 4,
     aimedFPS: 60,
     zoom: null,
 

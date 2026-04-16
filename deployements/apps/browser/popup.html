@@ -1,0 +1,259 @@
+<!doctype html>
+<html>
+   <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta charset="UTF-8">
+      <title>LCB Powder Simulator</title>
+      <link rel="stylesheet" href="src/ui/popup.css">
+   </head>
+   <body>
+      <span id="version"></span>
+
+      <div class="main">
+
+         <div class="overlay" title="Frames per second | Steps per second">
+            <div id="fpsDisplay"></div>
+            <div id="fpsStepDisplay"></div>
+         </div>
+
+         <div class="overlay" id="statusParent">
+            <span id="mousePosStatus"></span>
+            <span id="mapDimensionsStatus"></span>
+            <span id="sidePriorityStatus"></span>
+            <span id="isRunningStatus"></span>
+            <span id="physicsUnitTypeStatus"></span>
+            <span id="zoomStatus"></span>
+            <span id="timeStampStatus"></span>
+            <span id="tempStatus"></span>
+            <span id="particleStatus"></span>
+         </div>
+
+         <div class="cvsParent">
+            <canvas id="simulationCanvas"></canvas>
+         </div>
+
+         <div id="bottom">
+            <div class="tabs">
+               <span data-content="0" data-selected="true">Materials</span>
+               <span data-content="1">Brushes</span>
+               <span data-content="2">Map</span>
+               <span data-content="3">Settings</span>
+               <span data-content="4">Saves</span>
+               <span data-content="5">Misc</span>
+               <span data-content="6">Physics</span>
+               <span data-content="7">Presets</span>
+               <div id="drawerControl">∨</div>
+               <div id="updatesStatus"></div>
+            </div>
+
+            <div class="tabContent">
+
+               <div data-content="0" data-displayed="true">
+                  <div class="tabInputsParent" data-scrollable>
+                     <div class="bigList" id="materialsList"></div>
+                  </div>
+               </div>
+
+               <div data-content="1">
+                  <div class="tabInputsParent" data-scrollable>
+                     <div class="bigList" id="brushesList"></div>
+                  </div>
+               </div>
+
+               <div data-content="2">
+                  <div class="tabInputsParent mapSection">
+                     <div class="col">
+                        <div class="crow">
+                           <button id="startButton">►</button>
+                           <button id="stopButton">⏹</button>
+                           <button id="clearButton">Clear</button>
+                        </div>
+                        <div class="crow">
+                           <button id="backStepButton"><</button>
+                           <button id="stepButton">></button>           
+                           <button id="resetZoomButton">Zoom 1x</button>
+                        </div>
+                     </div>
+
+                     <div class="col">
+                        <span>Show Grid: <label class="checkboxParent"><input id="c_showGrid" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Show Border: <label class="checkboxParent"><input id="c_showBorder" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Auto Sizing: <label class="checkboxParent"><input id="c_autoSizing" type="checkbox"><span class="checkCore"></span></label></span>
+                     </div>
+
+                     <div class="col">
+                        <span>Width: <input type="number" step="1" min="1" max="800" id="c_width"></span>
+                        <span>Height: <input type="number" step="1" min="1" max="600" id="c_height"></span>
+                        <span>Pixel Size: <input type="number"step="1" min="1" max="200" id="c_pixelSize"></span>
+                     </div>
+                  </div>
+               </div>
+
+               <div data-content="3">
+                  <div class="tabInputsParent" data-scrollable>
+                     <div class="bigList settingsTab">
+                        <div class="col">
+                           <span class="label"><span>Show FPS:</span><label class="checkboxParent"><input id="c_showFPS" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Show status:</span><label class="checkboxParent"><input id="c_showStatus" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Show Cursor:</span><label class="checkboxParent"><input id="c_showCursor" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Show Brush:</span><label class="checkboxParent"><input id="c_showBrush" type="checkbox"><span class="checkCore"></span></label></span>
+                        </div>
+                        <div class="col">
+                           <span class="label"><span>Map persistence:</span><label class="checkboxParent"><input id="c_mapPersistence" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Visual Effects:</span><label class="checkboxParent"><input id="c_visualEffect" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Drag and zoom:</span><label class="checkboxParent"><input id="c_dragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Smooth drawing:</span><label class="checkboxParent"><input id="c_smoothDrawing" type="checkbox"><span class="checkCore"></span></label></span>
+                        </div>
+                        <div class="col" style="width: 235px;">
+                           <span class="label"><span>Multithreading:</span><label class="checkboxParent"><input id="c_useWorkers" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Mouse velocity create:</span><label class="checkboxParent"><input id="c_createFromMouseVel" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Backstep optimization:</span><label class="checkboxParent"><input id="c_backstepSavingOptimization" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>Middle click resets zoom:</span><label class="checkboxParent"><input id="c_useMiddleClickToResetDragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
+                        </div>
+                        <div class="col" style="width: 195px;">
+                           <span class="label"><span>Max particles:</span><input type="number" step="1000" min="0" max="1000000" id="c_maxDynamicMaterials"></span>
+                           <span class="label"><span>Backstep saves:</span><input type="number" step="10" min="0" max="100000" id="c_maxBackstepSaves"></span>
+                           <span class="label"><span>Max FPS:</span><input type="number" step="4" min="2" max="240" id="c_maxFPS"></span>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div data-content="4">
+                  <div class="tabInputsParent savesTab">
+                     <div>
+                        <div class="smallGroup">
+                           <button id="saveButton">Save</button>
+                           <button id="downloadSaveButton">Download Save</button>
+                        </div>
+                        <div class="smallGroup">
+                           <textarea id="exportValueInput" type="text" placeholder="Export as text..." readonly rows="3"></textarea>
+                           <svg id="copyButton" height="24" width="24" viewBox="0 -960 960 960"><path d="M180-80q-24 0-42-18t-18-42h60v60Zm-60-144v-84h60v84h-60Zm0-168v-84h60v84h-60Zm0-168v-84h60v84h-60Zm0-168q0-24 18-42t42-18v60h-60ZM264-80v-60h84v60h-84Zm60-144q-24 0-42-18t-18-42v-536q0-24 18-42t42-18h416q24 0 42 18t18 42v536q0 24-18 42t-42 18H324Zm0-60h416v-536H324v536ZM432-80v-60h84v60h-84Zm168 0v-60h60q0 24-18 42t-42 18Z"></path></svg>
+                           <select id="exportTypeSelect">
+                              <option value="0">Raw</option>
+                              <option value="1">Compacted</option>
+                              <option value="2">Exact</option>
+                           </select>
+                        </div>
+                     </div>
+
+                     <div>
+                        <div class="smallGroup">
+                           <button id="loadButton">Load</button>
+                           <label for="uploadFile" class="fileUploadParent">
+                              <input id="uploadFile" type="file" accept=".lcbps" class="hidden">
+                              <span class="button">Upload <span style="font-size: 10px;"> (.lcbps)</span></span>
+                           </label>
+                        </div>
+                        <textarea id="loadValueInput" type="text" placeholder="Load from text..." rows="3"></textarea>
+                     </div>
+
+                     <div>
+                        <button id="resetSavedMapButton">Reset saved Map</button>
+                        <button id="resetAllButton">Reset ALL settings</button>
+                     </div>
+                  </div>
+               </div>
+
+               <div data-content="5">
+                  <div class="tabInputsParent miscTab">
+
+                     <div class="col">
+                        <span class="label"><span>Side Priority:</span><select id="sidePrioritiesSelect"></select></span>
+                        <span class="label"><span>Replace Mode:</span><select id="replaceModesSelect"></select></span>
+                     </div>
+
+                     <button id="resetMisc">Reset</button>
+                     
+                     <div class="separation"></div>
+
+                     <div class="smallVerticalGroup">
+                        <button id="openFullPageButton">Open in browser</button>
+                        <button id="toggleOverlayButton">Open overlay</button>
+                     </div>
+
+                     <div class="col">
+                        <span>Input Isolation: <label class="checkboxParent"><input id="c_inputIsolation" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Fixed Position: <label class="checkboxParent"><input id="c_fixedPosition" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span>Integration Visibility: <label class="checkboxParent"><input id="c_integrationVisibility" type="checkbox"><span class="checkCore"></span></label></span>
+                     </div>
+
+                  </div>
+               </div>
+
+               <div data-content="6">
+                  <div class="tabInputsParent" data-scrollable>
+                     <div class="bigList physicsTab">
+                        <div class="col" style="width: 240px;align-items: center;">
+                           <span class="label"><span>Crazy Init Velocity:</span><label class="checkboxParent"><input id="c_crazyVel" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label"><span>2nd Fall Uniformity:</span><label class="checkboxParent"><input id="c_secondFallUni" type="checkbox"><span class="checkCore"></span></label></span>
+                           <button id="resetPhysicsButton">Reset Physics</button>
+                        </div>
+                        <div class="separation"></div>
+                        <div class="physicsEditorParent">
+                           <div class="smallVerticalGroup">
+                              <span>Material Editor</span>
+                              <select id="materialSettingsSelect"></select>
+                           </div>
+                           <div class="col" style="width: 170px;">
+                              <span class="tlabel"><span>Gravity:</span><input type="number"    step="1" min="-1000" max="1000" id="c_materialSettingsGravity"></span>
+                              <span class="tlabel"><span>Velocity X:</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityX"></span>
+                              <span class="tlabel"><span>Velocity Y:</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityY"></span>
+                           </div>
+                           <div class="col">
+                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsGravityRange"></span>
+                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityXRange"></span>
+                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityYRange"></span>
+                           </div>
+                        </div>
+                        <div class="separation spaceRight"></div>
+                        <div class="col">
+                           <span class="tlabel"><span>Base Friction:</span><input type="number" step="1" min="-100" max="100" id="c_baseFriction"></span>
+                           <span class="tlabel"><span>Friction Coef:</span><input type="number" step="0.001" min="0.001" max="5" id="c_frictionCoefficient"></span>
+                           <span class="tlabel"><span>Final Col Time:</span><input type="number" step="1" min="1" max="10000" id="c_finalCollisionTime"></span>
+                        </div>
+                        <div class="col" style="width: 282px;">
+                           <span class="tlabel"><span>Contamination Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_contaminationChance"></span>
+                           <span class="tlabel"><span>Lava Melt Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_meltChance"></span>
+                           <span class="tlabel"><span>Fire Inflammation Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_inflammationChance"></span>
+                        </div>
+                        <div class="col">
+                           <span class="tlabel"><span>Vapor Chance 1:</span><input type="number" step="0.1" min="0" max="1" id="c_fireExtinguishesVaporCreationChance"></span>
+                           <span class="tlabel"><span>Vapor Chance 2:</span><input type="number" step="0.1" min="0" max="1" id="c_firePropagatesVaporCreationChance"></span>
+                        </div>
+                        <div class="col" style="width: 257px;">
+                           <span class="tlabel"><span>Fire Decay Threshold:</span><input type="number" step="10" min="1" max="100000" id="c_fireDecayThreshold"></span>
+                           <span class="tlabel"><span>Vapor Decay Threshold:</span><input type="number" step="10" min="1" max="100000" id="c_vaporDecayThreshold"></span>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+
+               <div data-content="7">
+                  <div class="tabInputsParent">
+                     prsests
+                  </div>
+               </div>
+
+            </div>
+         </div>
+
+      </div>
+      
+
+      <script src="src/lcb-ps/lcbPS.min.js"></script>
+      <script src="src/constants.js"></script>
+      <script src="src/utils.js"></script>
+      <script src="src/popup.js"></script>
+
+      <script src="src/ui/tabs/materialsTab.js"></script>
+      <script src="src/ui/tabs/brushesTab.js"></script>
+      <script src="src/ui/tabs/mapTab.js"></script>
+      <script src="src/ui/tabs/settingsTab.js"></script>
+      <script src="src/ui/tabs/savesTab.js"></script>
+      <script src="src/ui/tabs/miscTab.js"></script>
+      <script src="src/ui/tabs/physicsTab.js"></script>
+      <script src="src/ui/tabs/presetsTab.js"></script>
+      <script src="src/ui/ui.js"></script>
+   </body>
+</html>

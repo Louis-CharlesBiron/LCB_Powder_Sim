@@ -1,7 +1,9 @@
 class KeybindManager {
     #simulation = null
+    #keybinds = null
     constructor(simulation, keybinds) {
         this.#simulation = simulation 
+        this.#keybinds = keybinds
         this.setKeyBinds(keybinds)
     }
 
@@ -22,8 +24,10 @@ class KeybindManager {
         const hasAction = CDEUtils.isFunction(actionCB), {requiredKeys, cancelKeys, preventDefault} = bindValue
         if (preventDefault && e.target.value === undefined) e.preventDefault()
 
-        if (!hasAction) return void SimUtils.warn(SETTINGS.STANDALONE_KEYBIND_WARN, this.#simulation.userSettings)
+        if (!hasAction) return void SimUtils.warn(WARNINGS.STANDALONE_KEYBIND_WARN, this.#simulation.userSettings)
 
         if ((!requiredKeys || typingDevice.isDown(requiredKeys)) && (!cancelKeys || !typingDevice.isDown(cancelKeys))) actionCB.bind(this)()
     }
+
+    get keybinds() {return this.#keybinds}
 }

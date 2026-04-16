@@ -1,0 +1,451 @@
+/* Fancy Checkbox */
+.checkboxParent {
+    width: 34px;
+    height: 17px;
+    position: relative;
+    display: inline-block;
+    margin-left: 8px;
+    transform: scale(0.95); /**/
+}
+.checkCore {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #afb7cd;
+    transition: 0.4s;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    border-radius: 6px;
+}
+.checkCore:before {
+    position: absolute;
+    content: "";
+    height: 9px;
+    width: 9px;
+    left: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 5px;
+}
+.checkboxParent > input {display: none;}
+.checkboxParent > input + .checkCore:before {background-color: rgb(var(--l1));}
+.checkboxParent > input:checked + .checkCore:before {transform: translateX(16px);}
+.checkboxParent > input:checked + .checkCore {background-color: #5fadeb;}
+
+:root {
+    --app-width: 780px;
+    --app-height: 580px;
+    --cvsHeight: 100%;
+    --tabsHeight: 25%;
+    --drawerControlButtonWidth: 3%;
+    --tabsCount: 0;
+    --checkboxWidth: 34px;
+    --inputWidth: 60px;
+
+    --d0: 0, 0, 0;
+    --d4: 34, 32, 32;
+    --d5: 54, 52, 52;
+
+    --l1: 240 248 255;
+    --l4: 55 55 55;
+
+    --s1: 0 255 0;
+    --s2: 180 180 180;
+}
+
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button {-webkit-appearance: none; margin: 0;}input[type="number"] {-moz-appearance: textfield;}
+
+*::-webkit-scrollbar {
+    width: 4px !important;
+    height: 4px !important;
+}
+
+*::-webkit-scrollbar-thumb {
+    opacity: 0.2 !important;
+    background-color: rgba(var(--d5), 1);
+}
+
+@media (max-height: 145px) {
+    .cvsParent {
+        display: none;
+    }
+
+    #bottom {
+        height: 145px !important;
+    }
+}
+
+
+html, body {
+    min-width: var(--app-width);
+    min-height: var(--app-height);
+    width: 100%;
+    height: 100%;
+    background-color: rgb(var(--d0));
+    margin: 0px;
+    user-select: none;
+    overflow: hidden;
+    font-family: monospace;
+}
+#version {
+    position: absolute;
+    right: 1px;
+    bottom: 0;
+    z-index: 10;
+    color: rgba(var(--l1) / .5);
+    letter-spacing: -1px;
+    font-size: 9px !important;
+}
+
+.hidden {
+    display: none;
+}
+
+.main {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+}
+
+.cvsParent {
+    width: 100%;
+    height: var(--cvsHeight);
+}
+
+#bottom {
+    display: flex;
+    flex-direction: column;
+    height: var(--tabsHeight);
+    width: 100%;
+    color: rgb(var(--l1));
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(var(--d0), .5);
+}
+#bottom[data-closed=true] {
+    bottom: calc(-1 * var(--tabsHeight) - 2px);
+}
+
+.tabs {
+    width: 100%;
+    height: var(--tabsHeight);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    position: relative;
+}
+
+.tabs > span, #drawerControl {
+    width: calc(100% / var(--tabsCount));
+    height: 100%;
+    border: 2px solid rgb(var(--l1));
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#drawerControl {
+    position: absolute;
+    width: var(--drawerControlButtonWidth);
+    height: 26px;
+    color: var(--l1);
+    background-color: rgba(var(--l1) / 0.2);
+    right: 0;
+    top: -29px;
+    font-weight: bold;
+    padding: 0px;
+}
+
+#updatesStatus {
+    position: absolute;
+    width: calc(100% - var(--drawerControlButtonWidth));
+    height: 26px;
+    left: 2px;
+    top: -15px;
+    z-index: 2;
+    pointer-events: none;
+    font-size: 13px;
+    letter-spacing: -1px;
+    display: flex;
+    flex-direction: row;
+    color: rgb(var(--s2));
+    opacity: 1;
+    transition: .3s all;
+}
+
+[data-selected=true] {
+    cursor: default !important;
+    background-color: rgba(var(--l1) / 0.325) !important;
+}
+
+.tabContent {
+    width: 100%;
+    height: calc(100% - var(--tabsHeight));
+}
+
+.tabContent > div {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+.tabContent > div[data-displayed=true] {
+    display: flex;
+    justify-content: center;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+}
+
+.tabInputsParent {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    overflow: hidden;
+    overflow-x: auto;
+}
+
+.bigList {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 90%;
+}
+
+.smallBoxParent {
+    width: 75px;
+    background: #222020;
+    height: 70px;
+    border: 2px solid aliceblue;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    text-align: center;
+    border-radius: 4px;
+    margin-right: 12px;
+    transform: scale(0.9);
+    position: relative;
+    padding-top: 5px;
+    cursor: pointer;
+}
+
+.smallBoxIcon {
+    width: 55%;
+    height: 55%;
+    outline: 2px solid rgb(var(--l1));
+    border-radius: 2px;
+}
+
+button, input, textarea, .button, select {
+    border: 2px solid rgb(var(--l1));
+    height: 25px;
+    background-color: rgb(var(--d0));
+    color: rgb(var(--l1));
+    border-radius: 3px;
+    font-weight: 900;
+    line-height: 0px;
+    cursor: pointer;
+    margin: 0px 5px;
+    text-align: center;
+    resize: none;
+}
+
+input[type="number"], input[type="text"], textarea {
+    width: var(--inputWidth);
+    font-weight: bold;
+    cursor: text;
+    outline: none;
+}
+
+input[type="text"], textarea {
+    width: 120px;
+}
+
+textarea {
+    text-align: start;
+    line-height: unset;
+    font-size: 8px;
+}
+
+[readonly] {
+    border-color: rgba(var(--l1) / .65);
+}
+
+.button {
+    padding: 0px 5px;
+    height: 22px;
+}
+
+select {
+    width: 66px;
+}
+
+.crow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.mapSection > div {
+    width: 33%;
+    height: 100%;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.mapSection > div > span {
+    width: 62%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+span {
+    font-size: 14px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.settingsTab > div {
+    width: 170px;
+    height: 90%;
+    margin-right: 18px;
+    justify-content: space-between;
+}
+
+.settingsTab > div > span {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.overlay {
+    position: absolute;
+    top: -1px;
+    right: 3px;
+    z-index: 2;
+    color: rgb(var(--s1));
+    display: flex;
+    flex-direction: row;
+    font-size: 13px;
+    letter-spacing: -1px;
+    opacity: 0.85;
+    user-select: none;
+    pointer-events: none;
+}
+
+#statusParent {
+    right: unset;
+    top: 0px;
+    left: 2px;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    white-space: pre;
+    align-items: flex-start;
+}
+
+#statusParent > * {
+    width: fit-content;
+    font-size: inherit;
+    display: flex;
+    flex-direction: column;
+}
+
+.label, .tlabel {
+    text-align: end;
+    width: calc(100% - var(--checkboxWidth));
+}
+
+.tlabel {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.savesTab > div {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 65%;
+    width: 32%;
+    align-items: center;
+}
+
+.savesTab {
+    justify-content: flex-end;
+}
+
+.separation {
+    width: 1px !important;
+    height: 100% !important;
+    border-left: 4px solid rgba(var(--l1) / .2);
+    border-radius: 102px;
+    margin: 0 !important;
+}
+
+.smallGroup, .smallVerticalGroup {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.smallVerticalGroup {
+    flex-direction: column;
+    justify-content: space-evenly;
+}
+.smallVerticalGroup > span {
+    text-align: center;
+}
+
+svg {
+    fill: rgb(var(--l1));
+    cursor: pointer;
+    transition: 0.4s all;
+}
+
+.physicsTab > div {
+    width: 205px;
+    height: 90%;
+    margin-right: 18px;
+    justify-content: space-between;
+}
+
+.physicsEditorParent {
+    display: flex;
+    flex-direction: row;
+    width: fit-content !important;
+}
+
+.spaceRight {
+    margin-right: 10px !important;
+}
+
+.miscTab > .col {
+    width: 220px;
+    height: 90%;
+    margin-right: 18px;
+    justify-content: space-evenly;
+}

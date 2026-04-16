@@ -1,0 +1,35 @@
+{
+  "name": "LCB Powder Simulator",
+  "description": "LCB Powder Simulator is an efficient, customizable and fully native JS powder simulation.",
+  "version": "1",
+  "version_name": "2.0.0",
+  "manifest_version": 3,
+  "icons": {
+      "128": "./img/logo.png"
+  },
+  "commands": {
+    "_execute_action": { 
+      "suggested_key": {
+        "default": "Alt+Q",
+        "linux": "Alt+Q",
+        "windows": "Alt+Q",
+        "mac": "Alt+Q"
+      }
+    }
+  },
+  "background": {
+      "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_title": "Powder Simulator",
+      "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "downloads",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": ["<all_urls>"]
+}

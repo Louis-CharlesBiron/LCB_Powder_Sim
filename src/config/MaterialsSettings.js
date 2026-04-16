@@ -36,9 +36,13 @@ class MaterialSettings {
         stepsAliveOffsetMax:0,
         hasStepsAliveOffset:null,
     }
+    
+    static {
+        MaterialSettings.#defineSettings()
+    }
 
     // MATERIALS CONFIGS //
-    static {
+    static #defineSettings() {
         const {SAND, WATER, GRAVEL, INVERTED_WATER, CONTAMINANT, LAVA, VAPOR, FIRE} = SETTINGS.MATERIALS
 
         MaterialSettings.MATERIALS_SETTINGS[SAND] = {}
@@ -99,6 +103,14 @@ class MaterialSettings {
 
         Object.values(SETTINGS.MATERIALS).forEach(material=>MaterialSettings.MATERIALS_SETTINGS[material] ??= {})
         MaterialSettings.MATERIALS_SETTINGS.forEach((settings, material)=>MaterialSettings.updateMaterialSettings(material, settings))
+    }
+
+    static resetAllMaterialSettings() {
+        MaterialSettings.#defineSettings()
+    }
+
+    static getMaterialSettings(material) {
+        return MaterialSettings.MATERIALS_SETTINGS[material]
     }
     
     static updateMaterialSettings(material, settings) {

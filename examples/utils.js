@@ -13,7 +13,6 @@ function addWheelIncrement(input, step=[1,1,1], actionCB) {
           ctrlStep = step[1]??normalStep,
           shiftStep = step[2]??ctrlStep
 
-
     if (nodeName === "INPUT" && type === "number") callback=e=>{
         e.preventDefault()
         const min = +input.min||0, max = +input.max||Infinity, isFowardStep = e.deltaY>0
@@ -62,7 +61,8 @@ function fillSelectOptions(input, optionNames, valueMapper) {
  */
 function setRegularNumberInput(input, actionCB) {
     const hasActionCB = typeof actionCB === "function", min = +input.min||0, max = +input.max||Infinity
-    input.addEventListener("input", ()=>{
+    input.title = `Min: ${min} | Max: ${max}`
+    return input.addEventListener("input", ()=>{
         const v = +input.value
         input.value = v < min ? min : v > max ? max : v
         if (hasActionCB) actionCB(+input.value)

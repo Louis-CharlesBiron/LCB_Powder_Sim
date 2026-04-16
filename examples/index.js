@@ -10,13 +10,10 @@ const simulation = new Simulation(
     readyCB,
     {
         usesWebWorkers: false,
-        autoStart: true,
         aimedFPS: 60,
-        //cameraCenterPos: null,
-        //zoom: 4
     },
     {
-        //autoSimulationSizing: 15,
+        autoSimulationSizing: 15,
         showBorder: true,
         showGrid: true,
         visualEffectsEnabled: true,
@@ -38,18 +35,20 @@ function readyCB(simulation) {
     //simulation.timerEnabled = true
 
     
-    //simulation.updateMapSize(5, 3)
+    //simulation.updateMapSize(5, 5)
     //simulation.updateMapPixelSize(120)
 
     //simulation.updateMapSize(23, 15)
     //simulation.updateMapPixelSize(40)
 
     //simulation.updateMapSize(400, 300)
-    //simulation.updateMapPixelSize(2)
+    // simulation.updateMapPixelSize(4)
+    // simulation.showGrid = false
+    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
     
-    //simulation.updateMapSize(231, 149)
-    //simulation.updateMapPixelSize(4)
-    //simulation.updateBrushType(Simulation.BRUSH_TYPES.X55)
+    simulation.updateMapSize(131, 129)
+    simulation.updateMapPixelSize(4)
+    simulation.updateBrushType(Simulation.BRUSH_TYPES.X99)
 
     //simulation.updateMapPixelSize(1)
     //simulation.updateMapSize(975, 600)
@@ -116,7 +115,7 @@ function statusLoopCore() {
 
     // MOUSE MATERIAL
     if (simulation.isMouseWithinSimulation && mapPos) {
-        const mouseMaterialText = "("+Simulation.MATERIAL_NAMES[simulation.getPixelAtMapPos(mapPos)]+")"
+        const mouseMaterialText = "("+Simulation.MATERIAL_NAMES[simulation.getMaterialAtMapPos(mapPos)]+")"
         if (mouseMaterialStatus.textContent !== mouseMaterialText) mouseMaterialStatus.textContent = mouseMaterialText
     }
 
@@ -158,7 +157,7 @@ function statusLoopCore() {
     if (isRunningStatus.textContent !== isRunningText) isRunningStatus.textContent = isRunningText
 
     // PHYSICS UNIT TYPE
-    const physicsUnitTypeText = simulation.usingWebWorkers ? "WORKER" : "LOCAL"
+    const physicsUnitTypeText = simulation.usingWebWorkers ? "WORKER ("+simulation.physicsUnit.threadCount+"x)" : "LOCAL"
     if (physicsUnitTypeStatus.textContent !== physicsUnitTypeText) physicsUnitTypeStatus.textContent = physicsUnitTypeText
 
     // TIMESTAMP

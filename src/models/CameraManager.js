@@ -4,6 +4,10 @@ class CameraManager {
         this.#simulation = simulation
         this.#setCanvasZoomAndDrag()
     }
+
+    resetCamera() {
+        this.#simulation.CVS.resetTransformations(true)
+    }
     
     // Zooms in/out towards the provided pos
     #zoomTowardsPos(pos, zoomDirection) {
@@ -27,9 +31,7 @@ class CameraManager {
             let isCameraMoving = false, lastDragPos = [0,0]
 
             frame.addEventListener("wheel", e=>{
-                if (userSettings.dragAndZoomCanvasEnabled) {
-                    if (this.#zoomTowardsPos(mouse.rawPos, e.deltaY)) lastDragPos = [...mouse.rawPos]
-                }
+                if (userSettings.dragAndZoomCanvasEnabled && this.#zoomTowardsPos(mouse.rawPos, e.deltaY)) lastDragPos = [...mouse.rawPos]
             })
 
             frame.addEventListener("mousedown", e=>{
@@ -38,7 +40,10 @@ class CameraManager {
                         isCameraMoving = true
                         lastDragPos = [e.clientX, e.clientY]
                     }
-                    else if (e.button === Mouse.BUTTON_TYPES.MIDDLE) CVS.resetTransformations(true)
+                    else if (userSettings.useMiddleClickToResetDragAndZoom && e.button === Mouse.BUTTON_TYPES.MIDDLE) {
+                        this.resetCamera()
+                        e.preventDefault()
+                    }
                 }
             })
 
