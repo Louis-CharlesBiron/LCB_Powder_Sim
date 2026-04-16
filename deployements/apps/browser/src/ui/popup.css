@@ -93,8 +93,8 @@ html, body {
 }
 #version {
     position: absolute;
-    right: 1px;
-    bottom: 0;
+    left: 2px;
+    bottom: 3px;
     z-index: 10;
     color: rgba(var(--l1) / .5);
     letter-spacing: -1px;

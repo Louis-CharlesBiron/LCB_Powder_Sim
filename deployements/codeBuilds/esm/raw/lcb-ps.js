@@ -11364,8 +11364,8 @@ export class Simulation {
         this._CVS.onResizeCB=()=>this.#handleAutoSizing()
         this._CVS.start()
         this._mouseListenerIds = [
-            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this.#isMouseWithinSimulation = true),
-            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.MOVE,  ()=>this.#isMouseWithinSimulation = true),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.ENTER, ()=>this.#mouseInSimulation()),
+            this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.MOVE,  ()=>this.#mouseInSimulation()),
             this._CVS.mouse.addListener([[0,0], this._mapGrid.globalDimensions], Mouse.LISTENER_TYPES.LEAVE, ()=>this.#mouseLeaveSimulation())
         ]
 
@@ -11925,6 +11925,13 @@ export class Simulation {
     #mouseLeaveSimulation() {
         this.#lastPlacedPos = null
         this.#isMouseWithinSimulation = false
+        if (!this._userSettings.showCursor && this.CVS.frame.style.cursor === Canvas.CURSOR_STYLES.NONE) this.CVS.setCursorStyle(Canvas.CURSOR_STYLES.DEFAULT)
+    }
+
+    // Runs when the mouse enters or moves inside the simulation's bounding box
+    #mouseInSimulation() {
+        this.#isMouseWithinSimulation = true
+        if (!this._userSettings.showCursor && this.CVS.frame.style.cursor !== Canvas.CURSOR_STYLES.NONE) this.CVS.setCursorStyle(Canvas.CURSOR_STYLES.NONE)
     }
 
     /**
