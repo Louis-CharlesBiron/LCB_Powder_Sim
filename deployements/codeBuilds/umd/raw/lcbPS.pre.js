@@ -8967,8 +8967,10 @@ class SimUtils {
 
 class KeybindManager {
     #simulation = null
+    #keybinds = null
     constructor(simulation, keybinds) {
         this.#simulation = simulation 
+        this.#keybinds = keybinds
         this.setKeyBinds(keybinds)
     }
 
@@ -8993,6 +8995,8 @@ class KeybindManager {
 
         if ((!requiredKeys || typingDevice.isDown(requiredKeys)) && (!cancelKeys || !typingDevice.isDown(cancelKeys))) actionCB.bind(this)()
     }
+
+    get keybinds() {return this.#keybinds}
 }
 
 ///[[@export]]
@@ -11520,7 +11524,7 @@ class Simulation {
      */
     step(deltaTime=this.CVS.deltaTime) {
         //const available = !this._physicsUnit.blocked TODO
-        if (this.useLocalPhysics) {
+        if (this.usingLocalPhysics) {
             this.saveStep()
             this._physicsUnit.step(
                 this._gridIndexes, this._gridMaterials, this._indexCount, this._indexFlags, this._indexPhysicsData, this._indexGravity, this._indexStepsAlive,
@@ -11597,7 +11601,7 @@ class Simulation {
         if (this.#checkInitializationState(WARNINGS.NOT_INITIALIZED_PHYSICS_TYPE_WARN)) return
 
         const isWebWorker = +(usesWebWorkers&&!this.isFileServed)
-        if ((isWebWorker && this.usingWebWorkers) || (!isWebWorker && this.useLocalPhysics)) return
+        if ((isWebWorker && this.usingWebWorkers) || (!isWebWorker && this.usingLocalPhysics)) return
 
         if (isWebWorker) {
             const threadCount = usesWebWorkers===true ? 4 : usesWebWorkers
@@ -11723,6 +11727,14 @@ class Simulation {
      */
     getMaterialSettings(material) {
         return MaterialSettings.getMaterialSettings(material)
+    }
+
+    /**
+     * Gets all material physics configurations
+     * @returns An array containing all the physics configurations
+     */
+    getAllMaterialSettings() {
+        return MaterialSettings.MATERIALS_SETTINGS
     }
 
     /**
@@ -12325,6 +12337,89 @@ class Simulation {
     }
 
     /**
+     * Exports all the current simulation configurations
+     */
+    getAllConfigurations() {
+        const exportObject = {
+            listeners: {
+                onBrushTypeChanged: this._onBrushTypeChanged,
+                onMapPixelSizeChanged: this._onMapPixelSizeChanged,
+                onMapSizeChanged: this._onMapSizeChanged,
+                onMaterialSettingsChanged: this._onMaterialSettingsChanged,
+                onPhysicsUnitTypeChanged: this._onPhysicsUnitTypeChanged,
+                onReplaceModeChanged: this._onReplaceModeChanged,
+                onSelectedMaterialChanged: this._onSelectedMaterialChanged,
+                onSidePriorityChanged: this._onSidePriorityChanged,
+                onStarted: this._onStarted,
+                onStopped: this._onStopped,
+            },
+            others: {
+                brushType: this._brushType,
+                selectedMaterial: this._selectedMaterial,
+                replaceMode: this._replaceMode,
+                sidePriority: this._sidePriority,
+                isRunning: this._isRunning,
+                usingWebWorkers: this.usingWebWorkers,
+                keybinds: this._keybindManager.keybinds,
+            },
+            settings: {
+                materialSettings: MaterialSettings.MATERIALS_SETTINGS,
+                colorSettings: this._colorSettings,
+                physicsSettings: this._physicsSettings,
+                userSettings: this._userSettings,
+                worldStartSettings: this._worldStartSettings,
+            }
+        }
+
+        return exportObject
+    }
+
+    /**
+     * Instantiates a simulation based on the provided
+    * @param {HTMLCanvasElement | Canvas} canvas A HTML canvas reference or a CDEJS Canvas instance to display the simulation on
+     * @param {Function?} readyCB A callback ran once the simulation is started. (simulation)=>{}
+     * @param {String?} mapData The save data as a string in the format created by the function exportAsText()
+     * @param {Object?} configurations A configurations object, in the format returned by the function getAllConfigurations()
+     */
+    static createFrom(canvas, readyCB, mapData, configurations) {
+        const settings = configurations||{},
+            simulation = new this(canvas, sim=>{
+                if (CDEUtils.isFunction(readyCB)) readyCB(sim)
+                if (mapData) simulation.load(mapData, true)
+            }, settings.worldStartSettings, settings.userSettings, settings.physicsSettings, settings.colorSettings)
+    
+        if (configurations) {
+            const {others, listeners} = configurations
+
+            // SETTINGS
+            MaterialSettings.MATERIALS_SETTINGS = settings.materialSettings
+            
+            // OTHERS
+            simulation.updateBrushType(others.brushType)
+            simulation.updateSelectedMaterial(others.selectedMaterial)
+            simulation.updateReplaceMode(others.replaceMode)
+            simulation.updateSidePriority(others.sidePriority)
+            if (others.isRunning) simulation.start()
+            else simulation.stop()
+            if (others.keybinds) simulation._keybindManager = new KeybindManager(simulation, others.keybinds)
+
+            // LISTENERS
+            simulation.onBrushTypeChanged = listeners.onBrushTypeChanged
+            simulation.onMapPixelSizeChanged = listeners.onMapPixelSizeChanged
+            simulation.onMapSizeChanged = listeners.onMapSizeChanged
+            simulation.onMaterialSettingsChanged = listeners.onMaterialSettingsChanged
+            simulation.onPhysicsUnitTypeChanged = listeners.onPhysicsUnitTypeChanged
+            simulation.onReplaceModeChanged = listeners.onReplaceModeChanged
+            simulation.onSelectedMaterialChanged = listeners.onSelectedMaterialChanged
+            simulation.onSidePriorityChanged = listeners.onSidePriorityChanged
+            simulation.onStarted = listeners.onStarted
+            simulation.onStopped = listeners.onStopped
+        }
+
+        return simulation
+    }
+
+    /**
      * Returns informations on the pixel at the provided index
      * @param {Number} gridIndex The grid index to look at 
      * @returns the pixel's informations
@@ -12413,7 +12508,7 @@ class Simulation {
 	get queuedBufferOperations() {return this._queuedBufferOperations}
     get aimedFPS() {return this._CVS.fpsLimit}
     get backStepSavingEnabled() {return Boolean(this._userSettings.backStepSavingCount)}
-    get useLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
+    get usingLocalPhysics() {return this._physicsUnit instanceof LocalPhysicsUnit}
     get usingWebWorkers() {return this._physicsUnit instanceof RemotePhysicsUnit}
     get isFileServed() {return location.href.startsWith("file")}
     get gridIndexes() {return this._gridIndexes}

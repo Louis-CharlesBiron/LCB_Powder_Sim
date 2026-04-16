@@ -48,7 +48,7 @@ toggleOverlayButton.onclick=()=>{
                 ]
             }).then(()=>{
                 _overlayId = tab.id
-                sendToOverlay({type:"init", value:"sim"})
+                sendToOverlay({type:"init", value:simulation.getAllConfigurations()})
                 LOCAL_STORAGE.set({[STORAGE_KEYS.overlayTabId]:_overlayId})
                 setTimeout(()=>window.close(),100)
             }).catch(err=>console.warn("NO TAB FOUND TODO ERROR", err))

@@ -6069,6 +6069,7 @@ export class KeybindManager {
      * @param {Object} keybinds The keybinds to set
      */
     setKeyBinds(keybinds: any): void;
+    get keybinds(): any;
     #private;
 }
 export namespace SETTINGS {
@@ -7037,6 +7038,14 @@ export class Simulation {
     };
     static PRECISE_PLACE_KEY: string;
     /**
+     * Instantiates a simulation based on the provided
+    * @param {HTMLCanvasElement | Canvas} canvas A HTML canvas reference or a CDEJS Canvas instance to display the simulation on
+     * @param {Function?} readyCB A callback ran once the simulation is started. (simulation)=>{}
+     * @param {String?} mapData The save data as a string in the format created by the function exportAsText()
+     * @param {Object?} configurations A configurations object, in the format returned by the function getAllConfigurations()
+     */
+    static createFrom(canvas: HTMLCanvasElement | Canvas, readyCB: Function | null, mapData: string | null, configurations: any | null): Simulation;
+    /**
      * The core of the simulation and manages all rendering and world manipulation. (except for physics)
      * @param {HTMLCanvasElement | Canvas} canvas A HTML canvas reference or a CDEJS Canvas instance to display the simulation on
      * @param {Function?} readyCB A callback ran once the simulation is started. (simulation)=>{}
@@ -7169,6 +7178,11 @@ export class Simulation {
         VAPOR: number;
         FIRE: number;
     }): any;
+    /**
+     * Gets all material physics configurations
+     * @returns An array containing all the physics configurations
+     */
+    getAllMaterialSettings(): any[];
     /**
      * Resets all materials' physics configurations
      */
@@ -7417,6 +7431,39 @@ export class Simulation {
         EXACT: number;
     }, callback: Function | null): string;
     /**
+     * Exports all the current simulation configurations
+     */
+    getAllConfigurations(): {
+        listeners: {
+            onBrushTypeChanged: any;
+            onMapPixelSizeChanged: any;
+            onMapSizeChanged: any;
+            onMaterialSettingsChanged: any;
+            onPhysicsUnitTypeChanged: any;
+            onReplaceModeChanged: any;
+            onSelectedMaterialChanged: any;
+            onSidePriorityChanged: any;
+            onStarted: any;
+            onStopped: any;
+        };
+        others: {
+            brushType: any;
+            selectedMaterial: any;
+            replaceMode: any;
+            sidePriority: number;
+            isRunning: boolean;
+            usingWebWorkers: boolean;
+            keybinds: any;
+        };
+        settings: {
+            materialSettings: any[];
+            colorSettings: any;
+            physicsSettings: any;
+            userSettings: any;
+            worldStartSettings: any;
+        };
+    };
+    /**
      * Returns informations on the pixel at the provided index
      * @param {Number} gridIndex The grid index to look at
      * @returns the pixel's informations
@@ -7456,7 +7503,7 @@ export class Simulation {
     get aimedFPS(): number | "static";
     set backStepSavingEnabled(backStepSavingEnabled: boolean);
     get backStepSavingEnabled(): boolean;
-    get useLocalPhysics(): boolean;
+    get usingLocalPhysics(): boolean;
     get usingWebWorkers(): boolean;
     get isFileServed(): any;
     get gridIndexes(): Int32Array<ArrayBuffer>;
