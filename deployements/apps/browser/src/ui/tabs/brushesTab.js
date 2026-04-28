@@ -1,4 +1,9 @@
 (()=>{
+
+const ICONS = [
+    
+]
+
 const parentClassName = "smallBoxParent"
 Object.entries(Simulation.BRUSH_TYPES).forEach(([name, brush], i)=>{
     const smallBoxParent = document.createElement("div"),
@@ -16,10 +21,9 @@ Object.entries(Simulation.BRUSH_TYPES).forEach(([name, brush], i)=>{
     smallBoxText.style.fontSize = autoTextSize(normalText, 8.25, 19)
 
     smallBoxParent.className = parentClassName
-    smallBoxIcon.className = "smallBoxIcon"
-    smallBoxIcon.style.width = smallBoxIcon.getBoundingClientRect().height+"px"
-    smallBoxIcon.style.height = smallBoxIcon.getBoundingClientRect().height+"px"
-    //smallBoxIcon.style.backgroundColor = new Color(simulation.colorSettings[name])
+    smallBoxIcon.className = "smallBoxIcon brushContainer brushIcon"+brush
+    //smallBoxIcon.style.width = smallBoxIcon.getBoundingClientRect().height+"px"
+    //smallBoxIcon.style.height = smallBoxIcon.getBoundingClientRect().height+"px"
     smallBoxParent.onclick=()=>{
         simulation.updateBrushType(brush)
         selectUIBrush(i)

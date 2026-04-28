@@ -64,21 +64,21 @@
                   <div class="tabInputsParent mapSection">
                      <div class="col">
                         <div class="crow">
-                           <button id="startButton">►</button>
-                           <button id="stopButton">⏹</button>
-                           <button id="clearButton">Clear</button>
+                           <button id="startButton" title="Play">►</button>
+                           <button id="stopButton" title="Stop">⏹</button>
+                           <button id="clearButton" title="Clear map">Clear</button>
                         </div>
                         <div class="crow">
-                           <button id="backStepButton"><</button>
-                           <button id="stepButton">></button>           
-                           <button id="resetZoomButton">Zoom 1x</button>
+                           <button id="backStepButton" title="Back step"><</button>
+                           <button id="stepButton" title="Foward step">></button>           
+                           <button id="resetZoomButton" title="Reset zoom">Zoom 1x</button>
                         </div>
                      </div>
 
                      <div class="col">
                         <span>Show Grid: <label class="checkboxParent"><input id="c_showGrid" type="checkbox"><span class="checkCore"></span></label></span>
                         <span>Show Border: <label class="checkboxParent"><input id="c_showBorder" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Auto Sizing: <label class="checkboxParent"><input id="c_autoSizing" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span title="Automatically resize map to available width/height">Auto Sizing: <label class="checkboxParent"><input id="c_autoSizing" type="checkbox"><span class="checkCore"></span></label></span>
                      </div>
 
                      <div class="col">
@@ -93,26 +93,26 @@
                   <div class="tabInputsParent" data-scrollable>
                      <div class="bigList settingsTab">
                         <div class="col">
-                           <span class="label"><span>Show FPS:</span><label class="checkboxParent"><input id="c_showFPS" type="checkbox"><span class="checkCore"></span></label></span>
-                           <span class="label"><span>Show status:</span><label class="checkboxParent"><input id="c_showStatus" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label" title="Display frames and steps per seconds"><span>Show FPS:</span><label class="checkboxParent"><input id="c_showFPS" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label" title="Display precise statistics on the simulation"><span>Show status:</span><label class="checkboxParent"><input id="c_showStatus" type="checkbox"><span class="checkCore"></span></label></span>
                            <span class="label"><span>Show Cursor:</span><label class="checkboxParent"><input id="c_showCursor" type="checkbox"><span class="checkCore"></span></label></span>
                            <span class="label"><span>Show Brush:</span><label class="checkboxParent"><input id="c_showBrush" type="checkbox"><span class="checkCore"></span></label></span>
                         </div>
                         <div class="col">
-                           <span class="label"><span>Map persistence:</span><label class="checkboxParent"><input id="c_mapPersistence" type="checkbox"><span class="checkCore"></span></label></span>
-                           <span class="label"><span>Visual Effects:</span><label class="checkboxParent"><input id="c_visualEffect" type="checkbox"><span class="checkCore"></span></label></span>
-                           <span class="label"><span>Drag and zoom:</span><label class="checkboxParent"><input id="c_dragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
-                           <span class="label"><span>Smooth drawing:</span><label class="checkboxParent"><input id="c_smoothDrawing" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label" title="Save the map between sessions"><span>Map persistence:</span><label class="checkboxParent"><input id="c_mapPersistence" type="checkbox"><span class="checkCore"></span></label></span>
+                           <!-- <span class="label"><span>Visual Effects:</span><label class="checkboxParent"><input id="c_visualEffect" type="checkbox"><span class="checkCore"></span></label></span> -->
+                           <span class="label" title="Allow dragging and zooming on the canvas"><span>Drag and zoom:</span><label class="checkboxParent"><input id="c_dragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label" title="Fills the gaps between drawing frames"><span>Smooth drawing:</span><label class="checkboxParent"><input id="c_smoothDrawing" type="checkbox"><span class="checkCore"></span></label></span>
                         </div>
                         <div class="col" style="width: 235px;">
-                           <span class="label"><span>Multithreading:</span><label class="checkboxParent"><input id="c_useWorkers" type="checkbox"><span class="checkCore"></span></label></span>
-                           <span class="label"><span>Mouse velocity create:</span><label class="checkboxParent"><input id="c_createFromMouseVel" type="checkbox"><span class="checkCore"></span></label></span>
-                           <span class="label"><span>Backstep optimization:</span><label class="checkboxParent"><input id="c_backstepSavingOptimization" type="checkbox"><span class="checkCore"></span></label></span>
+                           <!-- <span class="label"><span>Multithreading:</span><label class="checkboxParent"><input id="c_useWorkers" type="checkbox"><span class="checkCore"></span></label></span> -->
+                           <span class="label" title="Appy mouse direction and velocity to newly created particles"><span>Mouse velocity create:</span><label class="checkboxParent"><input id="c_createFromMouseVel" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label" title="(RECOMMENDED) If disabled, saves very precisely every particle"><span>Backstep optimization:</span><label class="checkboxParent"><input id="c_backstepSavingOptimization" type="checkbox"><span class="checkCore"></span></label></span>
                            <span class="label"><span>Middle click resets zoom:</span><label class="checkboxParent"><input id="c_useMiddleClickToResetDragAndZoom" type="checkbox"><span class="checkCore"></span></label></span>
                         </div>
                         <div class="col" style="width: 195px;">
-                           <span class="label"><span>Max particles:</span><input type="number" step="1000" min="0" max="1000000" id="c_maxDynamicMaterials"></span>
-                           <span class="label"><span>Backstep saves:</span><input type="number" step="10" min="0" max="100000" id="c_maxBackstepSaves"></span>
+                           <span class="label" title="The maximal amount of dynamic particles allowed"><span>Max particles:</span><input type="number" step="1000" min="0" max="1000000" id="c_maxDynamicMaterials"></span>
+                           <span class="label" title="The maximal amount of step saved"><span>Backstep saves:</span><input type="number" step="10" min="0" max="100000" id="c_maxBackstepSaves"></span>
                            <span class="label"><span>Max FPS:</span><input type="number" step="4" min="2" max="240" id="c_maxFPS"></span>
                         </div>
                      </div>
@@ -123,13 +123,13 @@
                   <div class="tabInputsParent savesTab">
                      <div>
                         <div class="smallGroup">
-                           <button id="saveButton">Save</button>
-                           <button id="downloadSaveButton">Download Save</button>
+                           <button id="saveButton" title="Exports as text the current map">Save</button>
+                           <button id="downloadSaveButton" title="Downloads the current map as a file">Download Save</button>
                         </div>
                         <div class="smallGroup">
-                           <textarea id="exportValueInput" type="text" placeholder="Export as text..." readonly rows="3"></textarea>
-                           <svg id="copyButton" height="24" width="24" viewBox="0 -960 960 960"><path d="M180-80q-24 0-42-18t-18-42h60v60Zm-60-144v-84h60v84h-60Zm0-168v-84h60v84h-60Zm0-168v-84h60v84h-60Zm0-168q0-24 18-42t42-18v60h-60ZM264-80v-60h84v60h-84Zm60-144q-24 0-42-18t-18-42v-536q0-24 18-42t42-18h416q24 0 42 18t18 42v536q0 24-18 42t-42 18H324Zm0-60h416v-536H324v536ZM432-80v-60h84v60h-84Zm168 0v-60h60q0 24-18 42t-42 18Z"></path></svg>
-                           <select id="exportTypeSelect">
+                           <textarea id="exportValueInput" type="text" placeholder="Export as text..." readonly rows="3" title="Current map as text"></textarea>
+                           <svg title="copy" id="copyButton" height="24" width="24" viewBox="0 -960 960 960"><path d="M180-80q-24 0-42-18t-18-42h60v60Zm-60-144v-84h60v84h-60Zm0-168v-84h60v84h-60Zm0-168v-84h60v84h-60Zm0-168q0-24 18-42t42-18v60h-60ZM264-80v-60h84v60h-84Zm60-144q-24 0-42-18t-18-42v-536q0-24 18-42t42-18h416q24 0 42 18t18 42v536q0 24-18 42t-42 18H324Zm0-60h416v-536H324v536ZM432-80v-60h84v60h-84Zm168 0v-60h60q0 24-18 42t-42 18Z"></path></svg>
+                           <select id="exportTypeSelect" title="Export type (RECOMMENDED: Compacted)">
                               <option value="0">Raw</option>
                               <option value="1">Compacted</option>
                               <option value="2">Exact</option>
@@ -139,18 +139,18 @@
 
                      <div>
                         <div class="smallGroup">
-                           <button id="loadButton">Load</button>
-                           <label for="uploadFile" class="fileUploadParent">
+                           <button id="loadButton" title="Loads a save into the current map">Load</button>
+                           <label for="uploadFile" class="fileUploadParent" title="Upload a save file">
                               <input id="uploadFile" type="file" accept=".lcbps" class="hidden">
                               <span class="button">Upload <span style="font-size: 10px;"> (.lcbps)</span></span>
                            </label>
                         </div>
-                        <textarea id="loadValueInput" type="text" placeholder="Load from text..." rows="3"></textarea>
+                        <textarea id="loadValueInput" type="text" placeholder="Load from text..." rows="3"  title="Paste a save here and pres 'Load' to load it!"></textarea>
                      </div>
 
                      <div>
-                        <button id="resetSavedMapButton">Reset saved Map</button>
-                        <button id="resetAllButton">Reset ALL settings</button>
+                        <button id="resetSavedMapButton" title="Resets the map data saved in storage (Map persistence)">Reset saved map</button>
+                        <button id="resetAllButton" title="Resets pretty much everything">Reset ALL settings</button>
                      </div>
                   </div>
                </div>
@@ -159,23 +159,23 @@
                   <div class="tabInputsParent miscTab">
 
                      <div class="col">
-                        <span class="label"><span>Side Priority:</span><select id="sidePrioritiesSelect"></select></span>
-                        <span class="label"><span>Replace Mode:</span><select id="replaceModesSelect"></select></span>
+                        <span class="label" title="The side particles will prefer when falling"><span>Side Priority:</span><select id="sidePrioritiesSelect"></select></span>
+                        <span class="label" title="Acts as a mask when placing materials"><span>Replace Mode:</span><select id="replaceModesSelect"></select></span>
                      </div>
 
-                     <button id="resetMisc">Reset</button>
+                     <button id="resetMisc" title="Resets the 'Side Priority' and 'Replace Mode' back to their default values">Reset</button>
                      
                      <div class="separation"></div>
 
                      <div class="smallVerticalGroup">
-                        <button id="openFullPageButton">Open in browser</button>
-                        <button id="toggleOverlayButton">Open overlay</button>
+                        <button id="openFullPageButton" title="Opens to UI as a browser page">Open in browser</button>
+                        <button id="toggleOverlayButton" title="Opens a simulation on top of the current tab. (Experimental)">Open overlay</button>
                      </div>
 
                      <div class="col">
-                        <span>Input Isolation: <label class="checkboxParent"><input id="c_inputIsolation" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Fixed Position: <label class="checkboxParent"><input id="c_fixedPosition" type="checkbox"><span class="checkCore"></span></label></span>
-                        <span>Integration Visibility: <label class="checkboxParent"><input id="c_integrationVisibility" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span title="In overlay, whether to restrict inputs to only simulation interactions">Input Isolation: <label class="checkboxParent"><input id="c_inputIsolation" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span title="In overlay, whether the simulation follows the screen on scroll">Fixed Position: <label class="checkboxParent"><input id="c_fixedPosition" type="checkbox"><span class="checkCore"></span></label></span>
+                        <span title="In overlay, whether to show the simulation border/grid">Integration Visibility: <label class="checkboxParent"><input id="c_integrationVisibility" type="checkbox"><span class="checkCore"></span></label></span>
                      </div>
 
                   </div>
@@ -185,9 +185,9 @@
                   <div class="tabInputsParent" data-scrollable>
                      <div class="bigList physicsTab">
                         <div class="col" style="width: 240px;align-items: center;">
-                           <span class="label"><span>Crazy Init Velocity:</span><label class="checkboxParent"><input id="c_crazyVel" type="checkbox"><span class="checkCore"></span></label></span>
-                           <span class="label"><span>2nd Fall Uniformity:</span><label class="checkboxParent"><input id="c_secondFallUni" type="checkbox"><span class="checkCore"></span></label></span>
-                           <button id="resetPhysicsButton">Reset Physics</button>
+                           <span class="label" title="Randomizes the initial velocity of new particles"><span>Crazy Init Velocity:</span><label class="checkboxParent"><input id="c_crazyVel" type="checkbox"><span class="checkCore"></span></label></span>
+                           <span class="label" title="Makes long/repeated falls more consistent (advanced)"><span>2nd Fall Uniformity:</span><label class="checkboxParent"><input id="c_secondFallUni" type="checkbox"><span class="checkCore"></span></label></span>
+                           <button id="resetPhysicsButton" title="Resets all physics settings to their default values">Reset Physics</button>
                         </div>
                         <div class="separation"></div>
                         <div class="physicsEditorParent">
@@ -201,29 +201,29 @@
                               <span class="tlabel"><span>Velocity Y:</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityY"></span>
                            </div>
                            <div class="col">
-                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsGravityRange"></span>
-                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityXRange"></span>
-                              <span class="tlabel"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityYRange"></span>
+                              <span class="tlabel" title="Randomization range"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsGravityRange"></span>
+                              <span class="tlabel" title="Randomization range"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityXRange"></span>
+                              <span class="tlabel" title="Randomization range"><span>±</span><input type="number" step="1" min="-1000" max="1000" id="c_materialSettingsVelocityYRange"></span>
                            </div>
                         </div>
                         <div class="separation spaceRight"></div>
                         <div class="col">
-                           <span class="tlabel"><span>Base Friction:</span><input type="number" step="1" min="-100" max="100" id="c_baseFriction"></span>
-                           <span class="tlabel"><span>Friction Coef:</span><input type="number" step="0.001" min="0.001" max="5" id="c_frictionCoefficient"></span>
-                           <span class="tlabel"><span>Final Col Time:</span><input type="number" step="1" min="1" max="10000" id="c_finalCollisionTime"></span>
+                           <span class="tlabel" title="Particle friction level"><span>Base Friction:</span><input type="number" step="1" min="-100" max="100" id="c_baseFriction"></span>
+                           <span class="tlabel" title="Particle friction coefficient"><span>Friction Coef:</span><input type="number" step="0.001" min="0.001" max="5" id="c_frictionCoefficient"></span>
+                           <span class="tlabel" title="The amount of time(ms) spent not moving to consitute a full collision"><span>Final Col Time:</span><input type="number" step="1" min="1" max="10000" id="c_finalCollisionTime"></span>
                         </div>
                         <div class="col" style="width: 282px;">
-                           <span class="tlabel"><span>Contamination Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_contaminationChance"></span>
-                           <span class="tlabel"><span>Lava Melt Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_meltChance"></span>
-                           <span class="tlabel"><span>Fire Inflammation Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_inflammationChance"></span>
+                           <span class="tlabel" title="The chance for a contaminant to propagates when possible (from 0 to 1)"><span>Contamination Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_contaminationChance"></span>
+                           <span class="tlabel" title="The chance for lava to propagates when possible (from 0 to 1)"><span>Lava Melt Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_meltChance"></span>
+                           <span class="tlabel" title="The chance for a fire to propagates when possible (from 0 to 1)"><span>Fire Inflammation Chance:</span><input type="number" step="0.1" min="0" max="1" id="c_inflammationChance"></span>
                         </div>
                         <div class="col">
-                           <span class="tlabel"><span>Vapor Chance 1:</span><input type="number" step="0.1" min="0" max="1" id="c_fireExtinguishesVaporCreationChance"></span>
-                           <span class="tlabel"><span>Vapor Chance 2:</span><input type="number" step="0.1" min="0" max="1" id="c_firePropagatesVaporCreationChance"></span>
+                           <span class="tlabel" title="The chance for vapor to be created from fire extinguishing (from 0 to 1)"><span>Vapor Chance 1:</span><input type="number" step="0.1" min="0" max="1" id="c_fireExtinguishesVaporCreationChance"></span>
+                           <span class="tlabel" title="The chance for vapor to be created from fire propagation (from 0 to 1)"><span>Vapor Chance 2:</span><input type="number" step="0.1" min="0" max="1" id="c_firePropagatesVaporCreationChance"></span>
                         </div>
                         <div class="col" style="width: 257px;">
-                           <span class="tlabel"><span>Fire Decay Threshold:</span><input type="number" step="10" min="1" max="100000" id="c_fireDecayThreshold"></span>
-                           <span class="tlabel"><span>Vapor Decay Threshold:</span><input type="number" step="10" min="1" max="100000" id="c_vaporDecayThreshold"></span>
+                           <span class="tlabel" title="The maximal amount of steps for fire to disapear upon creation"><span>Fire Decay Threshold:</span><input type="number" step="10" min="1" max="100000" id="c_fireDecayThreshold"></span>
+                           <span class="tlabel" title="The maximal amount of steps for vapor to disapear upon creation"><span>Vapor Decay Threshold:</span><input type="number" step="10" min="1" max="100000" id="c_vaporDecayThreshold"></span>
                         </div>
                      </div>
                   </div>

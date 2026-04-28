@@ -214,10 +214,10 @@ html, body {
     height: 100%;
     display: flex;
     flex-direction: row;
-    justify-content: flex-start;
     align-items: center;
     overflow: hidden;
     overflow-x: auto;
+    justify-content: flex-start;
 }
 
 .bigList {
@@ -251,6 +251,8 @@ html, body {
     height: 55%;
     outline: 2px solid rgb(var(--l1));
     border-radius: 2px;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 button, input, textarea, .button, select {
@@ -444,8 +446,71 @@ svg {
 }
 
 .miscTab > .col {
-    width: 220px;
+    width: 240px;
     height: 90%;
-    margin-right: 18px;
     justify-content: space-evenly;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.miscTab select {
+    width: 80px;
+}
+
+.miscTab .separation {
+    margin: 0px 10px !important;
+}
+
+.miscTab .smallVerticalGroup {
+    height: 100%;
+}
+
+.brushContainer {
+    border: none;
+    outline: none;
+}
+.brushIcon1 {
+    background-image: url(../../img/square.svg);
+    transform: scale(.42);
+}
+.brushIcon2 {
+    background-image: url(../../img/cross.svg);
+
+}
+.brushIcon4 {
+    background-image: url(../../img/rect.svg);
+    transform: rotateZ(90deg) scaleX(1.35) scaleY(.95);
+}
+.brushIcon8 {
+    background-image: url(../../img/rect.svg);
+    transform: scaleX(1.35) scaleY(.95);
+}
+.brushIcon16 {
+    background-image: url(../../img/cross.svg);
+    transform: scale(1.5);
+}
+.brushIcon32 {
+    background-image: url(../../img/square.svg);
+    transform: scale(.6);
+}
+.brushIcon64 {
+    background-image: url(../../img/square.svg);
+    transform: scale(.85);
+}
+.brushIcon128 {
+    background-image: url(../../img/square.svg);
+    transform: scale(1.1);
+}
+.brushIcon256 {
+    background-image: url(../../img/square.svg);
+    transform: scale(1.45);
+}
+.brushIcon512 {
+    background-image: url(../../img/square.svg);
+    transform: scale(1.85);
+}
+.brushIcon1024 {
+    background-image: url(../../img/square.svg);
+    transform: scale(2.15);
 }

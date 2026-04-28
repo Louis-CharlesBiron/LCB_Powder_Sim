@@ -5,7 +5,7 @@ keepCheckbox(c_showCursor, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)],
 keepCheckbox(c_showBrush, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.showBrush, isChecked=>simulation.showBrush = isChecked)
 keepCheckbox(c_smoothDrawing, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.smoothDrawingEnabled, isChecked=>simulation.smoothDrawingEnabled = isChecked)
 keepCheckbox(c_dragAndZoom, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.dragAndZoomCanvasEnabled, isChecked=>simulation.dragAndZoomCanvasEnabled = isChecked)
-keepCheckbox(c_useWorkers, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.worldStartSettings.usesWebWorkers, isChecked=>simulation.updatePhysicsUnitType(isChecked))
+// keepCheckbox(c_useWorkers, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.worldStartSettings.usesWebWorkers, isChecked=>simulation.updatePhysicsUnitType(isChecked))
 keepCheckbox(c_mapPersistence, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], true, isChecked=>toggleMapPersistence(isChecked))
 keepCheckbox(c_createFromMouseVel, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], simulation.useMouseVelocityForCreation, isChecked=>simulation.useMouseVelocityForCreation = isChecked)
 keepCheckbox(c_backstepSavingOptimization, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], !simulation.backStepSavingIsExact, isChecked=>simulation.backStepSavingIsExact = !isChecked)
