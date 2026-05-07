@@ -17,9 +17,6 @@
       }
     }
   },
-  "background": {
-      "service_worker": "src/background.js"
-  },
   "action": {
     "default_title": "Powder Simulator",
       "default_popup": "popup.html"
