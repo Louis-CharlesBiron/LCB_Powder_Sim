@@ -34,6 +34,9 @@ chrome.runtime.onMessage.addListener((message, _, sendResponse)=>{
     const type = message.type, value = message.value
     if (type === "init") {
         console.log(value)
+        toggleInputIsolation(value.inputIsolation)
+        toggleFixedPosition(value.fixedPosition, simulation.CVS)
+        toggleIntegrationVisibility(value.integrationVisibility, simulation)
     }
     else if (type === "inputIsolation") toggleInputIsolation(value)
     else if (type === "fixedPosition") toggleFixedPosition(value, simulation.CVS)

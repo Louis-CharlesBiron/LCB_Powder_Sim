@@ -48,7 +48,7 @@ toggleOverlayButton.onclick=()=>{
                 ]
             }).then(()=>{
                 _overlayId = tab.id
-                sendToOverlay({type:"init", value:simulation.getAllConfigurations()})
+                sendToOverlay({type:"init", value:overlayConfig})
                 LOCAL_STORAGE.set({[STORAGE_KEYS.overlayTabId]:_overlayId})
                 setTimeout(()=>window.close(),100)
             }).catch(err=>console.warn("NO TAB FOUND TODO ERROR", err))
@@ -62,20 +62,17 @@ keepCheckbox(c_inputIsolation, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(
     overlayConfig.inputIsolation = isChecked
     sendToOverlay({type:"inputIsolation", value:isChecked})
 })
-keepCheckbox(c_fixedPosition, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], overlayConfig.fixedPosition, isChecked=>{
-    overlayConfig.fixedPosition = isChecked
-    sendToOverlay({type:"fixedPosition", value:isChecked})
-})
+// keepCheckbox(c_fixedPosition, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], overlayConfig.fixedPosition, isChecked=>{
+//     overlayConfig.fixedPosition = isChecked
+//     sendToOverlay({type:"fixedPosition", value:isChecked})
+// })
 keepCheckbox(c_integrationVisibility, INPUT_STORAGE_TYPE, el=>STORAGE_KEYS[el.id.slice(2)], overlayConfig.integrationVisibility, isChecked=>{
     overlayConfig.integrationVisibility = isChecked
     sendToOverlay({type:"integrationVisibility", value:isChecked})
 })
 
 function sendToOverlay(obj) {
-    console.log(_overlayId, obj)
     if (_overlayId) chrome.tabs.sendMessage(_overlayId, obj)
 }
-
-
 
 })()
