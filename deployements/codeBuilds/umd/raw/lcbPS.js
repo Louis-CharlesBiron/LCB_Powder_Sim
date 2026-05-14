@@ -9612,6 +9612,15 @@ const DEFAULT_KEYBINDS = {
         triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
         preventDefault: true
     },
+    SELECT_AIR: {
+        callback:simulation=>{
+            simulation.updateSelectedMaterial(SETTINGS.MATERIALS.AIR)
+        },
+        cancelKeys: [TypingDevice.KEYS.CONTROL],
+        keys:[TypingDevice.KEYS.MINUS],
+        triggerType: TypingDevice.TRIGGER_TYPES.ONCE,
+        preventDefault: true
+    },
 
     BRUSH_PIXEL: {
         callback:simulation=>{

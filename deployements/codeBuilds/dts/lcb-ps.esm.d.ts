@@ -6440,11 +6440,11 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_15: boolean;
         export { preventDefault_15 as preventDefault };
     }
-    namespace BRUSH_PIXEL {
+    namespace SELECT_AIR {
         export function callback_21(simulation: any): void;
         export { callback_21 as callback };
-        let requiredKeys_6: string[];
-        export { requiredKeys_6 as requiredKeys };
+        let cancelKeys_9: string[];
+        export { cancelKeys_9 as cancelKeys };
         let keys_21: string[];
         export { keys_21 as keys };
         import triggerType_21 = ONCE;
@@ -6452,11 +6452,11 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_16: boolean;
         export { preventDefault_16 as preventDefault };
     }
-    namespace BRUSH_VERTICAL_CROSS {
+    namespace BRUSH_PIXEL {
         export function callback_22(simulation: any): void;
         export { callback_22 as callback };
-        let requiredKeys_7: string[];
-        export { requiredKeys_7 as requiredKeys };
+        let requiredKeys_6: string[];
+        export { requiredKeys_6 as requiredKeys };
         let keys_22: string[];
         export { keys_22 as keys };
         import triggerType_22 = ONCE;
@@ -6464,11 +6464,11 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_17: boolean;
         export { preventDefault_17 as preventDefault };
     }
-    namespace BRUSH_X3 {
+    namespace BRUSH_VERTICAL_CROSS {
         export function callback_23(simulation: any): void;
         export { callback_23 as callback };
-        let requiredKeys_8: string[];
-        export { requiredKeys_8 as requiredKeys };
+        let requiredKeys_7: string[];
+        export { requiredKeys_7 as requiredKeys };
         let keys_23: string[];
         export { keys_23 as keys };
         import triggerType_23 = ONCE;
@@ -6476,11 +6476,11 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_18: boolean;
         export { preventDefault_18 as preventDefault };
     }
-    namespace BRUSH_BIG_DOT {
+    namespace BRUSH_X3 {
         export function callback_24(simulation: any): void;
         export { callback_24 as callback };
-        let requiredKeys_9: string[];
-        export { requiredKeys_9 as requiredKeys };
+        let requiredKeys_8: string[];
+        export { requiredKeys_8 as requiredKeys };
         let keys_24: string[];
         export { keys_24 as keys };
         import triggerType_24 = ONCE;
@@ -6488,11 +6488,11 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_19: boolean;
         export { preventDefault_19 as preventDefault };
     }
-    namespace BRUSH_X5 {
+    namespace BRUSH_BIG_DOT {
         export function callback_25(simulation: any): void;
         export { callback_25 as callback };
-        let requiredKeys_10: string[];
-        export { requiredKeys_10 as requiredKeys };
+        let requiredKeys_9: string[];
+        export { requiredKeys_9 as requiredKeys };
         let keys_25: string[];
         export { keys_25 as keys };
         import triggerType_25 = ONCE;
@@ -6500,11 +6500,11 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_20: boolean;
         export { preventDefault_20 as preventDefault };
     }
-    namespace BRUSH_X15 {
+    namespace BRUSH_X5 {
         export function callback_26(simulation: any): void;
         export { callback_26 as callback };
-        let requiredKeys_11: string[];
-        export { requiredKeys_11 as requiredKeys };
+        let requiredKeys_10: string[];
+        export { requiredKeys_10 as requiredKeys };
         let keys_26: string[];
         export { keys_26 as keys };
         import triggerType_26 = ONCE;
@@ -6512,11 +6512,11 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_21: boolean;
         export { preventDefault_21 as preventDefault };
     }
-    namespace BRUSH_X25 {
+    namespace BRUSH_X15 {
         export function callback_27(simulation: any): void;
         export { callback_27 as callback };
-        let requiredKeys_12: string[];
-        export { requiredKeys_12 as requiredKeys };
+        let requiredKeys_11: string[];
+        export { requiredKeys_11 as requiredKeys };
         let keys_27: string[];
         export { keys_27 as keys };
         import triggerType_27 = ONCE;
@@ -6524,11 +6524,11 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_22: boolean;
         export { preventDefault_22 as preventDefault };
     }
-    namespace BRUSH_X55 {
+    namespace BRUSH_X25 {
         export function callback_28(simulation: any): void;
         export { callback_28 as callback };
-        let requiredKeys_13: string[];
-        export { requiredKeys_13 as requiredKeys };
+        let requiredKeys_12: string[];
+        export { requiredKeys_12 as requiredKeys };
         let keys_28: string[];
         export { keys_28 as keys };
         import triggerType_28 = ONCE;
@@ -6536,17 +6536,29 @@ export namespace DEFAULT_KEYBINDS {
         let preventDefault_23: boolean;
         export { preventDefault_23 as preventDefault };
     }
-    namespace BRUSH_X99 {
+    namespace BRUSH_X55 {
         export function callback_29(simulation: any): void;
         export { callback_29 as callback };
-        let requiredKeys_14: string[];
-        export { requiredKeys_14 as requiredKeys };
+        let requiredKeys_13: string[];
+        export { requiredKeys_13 as requiredKeys };
         let keys_29: string[];
         export { keys_29 as keys };
         import triggerType_29 = ONCE;
         export { triggerType_29 as triggerType };
         let preventDefault_24: boolean;
         export { preventDefault_24 as preventDefault };
+    }
+    namespace BRUSH_X99 {
+        export function callback_30(simulation: any): void;
+        export { callback_30 as callback };
+        let requiredKeys_14: string[];
+        export { requiredKeys_14 as requiredKeys };
+        let keys_30: string[];
+        export { keys_30 as keys };
+        import triggerType_30 = ONCE;
+        export { triggerType_30 as triggerType };
+        let preventDefault_25: boolean;
+        export { preventDefault_25 as preventDefault };
     }
 }
 export class _PhysicsUnit {
@@ -6966,6 +6978,13 @@ export class Simulation {
             preventDefault: boolean;
         };
         SELECT_FIRE: {
+            callback: (simulation: any) => void;
+            cancelKeys: string[];
+            keys: string[];
+            triggerType: number;
+            preventDefault: boolean;
+        };
+        SELECT_AIR: {
             callback: (simulation: any) => void;
             cancelKeys: string[];
             keys: string[];
