@@ -44,7 +44,7 @@ Link: [https://louis-charlesbiron.github.io/LCB_Powder_Sim](https://louis-charle
 
 ## **Chrome Extension**:
 ### - Download Instructions
-- Coming soon!
+- https://chromewebstore.google.com/detail/lcb-powder-simulator/mmgfddmehokfeeoeladbkmkffdnmpgfi
 
 ### - Info
 - A Nice little distraction in the top right of your browser
