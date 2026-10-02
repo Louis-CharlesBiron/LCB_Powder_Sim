@@ -11940,7 +11940,7 @@ class Simulation {
 
     // mouseDown listener, allows the mouse to place pixels
     #mouseDown(mouse) {
-        if (!mouse.rightClicked) this.#placePixelWithMouse(mouse)
+        if (!mouse.rightClicked && !this._userSettings.drawingDisabled) this.#placePixelWithMouse(mouse)
     }
 
     // Runs when the mouse leaves the simulation's bounding box

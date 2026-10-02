@@ -80,7 +80,7 @@ For those who know how to code a bit and want have more control over the simulat
       "dev": "vite"
     },
     "dependencies": {
-      "lcb-js": "^1.0.4"
+      "lcb-js": "^2.0.0"
     },
     "devDependencies": {
       "vite": "^7.3.1"

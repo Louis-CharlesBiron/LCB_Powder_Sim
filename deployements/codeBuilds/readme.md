@@ -80,7 +80,7 @@ For those who know how to code a bit and want have more control over the simulat
       "dev": "vite"
     },
     "dependencies": {
-      "lcb-js": "^1.0.4"
+      "lcb-js": "^2.0.0"
     },
     "devDependencies": {
       "vite": "^7.3.1"
@@ -220,7 +220,7 @@ This can be used to update map properties / import a world as soon as the simula
 - `height` The new height of the map (*local px*)
 #### - `updateMapPixelSize(pixelSize?)` -> Updates the map pixel size. (Defaults to `MapGrid.DEFAULT_PIXEL_SIZE`)
 - `pixelSize` The new map pixel size (*global px*)
-#### - `autoFitSize(pixelSize?, globalWidth?, globalHeight?)` ->Updates map size and pixel size automatically based on the optimal fit for the provided sizes. 
+#### - `autoFitMapSize(pixelSize?, globalWidth?, globalHeight?)` ->Updates map size and pixel size automatically based on the optimal fit for the provided sizes. 
 - `pixelSize` The desired map pixel size (*global px*) (Defaults to `DEFAULT_MAP_RESOLUTIONS.DEFAULT`)
 - `globalWidth` The width to cover (*global px*) (Defaults to the canvas width)
 - `globalHeight` The height to cover (*global px*) (Defaults to the canvas height)
@@ -336,9 +336,9 @@ All brushes available are given in the `BRUSH_TYPES` enum:
 
 ### Create your own isolated interactive worlds!
 
-![Cool img idk](images/image1.gif)
+![Cool img idk](examples/images/image1.gif)
 
-![Cool img2 idk](images/image2.png)
+![Cool img2 idk](examples/images/image2.png)
 
 # [Npx Commands](#table-of-contents)
 
@@ -361,4 +361,7 @@ This is the list of commands available through the `lcb-ps` command.
 
 Made by [Louis-Charles Biron](https://github.com/Louis-CharlesBiron) !
 
-Every line of code and documentation in this repository was written by hand with passion!
+Every uncredited line of code and documentation in this repository was written by me, by hand and with passion!
+
+Except for:
+- [coi-serviceworker.min.js](https://github.com/gzuidhof/coi-serviceworker)
